@@ -1,23 +1,38 @@
 package com.ravango.feature.camera
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
-import com.ravango.core.designsystem.component.RgScreen
+import com.ravango.core.navigation.BeautyPresetsRoute
 import com.ravango.core.navigation.CameraRoute
+import com.ravango.core.navigation.EditorRoute
+import com.ravango.core.navigation.PaywallRoute
+import com.ravango.core.navigation.ScriptsRoute
+
+/** Key the scripts picker writes into this entry's SavedStateHandle. */
+const val PICKED_SCRIPT_ID = "picked_script_id"
 
 /** Registers this feature's destinations. Navigation to other features uses routes from :core:navigation. */
 fun NavGraphBuilder.cameraDestinations(navController: NavHostController) {
-    composable<CameraRoute> { StubScreen("CameraRoute") { navController.popBackStack() } }
-}
-
-@Composable
-private fun StubScreen(name: String, onBack: () -> Unit) {
-    RgScreen(title = name, onBack = onBack) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(name) } }
+    composable<CameraRoute> { entry ->
+        val viewModel: CameraViewModel = hiltViewModel()
+        val picked by entry.savedStateHandle.getStateFlow<String?>(PICKED_SCRIPT_ID, null).collectAsStateWithLifecycle()
+        CameraStudioScreen(
+            viewModel = viewModel,
+            pickedScriptId = picked,
+            onPickedScriptConsumed = { entry.savedStateHandle[PICKED_SCRIPT_ID] = null },
+            onClose = { navController.popBackStack() },
+            onOpenEditor = { projectId ->
+                navController.navigate(EditorRoute(projectId)) {
+                    popUpTo<CameraRoute> { inclusive = true }
+                }
+            },
+            onPickScript = { navController.navigate(ScriptsRoute(pickForPrompter = true)) },
+            onOpenBeautyPresets = { navController.navigate(BeautyPresetsRoute) },
+            onRequirePro = { feature -> navController.navigate(PaywallRoute(source = "camera", feature = feature.name)) },
+        )
+    }
 }
