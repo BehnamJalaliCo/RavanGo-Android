@@ -48,6 +48,7 @@ data class RecoveredRecording(
 class RecordingRecovery @Inject constructor(
     private val storage: StorageInfo,
     private val crashGuard: CrashGuard,
+    private val audioEngine: com.ravango.engine.audio.AudioEngine,
     @IoDispatcher private val io: CoroutineDispatcher,
 ) {
     private val mutex = Mutex()
@@ -89,6 +90,22 @@ class RecordingRecovery @Inject constructor(
                     createdAt = manifest.createdAt,
                 )
             }
+            // Audio-only takes are written by the audio engine with a crash journal; rebuild any that were cut off.
+            runCatching { audioEngine.recoverInterruptedRecordings(root) }
+                .onFailure { RgLog.e(TAG, "audio-only recovery failed", it) }
+                .getOrDefault(emptyList())
+                .forEach { file ->
+                    recovered += RecoveredRecording(
+                        path = file.absolutePath,
+                        durationUs = probeDurationUs(file),
+                        width = 0,
+                        height = 0,
+                        frameRate = 0,
+                        hasAudio = true,
+                        captureMode = CaptureMode.AUDIO_ONLY,
+                        createdAt = file.lastModified(),
+                    )
+                }
             if (crashGuard.interruptedPayload(SECTION) != null && ActiveRecordings.isEmpty()) crashGuard.endSection(SECTION)
             if (recovered.isNotEmpty()) writePending(readPending() + recovered)
             _pendingCount.value = readPending().size
@@ -105,6 +122,16 @@ class RecordingRecovery @Inject constructor(
             list
         }
     }
+
+    private fun probeDurationUs(file: File): Long = runCatching {
+        val r = android.media.MediaMetadataRetriever()
+        try {
+            r.setDataSource(file.absolutePath)
+            (r.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L) * 1000
+        } finally {
+            r.release()
+        }
+    }.getOrDefault(0L)
 
     private fun readPending(): List<RecoveredRecording> = runCatching {
         val f = pendingFile

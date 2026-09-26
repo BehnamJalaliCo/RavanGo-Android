@@ -99,6 +99,7 @@ class CameraViewModel @Inject constructor(
     private var storageJob: Job? = null
 
     init {
+        bindPreviewBypass(beautyEngine.previewBypass)
         saver.target = SaveTarget(args.projectId, args.scriptId, args.templateId, _state.value.settings.aspectRatio)
         viewModelScope.launch {
             saver.events.collect { e ->
