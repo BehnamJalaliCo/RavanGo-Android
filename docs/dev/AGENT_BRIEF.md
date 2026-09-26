@@ -73,3 +73,12 @@ git worktree (your current working directory). Other agents work in parallel on 
   (use `git -c user.name="Claude" -c user.email="noreply@anthropic.com" commit ...`). Do NOT push.
 - Final report (concise): what you built (by file/area), any contract additions, dependencies added, services
   required, known limitations, the branch name and commit hash.
+
+## Screenshot review (UI work)
+Screens are reviewed as real renders, not by guessing. Apply the `ravango.android.screenshot` plugin to your module,
+write Robolectric tests annotated `@RunWith(RobolectricTestRunner::class) @GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(sdk = [35])` that call `captureAllVariants("<screen>") { ScreenContent(state = …) }` from `:core:testing`
+(fa-light, fa-dark, en-light). Run `./gradlew … :<module>:recordRoborazziDebug` (≈25 s) and **look at every PNG** in
+`<module>/build/outputs/roborazzi/` with your image viewer (Read tool). Screens must expose a stateless
+`XxxContent(state, callbacks)` composable (hoist `hiltViewModel()` out) so they can be rendered with sample data.
+Screenshot tests live in `src/test`; do not commit PNGs (build output).
