@@ -75,6 +75,7 @@
     <string name="prompter_group_text">متن</string>
     <string name="prompter_font">قلم</string>
     <string name="prompter_font_sample">روان‌گو Aa</string>
+    <string name="prompter_font_ravagh">رواق</string>
     <string name="prompter_font_vazirmatn">وزیرمتن</string>
     <string name="prompter_font_sahel">ساحل</string>
     <string name="prompter_font_samim">صمیم</string>

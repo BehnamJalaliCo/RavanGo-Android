@@ -483,17 +483,21 @@ internal fun presetDisplayName(preset: TeleprompterPreset): String = when (prese
     else -> preset.name
 }
 
+/**
+ * Matched by name so the label table also covers fonts added to the enum later (e.g. the brand font RAVAGH);
+ * unknown values fall back to a readable form of the enum name.
+ */
 @Composable
-private fun fontLabel(font: PrompterFont): String = stringResource(
-    when (font) {
-        PrompterFont.VAZIRMATN -> R.string.prompter_font_vazirmatn
-        PrompterFont.SAHEL -> R.string.prompter_font_sahel
-        PrompterFont.SAMIM -> R.string.prompter_font_samim
-        PrompterFont.SYSTEM_SANS -> R.string.prompter_font_sans
-        PrompterFont.SYSTEM_SERIF -> R.string.prompter_font_serif
-        PrompterFont.SYSTEM_MONO -> R.string.prompter_font_mono
-    },
-)
+private fun fontLabel(font: PrompterFont): String = when (font.name) {
+    "RAVAGH" -> stringResource(R.string.prompter_font_ravagh)
+    "VAZIRMATN" -> stringResource(R.string.prompter_font_vazirmatn)
+    "SAHEL" -> stringResource(R.string.prompter_font_sahel)
+    "SAMIM" -> stringResource(R.string.prompter_font_samim)
+    "SYSTEM_SANS" -> stringResource(R.string.prompter_font_sans)
+    "SYSTEM_SERIF" -> stringResource(R.string.prompter_font_serif)
+    "SYSTEM_MONO" -> stringResource(R.string.prompter_font_mono)
+    else -> font.name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() }
+}
 
 @Composable
 private fun alignLabel(align: PrompterTextAlign): String = stringResource(

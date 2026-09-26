@@ -46,8 +46,7 @@ class LiveSettingsEditor(
         persistJob = scope.launch {
             delay(PERSIST_DEBOUNCE_MS)
             val target = _local.value ?: return@launch
-            val usesOverride = script?.prompterSettings != null
-            if (usesOverride && script != null) {
+            if (script?.prompterSettings != null) {
                 scripts.savePrompterSettings(script.id, target)
                 withTimeoutOrNull(2_000) { scripts.observeScript(script.id).first { it?.prompterSettings == target } }
             } else {

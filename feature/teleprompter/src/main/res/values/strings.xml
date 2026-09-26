@@ -75,6 +75,7 @@
     <string name="prompter_group_text">Text</string>
     <string name="prompter_font">Font</string>
     <string name="prompter_font_sample">روان‌گو Aa</string>
+    <string name="prompter_font_ravagh">Ravagh</string>
     <string name="prompter_font_vazirmatn">Vazirmatn</string>
     <string name="prompter_font_sahel">Sahel</string>
     <string name="prompter_font_samim">Samim</string>

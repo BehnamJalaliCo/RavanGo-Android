@@ -186,6 +186,8 @@ private fun PrompterContent(
     }
     LaunchedEffect(snapshot.phase) {
         if (snapshot.phase == PrompterPhase.PAUSED || snapshot.phase == PrompterPhase.FINISHED) persistPosition()
+        // Starting to read answers the "resume?" question (start from the current point).
+        if (snapshot.phase != PrompterPhase.IDLE && state.resumeOffset > 0) viewModel.consumeResumeOffer()
     }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
         if (currentSnapshot.phase == PrompterPhase.SCROLLING || currentSnapshot.phase == PrompterPhase.COUNTDOWN) controller.pause()

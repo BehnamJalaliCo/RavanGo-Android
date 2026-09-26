@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- کتابخانه -->
+    <string name="scripts_title">متن‌ها</string>
+    <string name="scripts_pick_title">انتخاب متن</string>
+    <string name="scripts_count">%1$s متن</string>
+    <string name="scripts_new">متن تازه</string>
+    <string name="scripts_untitled">متن بی‌عنوان</string>
+    <string name="scripts_copy_suffix">(رونوشت)</string>
+    <string name="scripts_search_hint">جست‌وجو در عنوان و متن</string>
+    <string name="scripts_search_empty_title">نتیجه‌ای پیدا نشد</string>
+    <string name="scripts_search_empty_message">چیزی با «%1$s» جور نیست. کلمه‌های کمتر یا دیگری را امتحان کنید.</string>
+    <string name="scripts_empty_title">اولین متن‌تان از همین‌جا شروع می‌شود</string>
+    <string name="scripts_empty_message">متنی بنویسید، بچسبانید یا از فایل وارد کنید؛ بعد آن را با پرامپتر بخوانید یا همان لحظه ضبط کنید.</string>
+    <string name="scripts_empty_favorites_title">هنوز محبوبی ندارید</string>
+    <string name="scripts_empty_favorites_message">روی ستارهٔ یک متن بزنید یا آن را به کنار بکشید تا این‌جا بماند.</string>
+    <string name="scripts_empty_folder_title">این پوشه خالی است</string>
+    <string name="scripts_empty_folder_message">روی یک متن انگشت نگه دارید و «انتقال به پوشه» را بزنید، یا وقتی این پوشه انتخاب است متن تازه بسازید.</string>
+    <string name="scripts_filter_all">همه</string>
+    <string name="scripts_filter_favorites">محبوب‌ها</string>
+    <string name="scripts_sort">مرتب‌سازی</string>
+    <string name="scripts_sort_updated">آخرین ویرایش</string>
+    <string name="scripts_sort_created">جدیدترین</string>
+    <string name="scripts_sort_title">عنوان (الفبایی)</string>
+    <string name="scripts_sort_opened">آخرین بازشده</string>
+    <string name="scripts_card_meta">%1$s کلمه · %2$s با %3$s کلمه در دقیقه · %4$s</string>
+    <string name="scripts_favorite">افزودن به محبوب‌ها</string>
+    <string name="scripts_unfavorite">حذف از محبوب‌ها</string>
+    <string name="scripts_deleted">متن حذف شد</string>
+    <string name="scripts_duplicated">رونوشت ساخته شد</string>
+    <string name="scripts_action_prompter">باز کردن در پرامپتر</string>
+    <string name="scripts_action_record">ضبط با دوربین</string>
+    <string name="scripts_action_move">انتقال به پوشه</string>
+    <string name="scripts_no_folder">بدون پوشه</string>
+
+    <!-- پوشه‌ها -->
+    <string name="scripts_folder_new">پوشهٔ تازه</string>
+    <string name="scripts_folder_rename">تغییر نام پوشه</string>
+    <string name="scripts_folder_name">نام پوشه</string>
+    <string name="scripts_folder_color">رنگ</string>
+    <string name="scripts_folder_create">ساختن</string>
+    <string name="scripts_folder_delete">حذف پوشه</string>
+    <string name="scripts_folder_delete_title">«%1$s» حذف شود؟</string>
+    <string name="scripts_folder_delete_hint">متن‌های داخل آن حذف نمی‌شوند و فقط از پوشه بیرون می‌آیند.</string>
+
+    <!-- ساختن و وارد کردن -->
+    <string name="scripts_create_blank">نوشتن متن تازه</string>
+    <string name="scripts_create_blank_hint">شروع با صفحهٔ خالی</string>
+    <string name="scripts_create_import">وارد کردن از فایل</string>
+    <string name="scripts_create_import_hint">ورد (‎.docx‎)، متن ساده، مارک‌داون، زیرنویس (‎.srt‎ و ‎.vtt‎)، RTF یا HTML</string>
+    <string name="scripts_create_paste">چسباندن از کلیپ‌بورد</string>
+    <string name="scripts_create_paste_hint">ساختن متن از نوشته‌ای که کپی کرده‌اید</string>
+    <string name="scripts_clipboard_empty">در کلیپ‌بورد متنی برای چسباندن نیست.</string>
+    <string name="scripts_import_pdf">فایل‌های PDF را نمی‌شود با اطمینان وارد کرد. لطفاً سند را به‌صورت ورد (‎.docx‎) یا متن ساده (‎.txt‎) ذخیره و همان را وارد کنید.</string>
+    <string name="scripts_import_unsupported">این نوع فایل پشتیبانی نمی‌شود. از ‎.docx‎، ‎.txt‎، ‎.md‎، ‎.srt‎، ‎.vtt‎، ‎.rtf‎ یا ‎.html‎ استفاده کنید.</string>
+    <string name="scripts_import_empty">در این فایل متنی پیدا نشد.</string>
+    <string name="scripts_import_too_large">این فایل برای وارد کردن بیش از حد بزرگ است (حداکثر ۱۰ مگابایت).</string>
+    <string name="scripts_import_failed">فایل خوانده نشد. ممکن است خراب باشد یا دیگر در دسترس نباشد.</string>
+
+    <!-- ویرایشگر -->
+    <string name="scripts_editor_title">ویرایش متن</string>
+    <string name="scripts_editor_new_title">متن تازه</string>
+    <string name="scripts_editor_title_hint">عنوان</string>
+    <string name="scripts_editor_body_hint">متن‌تان را این‌جا بنویسید…\n\nنکته: «## » یک بخش تازه شروع می‌کند، ==متن== برجسته می‌شود، **متن** تأکید می‌گیرد، [مکث] یک مکث می‌گذارد و [[یادداشت]] فقط برای خودتان دیده می‌شود.</string>
+    <string name="scripts_editor_stats">%1$s کلمه · حدود %2$s با %3$s کلمه در دقیقه</string>
+    <string name="scripts_editor_saving">در حال ذخیره…</string>
+    <string name="scripts_editor_saved">ذخیره شد</string>
+    <string name="scripts_editor_save_failed">ذخیره نشد؛ متن‌تان همین‌جا محفوظ است و دوباره تلاش می‌کنیم</string>
+    <string name="scripts_editor_edit_mode">ویرایش</string>
+    <string name="scripts_editor_preview_mode">پیش‌نمایش</string>
+    <string name="scripts_editor_preview_empty">هنوز چیزی برای پیش‌نمایش نیست.</string>
+    <string name="scripts_editor_not_found_title">متن پیدا نشد</string>
+    <string name="scripts_editor_not_found_message">این متن حذف شده یا روی این دستگاه در دسترس نیست.</string>
+    <string name="scripts_editor_empty_action">اول چیزی بنویسید.</string>
+    <string name="scripts_editor_direction_auto">خودکار</string>
+    <string name="scripts_editor_direction_rtl">راست‌چین</string>
+    <string name="scripts_editor_direction_ltr">چپ‌چین</string>
+    <string name="scripts_editor_ai">دستیار هوشمند</string>
+    <string name="scripts_editor_tool_section">بخش</string>
+    <string name="scripts_editor_tool_highlight">برجسته</string>
+    <string name="scripts_editor_tool_emphasis">تأکید</string>
+    <string name="scripts_editor_tool_pause">مکث</string>
+    <string name="scripts_editor_tool_note">یادداشت</string>
+    <string name="scripts_editor_section_placeholder">عنوان بخش</string>
+    <string name="scripts_editor_text_placeholder">متن</string>
+    <string name="scripts_editor_note_placeholder">یادداشت برای خودم</string>
+    <string name="scripts_editor_open_prompter">پرامپتر</string>
+    <string name="scripts_editor_record">ضبط</string>
+    <string name="scripts_editor_prompter_settings">تنظیمات پرامپتر برای این متن</string>
+    <string name="scripts_editor_floating">پرامپتر شناور</string>
+    <string name="scripts_editor_ai_studio">باز کردن در استودیوی هوش مصنوعی</string>
+    <string name="scripts_editor_overlay_title">اجازهٔ نمایش روی برنامه‌های دیگر</string>
+    <string name="scripts_editor_overlay_message">برای نمایش متن روی اینستاگرام، تیک‌تاک یا هر برنامهٔ دوربین دیگری، روان‌گو به مجوز «نمایش روی برنامه‌های دیگر» نیاز دارد. این پنجره فقط تا وقتی پرامپتر شناور را باز نگه داشته‌اید دیده می‌شود.</string>
+
+    <!-- دستیار هوشمند -->
+    <string name="scripts_ai_title">دستیار هوشمند</string>
+    <string name="scripts_ai_scope_selection">روی متن انتخاب‌شده کار می‌کند.</string>
+    <string name="scripts_ai_scope_all">روی کل متن کار می‌کند. برای تغییر فقط یک بخش، اول آن را انتخاب کنید.</string>
+    <string name="scripts_ai_rewrite">بازنویسی</string>
+    <string name="scripts_ai_shorten">کوتاه‌تر</string>
+    <string name="scripts_ai_lengthen">بلندتر</string>
+    <string name="scripts_ai_change_tone">تغییر لحن</string>
+    <string name="scripts_ai_fix_grammar">اصلاح نگارش</string>
+    <string name="scripts_ai_translate">ترجمهٔ فارسی ↔ English</string>
+    <string name="scripts_ai_conversational">محاوره‌ای‌تر</string>
+    <string name="scripts_ai_bullets_to_script">نکته‌ها ← متن</string>
+    <string name="scripts_ai_hooks">قلاب شروع</string>
+    <string name="scripts_ai_cta">دعوت به اقدام</string>
+    <string name="scripts_ai_tone_label">لحن (برای «تغییر لحن»)</string>
+    <string name="scripts_ai_tone_friendly">صمیمی</string>
+    <string name="scripts_ai_tone_professional">حرفه‌ای</string>
+    <string name="scripts_ai_tone_energetic">پرانرژی</string>
+    <string name="scripts_ai_tone_humorous">طنز</string>
+    <string name="scripts_ai_tone_inspirational">الهام‌بخش</string>
+    <string name="scripts_ai_tone_calm">آرام</string>
+    <string name="scripts_ai_tone_persuasive">متقاعدکننده</string>
+    <string name="scripts_ai_tone_educational">آموزشی</string>
+    <string name="scripts_ai_thinking">در حال نوشتن…</string>
+    <string name="scripts_ai_stop">توقف</string>
+    <string name="scripts_ai_replace_selection">جایگزینی بخش انتخاب‌شده</string>
+    <string name="scripts_ai_replace_all">جایگزینی کل متن</string>
+    <string name="scripts_ai_insert_below">درج در ادامه</string>
+    <string name="scripts_ai_discard">کنار گذاشتن</string>
+    <string name="scripts_ai_disclaimer">متن شما فقط وقتی یکی از ابزارها را اجرا کنید به سرویس هوش مصنوعی تنظیم‌شده فرستاده می‌شود. پیش از استفاده، نتیجه را بازبینی کنید.</string>
+    <string name="scripts_ai_not_configured_title">سرویس هوش مصنوعی راه‌اندازی نشده</string>
+    <string name="scripts_ai_not_configured_message">دستیار هوشمند به یک سرویس هوش مصنوعی متصل (درگاه هوش مصنوعی روان‌گو یا کلید API خودتان) نیاز دارد. آن را در تنظیمات راه‌اندازی کنید.</string>
+    <string name="scripts_ai_consent_title">اجازهٔ شما لازم است</string>
+    <string name="scripts_ai_consent_message">برای استفاده از دستیار هوشمند، اجازه دهید روان‌گو متنی را که انتخاب می‌کنید به سرویس هوش مصنوعی بفرستد. این گزینه را در تنظیمات روشن کنید و هر وقت خواستید خاموشش کنید.</string>
+    <string name="scripts_ai_open_settings">باز کردن تنظیمات</string>
+    <string name="scripts_ai_open_studio">استودیوی هوش مصنوعی</string>
+</resources>
