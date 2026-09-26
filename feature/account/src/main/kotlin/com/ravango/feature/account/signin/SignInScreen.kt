@@ -86,6 +86,35 @@ import com.ravango.feature.account.R
 import com.ravango.feature.account.common.InfoBanner
 import com.ravango.feature.account.common.messageRes
 
+/** User intents of the sign-in flow; implemented by [SignInViewModel] via [asActions]. */
+internal interface SignInActions {
+    fun setMethod(method: SignInMethod)
+    fun setEmail(value: String)
+    fun setPhone(value: String)
+    fun setPassword(value: String)
+    fun setDisplayName(value: String)
+    fun toggleCreateAccount()
+    fun setCode(value: String)
+    fun editDestination()
+    fun sendCode()
+    fun submitPassword()
+    fun resetPassword()
+}
+
+private fun SignInViewModel.asActions(): SignInActions = object : SignInActions {
+    override fun setMethod(method: SignInMethod) { this@asActions.setMethod(method) }
+    override fun setEmail(value: String) { this@asActions.setEmail(value) }
+    override fun setPhone(value: String) { this@asActions.setPhone(value) }
+    override fun setPassword(value: String) { this@asActions.setPassword(value) }
+    override fun setDisplayName(value: String) { this@asActions.setDisplayName(value) }
+    override fun toggleCreateAccount() { this@asActions.toggleCreateAccount() }
+    override fun setCode(value: String) { this@asActions.setCode(value) }
+    override fun editDestination() { this@asActions.editDestination() }
+    override fun sendCode() { this@asActions.sendCode() }
+    override fun submitPassword() { this@asActions.submitPassword() }
+    override fun resetPassword() { this@asActions.resetPassword() }
+}
+
 @Composable
 fun SignInScreen(
     onBack: () -> Unit,
@@ -96,7 +125,13 @@ fun SignInScreen(
     val context = LocalContext.current
     val done by rememberUpdatedState(onSignedIn)
     LaunchedEffect(viewModel) { viewModel.signedIn.collect { done() } }
+    val actions = remember(viewModel) { viewModel.asActions() }
+    SignInContent(state, actions, onBack, onGoogle = { context.findActivity()?.let(viewModel::signInWithGoogle) })
+}
 
+/** Stateless sign-in screen (email code, password or phone). */
+@Composable
+internal fun SignInContent(state: SignInUiState, viewModel: SignInActions, onBack: () -> Unit, onGoogle: () -> Unit) {
     RgScreen(title = stringResource(R.string.account_signin_title), onBack = onBack) { padding ->
         Column(
             Modifier
@@ -164,7 +199,7 @@ fun SignInScreen(
                 OrDivider()
                 RgOutlineButton(
                     text = stringResource(R.string.account_google),
-                    onClick = { context.findActivity()?.let(viewModel::signInWithGoogle) },
+                    onClick = onGoogle,
                     modifier = Modifier.fillMaxWidth(),
                     size = RgButtonSize.LARGE,
                     enabled = !state.loading,
@@ -211,7 +246,7 @@ private fun BenefitRow(icon: ImageVector, text: String) {
 }
 
 @Composable
-private fun EmailForm(state: SignInUiState, vm: SignInViewModel) {
+private fun EmailForm(state: SignInUiState, vm: SignInActions) {
     Text(stringResource(R.string.account_email_code_hint), style = MaterialTheme.typography.bodySmall, color = RgTheme.colors.textSecondary)
     LtrField {
         RgTextField(
@@ -227,7 +262,7 @@ private fun EmailForm(state: SignInUiState, vm: SignInViewModel) {
 }
 
 @Composable
-private fun PhoneForm(state: SignInUiState, vm: SignInViewModel) {
+private fun PhoneForm(state: SignInUiState, vm: SignInActions) {
     Text(stringResource(R.string.account_phone_hint), style = MaterialTheme.typography.bodySmall, color = RgTheme.colors.textSecondary)
     LtrField {
         RgTextField(
@@ -244,7 +279,7 @@ private fun PhoneForm(state: SignInUiState, vm: SignInViewModel) {
 }
 
 @Composable
-private fun CodeStep(state: SignInUiState, vm: SignInViewModel) {
+private fun CodeStep(state: SignInUiState, vm: SignInActions) {
     Text(
         stringResource(R.string.account_code_sent_to, "⁦${state.codeSentTo.orEmpty()}⁩"),
         style = MaterialTheme.typography.bodyMedium,
@@ -270,7 +305,7 @@ private fun CodeStep(state: SignInUiState, vm: SignInViewModel) {
 }
 
 @Composable
-private fun PasswordForm(state: SignInUiState, vm: SignInViewModel) {
+private fun PasswordForm(state: SignInUiState, vm: SignInActions) {
     var visible by rememberSaveable { mutableStateOf(false) }
     if (state.creatingAccount) {
         RgTextField(

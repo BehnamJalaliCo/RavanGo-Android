@@ -35,6 +35,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -120,80 +121,30 @@ fun AccountScreen(
         }
     }
 
-    RgScreen(title = stringResource(R.string.account_title), onBack = onBack, snackbarHostState = snackbar) { padding ->
-        if (state.auth == AuthState.Unknown) {
-            LoadingState(Modifier.padding(padding))
-            return@RgScreen
-        }
-        val user = (state.auth as? AuthState.SignedIn)?.user
-        Column(
-            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = Spacing.xxl),
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-        ) {
-            AnimatedContent(user, label = "header", contentKey = { it?.id }) { u ->
-                if (u != null) ProfileHeader(u, state, onEdit = { editProfile = true }) else GuestHeader(state, onSignIn)
+    AccountContent(
+        state = state,
+        snackbar = snackbar,
+        onBack = onBack,
+        onSignIn = onSignIn,
+        onPaywall = onPaywall,
+        onCloud = onCloud,
+        onSettings = onSettings,
+        onPrivacy = onPrivacy,
+        onTerms = onTerms,
+        onAbout = onAbout,
+        onSubscription = {
+            val url = viewModel.manageSubscriptionUrl()
+            if (state.entitlements.plan == Plan.PRO && url != null) context.openUrl(url) else onPaywall()
+        },
+        onContactSupport = {
+            runCatching {
+                context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${state.supportEmail}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             }
-            UsageCard(state, onPaywall = onPaywall, onCloud = onCloud)
-
-            RgGroup(title = stringResource(R.string.account_section_account)) {
-                if (user != null) {
-                    RgListItem(stringResource(R.string.account_profile_edit), icon = Icons.Rounded.Edit, onClick = { editProfile = true })
-                }
-                val planName = planLabel(state.entitlements.plan)
-                RgListItem(
-                    title = stringResource(R.string.account_subscription),
-                    subtitle = if (state.entitlements.isTrial) stringResource(R.string.account_plan_trial, planName) else planName,
-                    icon = Icons.Rounded.WorkspacePremium,
-                    onClick = {
-                        val url = viewModel.manageSubscriptionUrl()
-                        if (state.entitlements.plan == Plan.PRO && url != null) context.openUrl(url) else onPaywall()
-                    },
-                    trailing = if (state.entitlements.plan == Plan.FREE) ({ ProBadge(text = stringResource(R.string.account_upgrade_badge)) }) else null,
-                )
-                RgListItem(
-                    title = stringResource(R.string.account_cloud),
-                    subtitle = cloudSubtitle(state),
-                    icon = Icons.Rounded.Cloud,
-                    onClick = onCloud,
-                )
-            }
-            RgGroup(title = stringResource(R.string.account_section_app)) {
-                RgListItem(stringResource(R.string.account_settings), icon = Icons.Rounded.Settings, onClick = onSettings)
-                RgListItem(stringResource(R.string.account_privacy), icon = Icons.Rounded.PrivacyTip, onClick = onPrivacy)
-                RgListItem(stringResource(R.string.account_terms), icon = Icons.Rounded.Description, onClick = onTerms)
-                RgListItem(stringResource(R.string.account_about), icon = Icons.Rounded.Info, onClick = onAbout)
-                if (state.supportEmail.isNotBlank()) {
-                    RgListItem(
-                        stringResource(R.string.account_contact_support),
-                        subtitle = state.supportEmail,
-                        icon = Icons.Rounded.Mail,
-                        onClick = {
-                            runCatching {
-                                context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${state.supportEmail}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                            }
-                        },
-                    )
-                }
-            }
-            if (user != null) {
-                RgGroup {
-                    RgListItem(
-                        stringResource(R.string.account_sign_out),
-                        icon = Icons.AutoMirrored.Rounded.Logout,
-                        onClick = { confirmSignOut = true },
-                    )
-                    RgListItem(
-                        stringResource(R.string.account_delete),
-                        subtitle = stringResource(R.string.account_delete_subtitle),
-                        icon = Icons.Rounded.DeleteForever,
-                        iconTint = RgTheme.colors.danger,
-                        iconBackground = RgTheme.colors.danger.copy(alpha = 0.12f),
-                        onClick = { confirmDelete = true },
-                    )
-                }
-            }
-        }
-    }
+        },
+        onEditProfile = { editProfile = true },
+        onSignOut = { confirmSignOut = true },
+        onDelete = { confirmDelete = true },
+    )
 
     val user = (state.auth as? AuthState.SignedIn)?.user
     if (editProfile && user != null) {
@@ -223,6 +174,101 @@ fun AccountScreen(
             onDismiss = { if (!state.busy) confirmDelete = false },
         )
     }
+}
+
+/** Stateless account hub (profile or guest header, usage, account/app groups). */
+@Composable
+internal fun AccountContent(
+    state: AccountUiState,
+    snackbar: SnackbarHostState?,
+    onBack: () -> Unit,
+    onSignIn: () -> Unit,
+    onPaywall: () -> Unit,
+    onCloud: () -> Unit,
+    onSettings: () -> Unit,
+    onPrivacy: () -> Unit,
+    onTerms: () -> Unit,
+    onAbout: () -> Unit,
+    onSubscription: () -> Unit,
+    onContactSupport: () -> Unit,
+    onEditProfile: () -> Unit,
+    onSignOut: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    RgScreen(title = stringResource(R.string.account_title), onBack = onBack, snackbarHostState = snackbar) { padding ->
+        if (state.auth == AuthState.Unknown) {
+            LoadingState(Modifier.padding(padding))
+            return@RgScreen
+        }
+        val user = (state.auth as? AuthState.SignedIn)?.user
+        Column(
+            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = Spacing.xxl),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            AnimatedContent(user, label = "header", contentKey = { it?.id }) { u ->
+                if (u != null) ProfileHeader(u, state, onEdit = onEditProfile) else GuestHeader(state, onSignIn)
+            }
+            UsageCard(state, onPaywall = onPaywall, onCloud = onCloud)
+
+            RgGroup(title = stringResource(R.string.account_section_account)) {
+                if (user != null) {
+                    RgListItem(stringResource(R.string.account_profile_edit), icon = Icons.Rounded.Edit, onClick = onEditProfile)
+                }
+                val planName = planLabel(state.entitlements.plan)
+                val planSubtitle = if (state.entitlements.isTrial) stringResource(R.string.account_plan_trial, planName) else planName
+                if (state.entitlements.plan == Plan.FREE) {
+                    RgListItem(
+                        title = stringResource(R.string.account_subscription),
+                        subtitle = planSubtitle,
+                        icon = Icons.Rounded.WorkspacePremium,
+                        onClick = onSubscription,
+                        trailing = { ProBadge(text = stringResource(R.string.account_upgrade_badge)) },
+                    )
+                } else {
+                    // Paid: keep the default chevron (the row opens subscription management).
+                    RgListItem(stringResource(R.string.account_subscription), subtitle = planSubtitle, icon = Icons.Rounded.WorkspacePremium, onClick = onSubscription)
+                }
+                RgListItem(
+                    title = stringResource(R.string.account_cloud),
+                    subtitle = cloudSubtitle(state),
+                    icon = Icons.Rounded.Cloud,
+                    onClick = onCloud,
+                )
+            }
+            RgGroup(title = stringResource(R.string.account_section_app)) {
+                RgListItem(stringResource(R.string.account_settings), icon = Icons.Rounded.Settings, onClick = onSettings)
+                RgListItem(stringResource(R.string.account_privacy), icon = Icons.Rounded.PrivacyTip, onClick = onPrivacy)
+                RgListItem(stringResource(R.string.account_terms), icon = Icons.Rounded.Description, onClick = onTerms)
+                RgListItem(stringResource(R.string.account_about), icon = Icons.Rounded.Info, onClick = onAbout)
+                if (state.supportEmail.isNotBlank()) {
+                    RgListItem(
+                        stringResource(R.string.account_contact_support),
+                        subtitle = state.supportEmail,
+                        icon = Icons.Rounded.Mail,
+                        onClick = onContactSupport,
+                    )
+                }
+            }
+            if (user != null) {
+                RgGroup {
+                    RgListItem(
+                        stringResource(R.string.account_sign_out),
+                        icon = Icons.AutoMirrored.Rounded.Logout,
+                        onClick = onSignOut,
+                    )
+                    RgListItem(
+                        stringResource(R.string.account_delete),
+                        subtitle = stringResource(R.string.account_delete_subtitle),
+                        icon = Icons.Rounded.DeleteForever,
+                        iconTint = RgTheme.colors.danger,
+                        iconBackground = RgTheme.colors.danger.copy(alpha = 0.12f),
+                        onClick = onDelete,
+                    )
+                }
+            }
+        }
+    }
+
 }
 
 @Composable
@@ -264,7 +310,7 @@ private fun ProfileHeader(user: UserAccount, state: AccountUiState, onEdit: () -
                     Text("⁦$contact⁩", style = MaterialTheme.typography.bodyMedium, color = RgTheme.colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Spacer(Modifier.height(Spacing.xs))
-                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
                     PlanBadge(state.entitlements.plan)
                     RgTag(providerLabel(user.provider), color = RgTheme.colors.surfaceMuted, contentColor = RgTheme.colors.textSecondary)
                 }
@@ -279,7 +325,7 @@ private fun PlanBadge(plan: Plan) {
     if (plan == Plan.FREE) {
         RgTag(planLabel(plan), color = RgTheme.colors.accentSoft, contentColor = RgTheme.colors.accent)
     } else {
-        ProBadge(text = planLabel(plan))
+        ProBadge(Modifier.height(24.dp), text = planLabel(plan))
     }
 }
 
@@ -301,12 +347,12 @@ private fun GuestHeader(state: AccountUiState, onSignIn: () -> Unit) {
                 InitialsAvatar("", seed = "guest", size = 56.dp)
                 Spacer(Modifier.width(Spacing.md))
                 Column {
-                    Text(stringResource(R.string.account_guest_title), style = MaterialTheme.typography.titleLarge, color = RgTheme.colors.textPrimary)
+                    Text(stringResource(R.string.account_guest_title), style = MaterialTheme.typography.titleMedium, color = RgTheme.colors.textPrimary)
                     Text(stringResource(R.string.account_guest_subtitle), style = MaterialTheme.typography.bodySmall, color = RgTheme.colors.textSecondary)
                 }
             }
             if (state.cloudConfigured) {
-                RgPrimaryButton(stringResource(R.string.account_sign_in), onSignIn, modifier = Modifier.fillMaxWidth(), icon = Icons.Rounded.Person, size = RgButtonSize.MEDIUM)
+                RgPrimaryButton(stringResource(R.string.account_sign_in), onSignIn, modifier = Modifier.fillMaxWidth(), icon = Icons.Rounded.Person)
             } else {
                 InfoBanner(stringResource(R.string.account_cloud_not_configured_long))
             }

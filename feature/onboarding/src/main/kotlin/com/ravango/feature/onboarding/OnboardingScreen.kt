@@ -76,6 +76,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ravango.core.common.format.localizeDigits
 import com.ravango.core.designsystem.component.GlassSurface
+import com.ravango.core.designsystem.component.RgButtonSize
 import com.ravango.core.designsystem.component.RgChip
 import com.ravango.core.designsystem.component.RgIconButton
 import com.ravango.core.designsystem.component.RgPrimaryButton
@@ -103,7 +104,7 @@ fun OnboardingDestination(onFinished: () -> Unit, viewModel: OnboardingViewModel
     LaunchedEffect(viewModel) {
         viewModel.eventFlow.collect { if (it is OnboardingEvent.Finished) onFinished() }
     }
-    OnboardingScreen(
+    OnboardingContent(
         state = state,
         onPageSettled = viewModel::setPage,
         onLanguage = viewModel::selectLanguage,
@@ -124,7 +125,7 @@ private fun pageColors(colors: RgColors, page: Int): Pair<Color, Color> = when (
 }
 
 @Composable
-private fun OnboardingScreen(
+internal fun OnboardingContent(
     state: OnboardingUiState,
     onPageSettled: (Int) -> Unit,
     onLanguage: (AppLanguage) -> Unit,
@@ -235,6 +236,7 @@ private fun BottomBar(pager: PagerState, isLast: Boolean, finishing: Boolean, on
             text = stringResource(if (isLast) R.string.onboarding_get_started else UiR.string.action_continue),
             onClick = onNext,
             loading = finishing,
+            size = RgButtonSize.HERO,
             modifier = Modifier.fillMaxWidth().widthIn(max = 480.dp),
         )
     }
