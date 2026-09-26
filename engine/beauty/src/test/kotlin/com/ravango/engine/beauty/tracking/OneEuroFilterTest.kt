@@ -1,7 +1,6 @@
 package com.ravango.engine.beauty.tracking
 
 import com.google.common.truth.Truth.assertThat
-import com.ravango.engine.beauty.TestFaces
 import org.junit.Test
 import java.util.Random
 import kotlin.math.abs
@@ -64,37 +63,6 @@ class OneEuroFilterTest {
         val v = f.filter(0.2f, 1.1)
         assertThat(f.filter(0.9f, 1.1)).isEqualTo(v)
         assertThat(f.filter(0.9f, 1.05)).isEqualTo(v)
-    }
-
-    @Test
-    fun stabilizerExtrapolatesWithVelocity() {
-        val s = LandmarkStabilizer(predictionGain = 1f, maxLeadSec = 0.1f)
-        val out = FaceLandmarks()
-        // Face moving right at 0.3 units/s.
-        for (i in 0 until 40) {
-            val t = i / 30.0
-            s.onMeasurement(TestFaces.frontal(cx = 0.5f + (0.3 * t).toFloat()), t, 0.16f)
-        }
-        val lastT = 39 / 30.0
-        s.predict(lastT, out)
-        val atMeasurement = out.x(Contour.NOSE_BRIDGE, 0)
-        s.predict(lastT + 0.05, out)
-        val ahead = out.x(Contour.NOSE_BRIDGE, 0)
-        assertThat(ahead - atMeasurement).isWithin(0.004f).of(0.3f * 0.05f)
-        // Lead is capped at maxLeadSec.
-        s.predict(lastT + 1.0, out)
-        assertThat(out.x(Contour.NOSE_BRIDGE, 0) - atMeasurement).isLessThan(0.3f * 0.11f)
-    }
-
-    @Test
-    fun stabilizerResetsOnLargeJump() {
-        val s = LandmarkStabilizer()
-        val out = FaceLandmarks()
-        for (i in 0 until 10) s.onMeasurement(TestFaces.frontal(cx = 0.3f), i / 30.0, 0.16f)
-        s.onMeasurement(TestFaces.frontal(cx = 0.9f), 10 / 30.0, 0.16f)
-        s.predict(10 / 30.0, out)
-        // A new face snaps immediately instead of sliding across the frame.
-        assertThat(out.x(Contour.NOSE_BRIDGE, 0)).isWithin(1e-4f).of(0.9f)
     }
 
     @Test

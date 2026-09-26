@@ -15,6 +15,7 @@ import androidx.compose.material.icons.rounded.FaceRetouchingNatural
 import androidx.compose.material.icons.rounded.Flare
 import androidx.compose.material.icons.rounded.Gradient
 import androidx.compose.material.icons.rounded.Healing
+import androidx.compose.material.icons.rounded.Lens
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.North
 import androidx.compose.material.icons.rounded.Opacity
@@ -55,6 +56,13 @@ sealed interface BeautyItem {
         override val requiresFace: Boolean get() = true
         override val bipolar: Boolean get() = false
     }
+
+    /** Iris recolour; its value lives in the engine's [com.ravango.engine.beauty.EyeColorSetting], not in BeautyState. */
+    data object EyeColor : BeautyItem {
+        override val key: String get() = "e:iris"
+        override val requiresFace: Boolean get() = true
+        override val bipolar: Boolean get() = false
+    }
 }
 
 enum class BeautyTab(@StringRes val label: Int) {
@@ -62,6 +70,7 @@ enum class BeautyTab(@StringRes val label: Int) {
     FACE(R.string.beauty_tab_face),
     EYES(R.string.beauty_tab_eyes),
     MOUTH(R.string.beauty_tab_mouth),
+    LOOKS(R.string.beauty_tab_looks),
     MAKEUP(R.string.beauty_tab_makeup),
     PRESETS(R.string.beauty_tab_presets),
 }
@@ -71,18 +80,18 @@ internal object BeautyCatalog {
     fun items(tab: BeautyTab): List<BeautyItem> = when (tab) {
         BeautyTab.SKIN -> beautyIn(BeautyCategory.SKIN)
         BeautyTab.FACE -> beautyIn(BeautyCategory.FACE_SHAPE)
-        BeautyTab.EYES -> beautyIn(BeautyCategory.EYES)
+        BeautyTab.EYES -> beautyIn(BeautyCategory.EYES) + BeautyItem.EyeColor
         BeautyTab.MOUTH -> beautyIn(BeautyCategory.MOUTH) +
             listOf(BeautyItem.Makeup(MakeupFeature.LIPSTICK), BeautyItem.Makeup(MakeupFeature.LIP_COLOR))
         BeautyTab.MAKEUP -> MakeupFeature.entries.map { BeautyItem.Makeup(it) }
-        BeautyTab.PRESETS -> emptyList()
+        BeautyTab.LOOKS, BeautyTab.PRESETS -> emptyList()
     }
 
     private fun beautyIn(category: BeautyCategory) = BeautyFeature.entries.filter { it.category == category }.map { BeautyItem.Beauty(it) }
 
     /** The entitlement required to use [item], or null when it is free. Plan → feature mapping stays remote. */
     fun requiredPro(item: BeautyItem): ProFeature? = when (item) {
-        is BeautyItem.Makeup -> ProFeature.MAKEUP
+        is BeautyItem.Makeup, BeautyItem.EyeColor -> ProFeature.MAKEUP
         is BeautyItem.Beauty -> requiredPro(item.feature)
     }
 
@@ -107,16 +116,48 @@ internal object BeautyCatalog {
 
     fun neutral(item: BeautyItem): Int = if (item.bipolar) 50 else 0
 
+    /** Value of [item] in [state]; the eye colour is not part of [BeautyState] (see `BeautyUiState.valueOf`). */
     fun value(state: BeautyState, item: BeautyItem): Int = when (item) {
         is BeautyItem.Beauty -> state.intensity(item.feature)
         is BeautyItem.Makeup -> state.layer(item.feature).intensity
+        BeautyItem.EyeColor -> 0
     }
+
+    /**
+     * The "sweet spot" of each slider: the value the slider magnetically snaps to (with a haptic detent), i.e. the
+     * subtle default a first tap applies.
+     */
+    fun recommended(item: BeautyItem): Int = when (item) {
+        is BeautyItem.Beauty -> when (item.feature) {
+            BeautyFeature.SMOOTH_SKIN -> 35
+            BeautyFeature.SKIN_BRIGHTNESS, BeautyFeature.SHARPEN, BeautyFeature.WHITENING -> 20
+            BeautyFeature.SKIN_RETOUCH, BeautyFeature.BLEMISH_REMOVAL, BeautyFeature.DARK_CIRCLES,
+            BeautyFeature.TEETH_WHITENING -> 40
+            BeautyFeature.FACE_SLIM, BeautyFeature.CHEEKBONE, BeautyFeature.NOSE, BeautyFeature.EYE_SIZE -> 30
+            else -> 50
+        }
+        is BeautyItem.Makeup -> 50
+        BeautyItem.EyeColor -> 50
+    }
+
+    /** Extra explanation for sliders that also drive an eye effect (Face Retouch mapping). */
+    @StringRes
+    fun hint(item: BeautyItem): Int? = when ((item as? BeautyItem.Beauty)?.feature) {
+        BeautyFeature.WHITENING -> R.string.beauty_hint_whitening_eyes
+        BeautyFeature.SHARPEN -> R.string.beauty_hint_sharpen_eyes
+        BeautyFeature.TEETH_WHITENING -> R.string.beauty_hint_teeth
+        else -> if (item == BeautyItem.EyeColor) R.string.beauty_hint_eye_color else null
+    }
+
+    /** Curated iris colours (ARGB). */
+    val eyeColorShades: List<Long> = listOf(0xFF6D8BA8, 0xFF4F7C5A, 0xFF8A6A45, 0xFF9AA7B1, 0xFF3F5E8C, 0xFF7B8F3A, 0xFFB08457, 0xFF6B5B95)
 
     fun withValue(state: BeautyState, item: BeautyItem, value: Int): BeautyState {
         val v = value.coerceIn(0, 100)
         return when (item) {
             is BeautyItem.Beauty -> state.copy(beauty = state.beauty + (item.feature to v))
             is BeautyItem.Makeup -> state.copy(makeup = state.makeup + (item.feature to state.layer(item.feature).copy(intensity = v)))
+            BeautyItem.EyeColor -> state
         }
     }
 
@@ -187,6 +228,7 @@ internal object BeautyCatalog {
             MakeupFeature.HIGHLIGHT -> R.string.beauty_makeup_highlight
             MakeupFeature.FOUNDATION -> R.string.beauty_makeup_foundation
         }
+        BeautyItem.EyeColor -> R.string.beauty_eye_color
     }
 
     /** Labels for the two ends of a bipolar slider (start = 0, end = 100). */
@@ -230,6 +272,7 @@ internal object BeautyCatalog {
             MakeupFeature.HIGHLIGHT -> Icons.Rounded.AutoAwesome
             MakeupFeature.FOUNDATION -> Icons.Rounded.Opacity
         }
+        BeautyItem.EyeColor -> Icons.Rounded.Lens
     }
 
     /** Curated shades per makeup layer (ARGB). */
