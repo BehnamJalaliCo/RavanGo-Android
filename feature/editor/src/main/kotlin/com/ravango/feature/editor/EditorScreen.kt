@@ -1,6 +1,7 @@
 package com.ravango.feature.editor
 
 import com.ravango.core.designsystem.motion.RgEnter
+import com.ravango.core.designsystem.theme.RgTheme
 import com.ravango.core.designsystem.motion.RgExit
 import com.ravango.core.designsystem.motion.SharedKeys
 import com.ravango.core.designsystem.motion.rgSharedBounds

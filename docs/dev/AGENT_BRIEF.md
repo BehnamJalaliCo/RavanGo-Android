@@ -47,6 +47,14 @@ git worktree (your current working directory). Other agents work in parallel on 
    `Spacing`, `Radius`, `Motion`. Camera/teleprompter/editor surfaces use `StudioTheme` (always dark). Micro-interactions:
    animate state changes (`animate*AsState`, `AnimatedVisibility`, `AnimatedContent`), haptics on meaningful actions.
    You may add module-local components when needed. Respect `RgTheme.reduceMotion`.
+   Palette: the logo blue is the only accent; use `RgTheme.colors.tones.<sky|periwinkle|lilac|mint|peach|blush|butter>`
+   (`container` + readable `content`) for category colors instead of raw `Palette` values, `onPro` on the gold Pro
+   gradient. Motion lives in `designsystem.motion`: `rememberEntranceActive` + `Modifier.staggeredEntrance` for list
+   entrances, `RgAnimatedContent`/`rgFadeThrough` for state swaps, `RgEnter`/`RgExit` presets for AnimatedVisibility,
+   `RgAnimatedCounter`/`rememberCountUp` for numbers, `Modifier.rgSharedBounds(SharedKeys.…)` inside an
+   `RgNavDestination` for cross-screen container transforms, `RgExpandHost` for tile → card expansion, `RgDialog` for
+   dialogs. Typography: the brand font draws "—"/"–" on the baseline and "·" like the Persian zero; avoid dashes in UI
+   copy and use `RgTheme.metaSeparator` / «،» next to numbers; `BalancedLines` for short hero paragraphs.
 9. **Monetization gating**: inject `EntitlementProvider` (core:model service) and check `has(ProFeature.X)`; when a
    gated action is attempted, navigate to `PaywallRoute(source = "<where>", feature = ProFeature.X.name)` or call a
    provided `onRequirePro`. Show `ProBadge` next to gated options. Never hard-code plan logic.

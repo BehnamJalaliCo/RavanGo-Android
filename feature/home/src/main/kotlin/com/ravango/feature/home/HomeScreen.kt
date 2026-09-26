@@ -1,5 +1,6 @@
 package com.ravango.feature.home
 
+import com.ravango.core.designsystem.theme.BalancedLines
 import com.ravango.core.designsystem.component.RgSpinner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -504,7 +505,7 @@ private fun HeroCard(onRecord: () -> Unit, onAudioOnly: () -> Unit, modifier: Mo
             Spacer(Modifier.height(Spacing.xs))
             Text(
                 stringResource(R.string.home_new_recording_body),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.merge(BalancedLines),
                 color = Color.White.copy(alpha = 0.9f),
             )
             Spacer(Modifier.height(Spacing.xl))

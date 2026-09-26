@@ -1,5 +1,6 @@
 package com.ravango.feature.ai
 
+import com.ravango.core.designsystem.theme.BalancedLines
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -184,7 +185,7 @@ fun AiHero(state: AiStudioUiState, onGetCredits: () -> Unit, modifier: Modifier 
                 }
             }
             Spacer(Modifier.height(Spacing.md))
-            Text(stringResource(R.string.ai_hero_body), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.92f))
+            Text(stringResource(R.string.ai_hero_body), style = MaterialTheme.typography.bodyMedium.merge(BalancedLines), color = Color.White.copy(alpha = 0.92f))
             Spacer(Modifier.height(Spacing.lg))
             if (state.showsCredits) {
                 val e = state.entitlements

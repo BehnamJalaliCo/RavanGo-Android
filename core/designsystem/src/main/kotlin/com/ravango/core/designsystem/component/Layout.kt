@@ -1,5 +1,6 @@
 package com.ravango.core.designsystem.component
 
+import com.ravango.core.designsystem.theme.BalancedLines
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.MutableTransitionState
@@ -289,7 +290,7 @@ fun EmptyState(
         Column(Modifier.staggeredEntrance(1, entrance), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(title, style = MaterialTheme.typography.titleLarge, color = colors.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 320.dp))
             Spacer(Modifier.height(Spacing.sm))
-            Text(message, style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 320.dp))
+            Text(message, style = MaterialTheme.typography.bodyMedium.merge(BalancedLines), color = colors.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 320.dp))
         }
         if (actionText != null && onAction != null) {
             Spacer(Modifier.height(Spacing.xxl))

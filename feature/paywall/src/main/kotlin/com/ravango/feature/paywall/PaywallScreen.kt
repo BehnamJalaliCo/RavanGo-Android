@@ -1,5 +1,6 @@
 package com.ravango.feature.paywall
 
+import com.ravango.core.designsystem.theme.BalancedLines
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -286,7 +287,7 @@ private fun Hero(state: PaywallUiState) {
             )
             Text(
                 stringResource(if (state.feature != null) R.string.paywall_hero_subtitle_feature else R.string.paywall_hero_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.merge(BalancedLines),
                 color = Color.White.copy(alpha = 0.82f),
             )
         }

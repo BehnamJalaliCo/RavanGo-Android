@@ -282,7 +282,7 @@ internal fun AboutContent(
                 RgListItem(
                     stringResource(R.string.account_crash_reports),
                     subtitle = crashReportsSubtitle(crashReportCount),
-                    icon = Icons.Rounded.BugReport,
+                    icon = Icons.Rounded.BugReport, iconTint = iconTone(Icons.Rounded.BugReport).content, iconBackground = iconTone(Icons.Rounded.BugReport).container,
                     onClick = onCrashReports,
                 )
             }

@@ -1,5 +1,6 @@
 package com.ravango.feature.account.diagnostics
 
+import com.ravango.feature.account.common.iconTone
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -303,7 +304,7 @@ fun CrashReportsSheet(onDismiss: () -> Unit, viewModel: CrashReportsViewModel = 
                 RgListItem(
                     report.summary,
                     subtitle = kindLabel(report.kind) + " · " + formatTime(report.timeMillis),
-                    icon = Icons.Rounded.BugReport,
+                    icon = Icons.Rounded.BugReport, iconTint = iconTone(Icons.Rounded.BugReport).content, iconBackground = iconTone(Icons.Rounded.BugReport).container,
                     onClick = { openId = report.id },
                     modifier = Modifier.padding(horizontal = Spacing.sm),
                 )
