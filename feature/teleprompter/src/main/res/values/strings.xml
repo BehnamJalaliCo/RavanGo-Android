@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Prompter screen -->
+    <string name="prompter_loading">Loading…</string>
+    <string name="prompter_not_found_title">Script not found</string>
+    <string name="prompter_not_found_message">This script was deleted or is not available on this device.</string>
+    <string name="prompter_play">Play</string>
+    <string name="prompter_pause">Pause</string>
+    <string name="prompter_restart">Restart</string>
+    <string name="prompter_prev_section">Previous section</string>
+    <string name="prompter_next_section">Next section</string>
+    <string name="prompter_sections">Sections</string>
+    <string name="prompter_speed_down">Slower</string>
+    <string name="prompter_speed_up">Faster</string>
+    <string name="prompter_wpm">words/min</string>
+    <string name="prompter_wpm_value">%1$s wpm</string>
+    <string name="prompter_font_smaller">Smaller text</string>
+    <string name="prompter_font_larger">Larger text</string>
+    <string name="prompter_font_size_short">text size</string>
+    <string name="prompter_mirror_h">Mirror ↔</string>
+    <string name="prompter_mirror_v">Mirror ↕</string>
+    <string name="prompter_mirror_hint">Mirror mode is for beam-splitter rigs: the phone lies under the glass and the reflection reads correctly. Use it with the back camera behind the glass, or turn it off when reading straight from the screen with the front camera.</string>
+    <string name="prompter_start_point">Start point</string>
+    <string name="prompter_rotation_lock">Lock rotation</string>
+    <string name="prompter_brightness">Max brightness</string>
+    <string name="prompter_floating">Floating prompter</string>
+    <string name="prompter_record">Record with camera</string>
+    <string name="prompter_settings">Prompter settings</string>
+    <string name="prompter_resume_title">Continue where you left off?</string>
+    <string name="prompter_resume_message">You stopped partway through this script last time.</string>
+    <string name="prompter_resume">Resume</string>
+    <string name="prompter_from_beginning">From the beginning</string>
+    <string name="prompter_tap_paragraph">Tap a paragraph to start from there</string>
+    <string name="prompter_paragraph_n">Paragraph %1$s</string>
+
+    <!-- Floating prompter -->
+    <string name="prompter_floating_title">Floating prompter</string>
+    <string name="prompter_floating_channel">Floating prompter</string>
+    <string name="prompter_floating_playing">Scrolling — tap to open RavanGo</string>
+    <string name="prompter_floating_paused">Paused — tap to open RavanGo</string>
+    <string name="prompter_floating_move">Move window</string>
+    <string name="prompter_floating_resize">Resize window</string>
+    <string name="prompter_floating_opacity">Transparency</string>
+    <string name="prompter_floating_started">Floating prompter is on. Open your camera or recording app — the prompter stays on top.</string>
+    <string name="prompter_floating_permission_title">Allow display over other apps</string>
+    <string name="prompter_floating_permission_message">To show your script on top of Instagram, TikTok or any camera app, RavanGo needs the “Display over other apps” permission. The window only appears while you keep the floating prompter open, and you can close it any time from the window or the notification.</string>
+
+    <!-- Settings -->
+    <string name="prompter_preview">Live preview</string>
+    <string name="prompter_preview_sample">## Welcome\nThis is a ==live preview== of your prompter. **Speed**, fonts, colors and mirroring update as you change them. [pause]\n[[Director note: smile and look at the lens]]\nKeep your eyes on the reading line and speak naturally — the text follows your chosen pace.</string>
+    <string name="prompter_scope_title">Apply to</string>
+    <string name="prompter_scope_script">This script only</string>
+    <string name="prompter_scope_all">All scripts</string>
+    <string name="prompter_scope_script_hint">These settings are saved with this script and override your defaults.</string>
+    <string name="prompter_scope_all_hint">You are editing the default settings used by every script without its own settings.</string>
+    <string name="prompter_presets">Presets</string>
+    <string name="prompter_preset_save">Save as preset</string>
+    <string name="prompter_preset_name_hint">Preset name</string>
+    <string name="prompter_preset_delete_title">Delete preset?</string>
+    <string name="prompter_preset_delete_message">“%1$s” will be removed. Your scripts keep their current settings.</string>
+    <string name="prompter_preset_standard">Standard</string>
+    <string name="prompter_preset_large">Large text</string>
+    <string name="prompter_preset_fast">Fast reader</string>
+    <string name="prompter_preset_camera">Camera overlay</string>
+    <string name="prompter_preset_mirror">Mirror rig</string>
+    <string name="prompter_preset_night">Night</string>
+
+    <string name="prompter_group_speed">Speed</string>
+    <string name="prompter_wpm_label">Words per minute</string>
+    <string name="prompter_speed_slow">Calm</string>
+    <string name="prompter_speed_normal">Normal</string>
+    <string name="prompter_speed_fast">Brisk</string>
+    <string name="prompter_speed_very_fast">Fast</string>
+
+    <string name="prompter_group_text">Text</string>
+    <string name="prompter_font">Font</string>
+    <string name="prompter_font_sample">روان‌گو Aa</string>
+    <string name="prompter_font_vazirmatn">Vazirmatn</string>
+    <string name="prompter_font_sahel">Sahel</string>
+    <string name="prompter_font_samim">Samim</string>
+    <string name="prompter_font_sans">System sans</string>
+    <string name="prompter_font_serif">System serif</string>
+    <string name="prompter_font_mono">Monospace</string>
+    <string name="prompter_font_size">Text size</string>
+    <string name="prompter_font_weight">Weight</string>
+    <string name="prompter_weight_light">Light</string>
+    <string name="prompter_weight_regular">Regular</string>
+    <string name="prompter_weight_medium">Medium</string>
+    <string name="prompter_weight_semibold">Semibold</string>
+    <string name="prompter_weight_bold">Bold</string>
+    <string name="prompter_weight_black">Black</string>
+    <string name="prompter_line_spacing">Line spacing</string>
+    <string name="prompter_letter_spacing">Letter spacing</string>
+    <string name="prompter_alignment">Alignment</string>
+    <string name="prompter_align_start">Start</string>
+    <string name="prompter_align_center">Center</string>
+    <string name="prompter_align_end">End</string>
+    <string name="prompter_align_justify">Justify</string>
+    <string name="prompter_text_width">Text width</string>
+    <string name="prompter_padding">Side margin</string>
+    <string name="prompter_direction">Text direction</string>
+    <string name="prompter_direction_auto">Auto</string>
+    <string name="prompter_direction_rtl">Right to left</string>
+    <string name="prompter_direction_ltr">Left to right</string>
+
+    <string name="prompter_group_colors">Colors</string>
+    <string name="prompter_text_color">Text</string>
+    <string name="prompter_highlight_color">Highlight</string>
+    <string name="prompter_background_color">Background</string>
+    <string name="prompter_background_opacity">Background opacity</string>
+
+    <string name="prompter_group_layout">Layout</string>
+    <string name="prompter_eye_line">Reading line position</string>
+    <string name="prompter_area_height">Prompter height over camera</string>
+    <string name="prompter_placement">Placement over camera</string>
+    <string name="prompter_placement_top">Top</string>
+    <string name="prompter_placement_center">Center</string>
+    <string name="prompter_placement_bottom">Bottom</string>
+    <string name="prompter_placement_hint">Top keeps the text closest to the front lens, so your eyes look almost straight at the camera.</string>
+    <string name="prompter_show_eye_line">Show reading line</string>
+
+    <string name="prompter_group_mirror">Mirror</string>
+    <string name="prompter_mirror_h_long">Mirror horizontally</string>
+    <string name="prompter_mirror_v_long">Mirror vertically</string>
+
+    <string name="prompter_group_behaviour">Behaviour</string>
+    <string name="prompter_countdown">Countdown</string>
+    <string name="prompter_off">Off</string>
+    <string name="prompter_seconds">%1$s s</string>
+    <string name="prompter_loop">Loop</string>
+    <string name="prompter_loop_hint">Start over automatically at the end</string>
+    <string name="prompter_dim_read">Dim text already read</string>
+    <string name="prompter_show_remaining">Show remaining time</string>
+    <string name="prompter_show_progress">Show progress</string>
+    <string name="prompter_tap_to_pause">Tap to pause</string>
+    <string name="prompter_tap_to_pause_hint">Tap the text to pause or continue</string>
+    <string name="prompter_volume_keys">Volume buttons</string>
+    <string name="prompter_volume_keys_hint">Press to adjust, hold either button to pause or continue</string>
+    <string name="prompter_volume_mode_speed">Change speed</string>
+    <string name="prompter_volume_mode_page">Turn pages</string>
+    <string name="prompter_remote">Bluetooth remote &amp; keyboard</string>
+    <string name="prompter_remote_hint">Page turners and keyboards: arrows/page keys scroll, space or enter pauses</string>
+    <string name="prompter_sync_recording">Sync with recording</string>
+    <string name="prompter_sync_recording_hint">In the camera, scrolling starts and pauses with the recording</string>
+    <string name="prompter_reset_defaults">Reset to defaults</string>
+    <string name="prompter_reset_message">All prompter settings on this screen go back to their original values.</string>
+</resources>

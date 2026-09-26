@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Floating teleprompter: draws a prompter window over other apps (e.g. while recording in Instagram). -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application>
+        <!--
+            specialUse: none of the predefined foreground-service types describe a user-started overlay that
+            displays a teleprompter above another app's camera. The service runs only while the user keeps the
+            floating window open and stops as soon as it is closed (from the window or the notification).
+        -->
+        <service
+            android:name=".floating.FloatingPrompterService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Floating teleprompter window shown over other apps while the user records video with them. Started explicitly by the user; stopped when the window is closed." />
+        </service>
+    </application>
+</manifest>

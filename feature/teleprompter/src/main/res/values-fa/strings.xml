@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- صفحهٔ پرامپتر -->
+    <string name="prompter_loading">در حال بارگذاری…</string>
+    <string name="prompter_not_found_title">متن پیدا نشد</string>
+    <string name="prompter_not_found_message">این متن حذف شده یا روی این دستگاه در دسترس نیست.</string>
+    <string name="prompter_play">پخش</string>
+    <string name="prompter_pause">توقف</string>
+    <string name="prompter_restart">شروع دوباره</string>
+    <string name="prompter_prev_section">بخش قبلی</string>
+    <string name="prompter_next_section">بخش بعدی</string>
+    <string name="prompter_sections">بخش‌ها</string>
+    <string name="prompter_speed_down">آهسته‌تر</string>
+    <string name="prompter_speed_up">تندتر</string>
+    <string name="prompter_wpm">کلمه در دقیقه</string>
+    <string name="prompter_wpm_value">%1$s کلمه در دقیقه</string>
+    <string name="prompter_font_smaller">متن کوچک‌تر</string>
+    <string name="prompter_font_larger">متن بزرگ‌تر</string>
+    <string name="prompter_font_size_short">اندازهٔ متن</string>
+    <string name="prompter_mirror_h">آینه ↔</string>
+    <string name="prompter_mirror_v">آینه ↕</string>
+    <string name="prompter_mirror_hint">حالت آینه برای ریگ‌های شیشه‌ای (بیم‌اسپلیتر) است: گوشی زیر شیشه قرار می‌گیرد و بازتاب متن درست خوانده می‌شود. آن را با دوربین پشتیِ پشت شیشه به کار ببرید و وقتی مستقیم از صفحه و با دوربین جلو می‌خوانید، خاموشش کنید.</string>
+    <string name="prompter_start_point">نقطهٔ شروع</string>
+    <string name="prompter_rotation_lock">قفل چرخش</string>
+    <string name="prompter_brightness">بیشترین روشنایی</string>
+    <string name="prompter_floating">پرامپتر شناور</string>
+    <string name="prompter_record">ضبط با دوربین</string>
+    <string name="prompter_settings">تنظیمات پرامپتر</string>
+    <string name="prompter_resume_title">از همان‌جایی که ماندید ادامه می‌دهید؟</string>
+    <string name="prompter_resume_message">دفعهٔ قبل وسط این متن متوقف شدید.</string>
+    <string name="prompter_resume">ادامه</string>
+    <string name="prompter_from_beginning">از ابتدا</string>
+    <string name="prompter_tap_paragraph">روی یک پاراگراف بزنید تا از همان‌جا شروع شود</string>
+    <string name="prompter_paragraph_n">پاراگراف %1$s</string>
+
+    <!-- پرامپتر شناور -->
+    <string name="prompter_floating_title">پرامپتر شناور</string>
+    <string name="prompter_floating_channel">پرامپتر شناور</string>
+    <string name="prompter_floating_playing">در حال حرکت — برای باز کردن روان‌گو بزنید</string>
+    <string name="prompter_floating_paused">متوقف — برای باز کردن روان‌گو بزنید</string>
+    <string name="prompter_floating_move">جابه‌جایی پنجره</string>
+    <string name="prompter_floating_resize">تغییر اندازهٔ پنجره</string>
+    <string name="prompter_floating_opacity">شفافیت</string>
+    <string name="prompter_floating_started">پرامپتر شناور روشن شد. حالا دوربین یا برنامهٔ ضبطتان را باز کنید؛ پرامپتر روی آن می‌ماند.</string>
+    <string name="prompter_floating_permission_title">اجازهٔ نمایش روی برنامه‌های دیگر</string>
+    <string name="prompter_floating_permission_message">برای نمایش متن روی اینستاگرام، تیک‌تاک یا هر برنامهٔ دوربین دیگری، روان‌گو به مجوز «نمایش روی برنامه‌های دیگر» نیاز دارد. این پنجره فقط تا وقتی پرامپتر شناور را باز نگه داشته‌اید نمایش داده می‌شود و هر زمان بخواهید می‌توانید آن را از خود پنجره یا اعلان ببندید.</string>
+
+    <!-- تنظیمات -->
+    <string name="prompter_preview">پیش‌نمایش زنده</string>
+    <string name="prompter_preview_sample">## خوش آمدید\nاین ==پیش‌نمایش زندهٔ== پرامپتر شماست. **سرعت**، قلم، رنگ‌ها و حالت آینه همزمان با تغییرشان به‌روز می‌شوند. [مکث]\n[[یادداشت کارگردان: لبخند بزنید و به لنز نگاه کنید]]\nنگاهتان را روی خط خواندن نگه دارید و طبیعی حرف بزنید؛ متن با سرعتی که انتخاب کرده‌اید جلو می‌رود.</string>
+    <string name="prompter_scope_title">اعمال روی</string>
+    <string name="prompter_scope_script">فقط همین متن</string>
+    <string name="prompter_scope_all">همهٔ متن‌ها</string>
+    <string name="prompter_scope_script_hint">این تنظیمات همراه همین متن ذخیره می‌شوند و جای تنظیمات پیش‌فرض را می‌گیرند.</string>
+    <string name="prompter_scope_all_hint">در حال ویرایش تنظیمات پیش‌فرض هستید؛ همهٔ متن‌هایی که تنظیمات اختصاصی ندارند از آن استفاده می‌کنند.</string>
+    <string name="prompter_presets">پیش‌تنظیم‌ها</string>
+    <string name="prompter_preset_save">ذخیره به‌عنوان پیش‌تنظیم</string>
+    <string name="prompter_preset_name_hint">نام پیش‌تنظیم</string>
+    <string name="prompter_preset_delete_title">پیش‌تنظیم حذف شود؟</string>
+    <string name="prompter_preset_delete_message">«%1$s» حذف می‌شود. تنظیمات فعلی متن‌هایتان تغییری نمی‌کند.</string>
+    <string name="prompter_preset_standard">استاندارد</string>
+    <string name="prompter_preset_large">متن درشت</string>
+    <string name="prompter_preset_fast">خوانش سریع</string>
+    <string name="prompter_preset_camera">روی دوربین</string>
+    <string name="prompter_preset_mirror">ریگ آینه‌ای</string>
+    <string name="prompter_preset_night">شب</string>
+
+    <string name="prompter_group_speed">سرعت</string>
+    <string name="prompter_wpm_label">کلمه در دقیقه</string>
+    <string name="prompter_speed_slow">آرام</string>
+    <string name="prompter_speed_normal">معمولی</string>
+    <string name="prompter_speed_fast">چابک</string>
+    <string name="prompter_speed_very_fast">سریع</string>
+
+    <string name="prompter_group_text">متن</string>
+    <string name="prompter_font">قلم</string>
+    <string name="prompter_font_sample">روان‌گو Aa</string>
+    <string name="prompter_font_vazirmatn">وزیرمتن</string>
+    <string name="prompter_font_sahel">ساحل</string>
+    <string name="prompter_font_samim">صمیم</string>
+    <string name="prompter_font_sans">سیستمی بی‌سریف</string>
+    <string name="prompter_font_serif">سیستمی سریف</string>
+    <string name="prompter_font_mono">هم‌عرض</string>
+    <string name="prompter_font_size">اندازهٔ متن</string>
+    <string name="prompter_font_weight">ضخامت</string>
+    <string name="prompter_weight_light">نازک</string>
+    <string name="prompter_weight_regular">معمولی</string>
+    <string name="prompter_weight_medium">متوسط</string>
+    <string name="prompter_weight_semibold">نیمه‌ضخیم</string>
+    <string name="prompter_weight_bold">ضخیم</string>
+    <string name="prompter_weight_black">خیلی ضخیم</string>
+    <string name="prompter_line_spacing">فاصلهٔ خطوط</string>
+    <string name="prompter_letter_spacing">فاصلهٔ حروف</string>
+    <string name="prompter_alignment">چینش</string>
+    <string name="prompter_align_start">ابتدا</string>
+    <string name="prompter_align_center">وسط</string>
+    <string name="prompter_align_end">انتها</string>
+    <string name="prompter_align_justify">هم‌تراز</string>
+    <string name="prompter_text_width">عرض متن</string>
+    <string name="prompter_padding">حاشیهٔ کناری</string>
+    <string name="prompter_direction">جهت متن</string>
+    <string name="prompter_direction_auto">خودکار</string>
+    <string name="prompter_direction_rtl">راست به چپ</string>
+    <string name="prompter_direction_ltr">چپ به راست</string>
+
+    <string name="prompter_group_colors">رنگ‌ها</string>
+    <string name="prompter_text_color">متن</string>
+    <string name="prompter_highlight_color">برجسته‌سازی</string>
+    <string name="prompter_background_color">پس‌زمینه</string>
+    <string name="prompter_background_opacity">تیرگی پس‌زمینه</string>
+
+    <string name="prompter_group_layout">چیدمان</string>
+    <string name="prompter_eye_line">جای خط خواندن</string>
+    <string name="prompter_area_height">ارتفاع پرامپتر روی دوربین</string>
+    <string name="prompter_placement">جای پرامپتر روی دوربین</string>
+    <string name="prompter_placement_top">بالا</string>
+    <string name="prompter_placement_center">وسط</string>
+    <string name="prompter_placement_bottom">پایین</string>
+    <string name="prompter_placement_hint">در حالت «بالا» متن نزدیک‌ترین فاصله را با لنز جلو دارد و نگاهتان تقریباً مستقیم به دوربین است.</string>
+    <string name="prompter_show_eye_line">نمایش خط خواندن</string>
+
+    <string name="prompter_group_mirror">آینه</string>
+    <string name="prompter_mirror_h_long">آینهٔ افقی</string>
+    <string name="prompter_mirror_v_long">آینهٔ عمودی</string>
+
+    <string name="prompter_group_behaviour">رفتار</string>
+    <string name="prompter_countdown">شمارش معکوس</string>
+    <string name="prompter_off">خاموش</string>
+    <string name="prompter_seconds">%1$s ثانیه</string>
+    <string name="prompter_loop">تکرار</string>
+    <string name="prompter_loop_hint">در پایان، خودکار از اول شروع شود</string>
+    <string name="prompter_dim_read">کم‌رنگ کردن متن خوانده‌شده</string>
+    <string name="prompter_show_remaining">نمایش زمان باقی‌مانده</string>
+    <string name="prompter_show_progress">نمایش پیشرفت</string>
+    <string name="prompter_tap_to_pause">توقف با لمس</string>
+    <string name="prompter_tap_to_pause_hint">با لمس متن، حرکت متوقف یا ادامه می‌شود</string>
+    <string name="prompter_volume_keys">دکمه‌های صدا</string>
+    <string name="prompter_volume_keys_hint">با فشار کوتاه تنظیم کنید؛ با نگه داشتن هر دکمه، متوقف یا ادامه دهید</string>
+    <string name="prompter_volume_mode_speed">تغییر سرعت</string>
+    <string name="prompter_volume_mode_page">ورق زدن</string>
+    <string name="prompter_remote">ریموت بلوتوثی و صفحه‌کلید</string>
+    <string name="prompter_remote_hint">ورق‌زن‌ها و صفحه‌کلید: کلیدهای جهت و صفحه، متن را جابه‌جا می‌کنند و فاصله یا اینتر آن را متوقف می‌کند</string>
+    <string name="prompter_sync_recording">هماهنگ با ضبط</string>
+    <string name="prompter_sync_recording_hint">در دوربین، حرکت متن همراه با شروع و توقف ضبط انجام می‌شود</string>
+    <string name="prompter_reset_defaults">بازگشت به پیش‌فرض</string>
+    <string name="prompter_reset_message">همهٔ تنظیمات پرامپتر در این صفحه به مقدارهای اولیه برمی‌گردند.</string>
+</resources>
