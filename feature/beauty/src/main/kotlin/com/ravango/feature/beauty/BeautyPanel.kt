@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.expandVertically
@@ -169,7 +170,7 @@ internal fun BeautyPanelImpl(modifier: Modifier, onOpenPresets: () -> Unit, onRe
             val dim by animateFloatAsState(if (ui.state.enabled) 1f else 0.55f, Motion.quick(), label = "enabled")
             AnimatedContent(
                 targetState = ui.tab,
-                transitionSpec = { fadeIn(Motion.quick()) togetherWith fadeOut(Motion.quick()) },
+                transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(180)) },
                 label = "tab",
                 modifier = Modifier.alpha(dim),
             ) { tab ->
@@ -372,7 +373,7 @@ private fun FeatureTab(ui: BeautyUiState, tab: BeautyTab, viewModel: BeautyViewM
         Spacer(Modifier.height(Spacing.md))
         AnimatedContent(
             targetState = selected,
-            transitionSpec = { fadeIn(Motion.quick()) togetherWith fadeOut(Motion.quick()) },
+            transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(180)) },
             label = "detail",
         ) { item ->
             FeatureDetail(

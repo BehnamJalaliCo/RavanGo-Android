@@ -34,7 +34,11 @@ class QualityController(
     private val emaAlpha: Float = 0.12f,
 ) {
     var tier: TierHint = tier
-        set(value) { field = value; clampToCap() }
+        set(value) {
+            field = value
+            // Before any measurement the tier simply defines the starting level.
+            if (samples == 0 && lastChangeSec == Double.NEGATIVE_INFINITY) level = cap else clampToCap()
+        }
     var thermal: ThermalHint = ThermalHint.NORMAL
         set(value) { field = value; clampToCap() }
     var powerSave: Boolean = false

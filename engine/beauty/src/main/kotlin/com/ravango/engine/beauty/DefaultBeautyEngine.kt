@@ -36,7 +36,7 @@ class DefaultBeautyEngine @Inject constructor(
     private val preferences: PreferencesDataSource,
     private val deviceProfiler: DeviceProfiler,
     private val thermalMonitor: ThermalMonitor,
-    @ApplicationScope private val scope: CoroutineScope,
+    @param:ApplicationScope private val scope: CoroutineScope,
 ) : BeautyEngine {
 
     private val controls = BeautyControls(TierHint.MID)

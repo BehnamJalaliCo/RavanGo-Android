@@ -1,6 +1,7 @@
 package com.ravango.engine.beauty
 
 import android.opengl.GLES20
+import android.opengl.GLES30
 import com.ravango.core.common.log.RgLog
 import com.ravango.core.model.BeautyFeature
 import com.ravango.core.model.BeautyState
@@ -625,6 +626,9 @@ internal class BeautyProcessor(private val controls: BeautyControls) : GlFramePr
         GLES20.glDisable(GLES20.GL_SCISSOR_TEST)
         GLES20.glDisable(GLES20.GL_CULL_FACE)
         GLES20.glColorMask(true, true, true, true)
+        // Client-side vertex arrays (FullScreenQuad, mask geometry) need no VBO/VAO bound.
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
+        if (glVersion >= 3) GLES30.glBindVertexArray(0)
     }
 
     private fun fbo(existing: GlFramebuffer?, w: Int, h: Int): GlFramebuffer {
