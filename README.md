@@ -14,9 +14,9 @@
 
 [![Android CI](https://github.com/BehnamJalaliCo/RavanGo-Android/actions/workflows/android.yml/badge.svg)](https://github.com/BehnamJalaliCo/RavanGo-Android/actions/workflows/android.yml)
 
-| خانه | استودیوی دوربین و لنزها | فیلترهای زنده | بیوتی و میکاپ |
+| خانه | آرایش‌های آماده (یک‌لمسی) | فیلترهای زنده | بیوتی و میکاپ |
 |:-:|:-:|:-:|:-:|
-| <img src="docs/screenshots/home-fa-light.png" width="200"/> | <img src="docs/screenshots/camera-studio-lenses-fa-dark.png" width="200"/> | <img src="docs/screenshots/camera-effects-filters-fa-dark.png" width="200"/> | <img src="docs/screenshots/beauty-panel-makeup-fa-dark.png" width="200"/> |
+| <img src="docs/screenshots/home-fa-light.png" width="200"/> | <img src="docs/screenshots/camera-studio-looks-fa-dark.png" width="200"/> | <img src="docs/screenshots/camera-effects-filters-fa-dark.png" width="200"/> | <img src="docs/screenshots/beauty-panel-makeup-fa-dark.png" width="200"/> |
 | **پس‌زمینه‌ی مجازی** | **پروژه‌ها** | **اشتراک Pro** | **تنظیمات (تیره)** |
 | <img src="docs/screenshots/camera-effects-background-fa-light.png" width="200"/> | <img src="docs/screenshots/projects-fa-light.png" width="200"/> | <img src="docs/screenshots/paywall-fa-light.png" width="200"/> | <img src="docs/screenshots/settings-fa-dark.png" width="200"/> |
 
@@ -278,6 +278,7 @@ Workflow: [`.github/workflows/android.yml`](.github/workflows/android.yml)
 - دوربین، میکروفون، بلوتوث و اعلان‌ها **فقط هنگام نیاز** و با توضیح شفاف درخواست می‌شوند؛ Onboarding هیچ مجوزی نمی‌گیرد.
 - پردازش تصویر، بیوتی، صدا، سکوت‌یابی و پاک‌سازی صدا **روی دستگاه** انجام می‌شود.
 - هیچ داده‌ای بدون اجازه ارسال نمی‌شود: همگام‌سازی ابری خاموش است تا کاربر فعالش کند؛ ارسال متن/صدا به هوش مصنوعی نیازمند رضایت است؛ آمار و گزارش کرش پیش‌فرض خاموش‌اند.
+- **گزارش کرش محلی:** اگر برنامه بسته شود (از جمله کرش‌های سطح پایین گرافیک/MediaPipe و ANR در اندروید ۱۱+)، گزارش فقط روی خود گوشی ذخیره می‌شود و در اجرای بعد کارت «روان‌گو دفعه‌ی قبل بسته شد» با دکمه‌ی اشتراک نمایش داده می‌شود؛ همه‌ی گزارش‌ها در «تنظیمات ← درباره ← گزارش‌های کرش». هیچ چیزی خودکار ارسال نمی‌شود.
 - توکن‌ها و کلیدهای API در Android Keystore رمز می‌شوند و از پشتیبان‌گیری مستثنا هستند.
 - صفحات **حریم خصوصی**، **شرایط استفاده**، **مدیریت و حذف حساب** و **خروجی داده‌ها** در اپ موجودند.
 
