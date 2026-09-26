@@ -178,12 +178,7 @@ class VoiceCleanupAudioProcessor(
     private companion object {
         const val TAG = "VoiceCleanup"
 
-        /**
-         * `VoiceProcessor.latencySamples` (frames). Read reflectively so this module builds against both the original
-         * contract (no property; 0 latency) and the implemented processor. The getter is kept by consumer rules.
-         */
-        fun latencyOf(p: VoiceProcessor): Int = runCatching {
-            p.javaClass.getMethod("getLatencySamples").invoke(p) as Int
-        }.getOrDefault(0).coerceAtLeast(0)
+        /** `VoiceProcessor.latencySamples` (frames) — the constant delay of the spectral stage. */
+        fun latencyOf(p: VoiceProcessor): Int = p.latencySamples.coerceAtLeast(0)
     }
 }
