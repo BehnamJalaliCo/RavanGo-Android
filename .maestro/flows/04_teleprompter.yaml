@@ -25,14 +25,21 @@ tags:
 - takeScreenshot: prompter_scrolling
 - tapOn:
     point: 50%,35%
+# The touch brings the controls back (and pauses when "tap to pause" is on); pause if still running.
+- extendedWaitUntil:
+    visible: 'Play|پخش|Pause|توقف'
+    timeout: 10000
 - runFlow:
     when:
       visible: 'Pause|توقف'
     commands:
-      - tapOn: 'Pause|توقف'
+      - tapOn:
+          text: 'Pause|توقف'
+          optional: true
+# A short script may also simply reach its end; either way the transport shows Play.
 - extendedWaitUntil:
     visible: 'Play|پخش'
-    timeout: 10000
+    timeout: 30000
 - takeScreenshot: prompter_paused
 
 # Steppers and chips

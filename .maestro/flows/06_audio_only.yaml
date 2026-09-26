@@ -43,13 +43,5 @@ tags:
     timeout: 60000
 - takeScreenshot: audio_saved
 - assertVisible: '.*Audio saved.*|.*صدا ذخیره شد.*'
-- tapOn:
-    text: 'Record another take|ضبط برداشت دیگر'
-    optional: true
-- extendedWaitUntil:
-    visible: 'Start recording|شروع ضبط'
-    timeout: 20000
-- tapOn: 'Close studio|بستن استودیو'
-- extendedWaitUntil:
-    visible: '.*New recording.*|.*ضبط جدید.*'
-    timeout: 20000
+# Dismiss the saved-take sheet and leave the studio.
+- runFlow: ../subflows/go_home.yaml

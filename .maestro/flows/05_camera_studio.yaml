@@ -120,10 +120,19 @@ tags:
 - tapOn:
     text: 'Warm|گرم'
     optional: true
-- tapOn:
-    text: 'Noir|نوآر'
-    optional: true
 - takeScreenshot: camera_effects_filter_picked
+# Some filters are Pro: a free user lands on the paywall; close it and reopen the sheet.
+- runFlow: ../subflows/dismiss_paywall.yaml
+- runFlow:
+    when:
+      notVisible: 'Background|پس.زمینه'
+    commands:
+      - tapOn:
+          text: 'Filters \& background|فیلتر و پس.زمینه'
+          index: 0
+      - extendedWaitUntil:
+          visible: 'Background|پس.زمینه'
+          timeout: 15000
 - tapOn: 'Background|پس.زمینه'
 - waitForAnimationToEnd:
     timeout: 3000
@@ -131,6 +140,7 @@ tags:
 - tapOn:
     text: 'Portrait blur|محوِ پرتره'
     optional: true
+- runFlow: ../subflows/dismiss_paywall.yaml
 - runFlow:
     file: ../subflows/wait.yaml
     env:
@@ -142,10 +152,17 @@ tags:
 - tapOn:
     text: 'Remove all effects|حذف همهٔ جلوه.ها'
     optional: true
-- back
+- repeat:
+    times: 2
+    while:
+      notVisible: 'Start recording|شروع ضبط'
+    commands:
+      - back
+      - waitForAnimationToEnd:
+          timeout: 3000
 - extendedWaitUntil:
     visible: 'Start recording|شروع ضبط'
-    timeout: 10000
+    timeout: 15000
 
 # Beauty panel: tabs, a slider per tab, looks (Pro-gated for free users → paywall → back).
 - tapOn: 'Beauty|زیبایی'
