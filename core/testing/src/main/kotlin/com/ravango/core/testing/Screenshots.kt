@@ -34,7 +34,8 @@ fun captureScreen(
     // Qualifier order per Android rules: locale, size, night mode, density.
     RuntimeEnvironment.setQualifiers("$locale-$qualifiers-$night-$DENSITY")
     captureRoboImage(filePath = "build/outputs/roborazzi/$name-${variant.suffix}.png") {
-        RavanGoTheme(darkTheme = variant.dark) {
+        // reduceMotion stops infinite animations (gradient blobs, shimmer) so Compose goes idle and capture is fast.
+        RavanGoTheme(darkTheme = variant.dark, reduceMotion = true) {
             CompositionLocalProvider(LocalLayoutDirection provides if (variant.persian) LayoutDirection.Rtl else LayoutDirection.Ltr) {
                 content()
             }
