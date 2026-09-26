@@ -72,20 +72,36 @@ private val base = TextStyle(
     lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None),
 )
 
+/*
+ * Type scale. Persian (Arabic script) has tall ascenders (ک، گ، ل) and deep descenders (ی، ع، ج), so line heights are
+ * ~1.5× for body text and ≥1.35× for single-line titles — slightly looser than Latin defaults, which also keeps
+ * English comfortable. Everything sits on a 2sp grid.
+ */
 val RgTypography = Typography(
-    displayLarge = base.copy(fontSize = 44.sp, lineHeight = 52.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.02).em),
-    displayMedium = base.copy(fontSize = 36.sp, lineHeight = 44.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.015).em),
-    displaySmall = base.copy(fontSize = 30.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold),
-    headlineLarge = base.copy(fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.Bold),
-    headlineMedium = base.copy(fontSize = 24.sp, lineHeight = 32.sp, fontWeight = FontWeight.Bold),
+    displayLarge = base.copy(fontSize = 44.sp, lineHeight = 56.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.02).em),
+    displayMedium = base.copy(fontSize = 36.sp, lineHeight = 48.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = (-0.015).em),
+    displaySmall = base.copy(fontSize = 30.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.01).em),
+    headlineLarge = base.copy(fontSize = 28.sp, lineHeight = 38.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.01).em),
+    headlineMedium = base.copy(fontSize = 24.sp, lineHeight = 34.sp, fontWeight = FontWeight.Bold),
     headlineSmall = base.copy(fontSize = 20.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold),
-    titleLarge = base.copy(fontSize = 18.sp, lineHeight = 26.sp, fontWeight = FontWeight.SemiBold),
+    titleLarge = base.copy(fontSize = 18.sp, lineHeight = 26.sp, fontWeight = FontWeight.Bold),
     titleMedium = base.copy(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
-    titleSmall = base.copy(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
+    titleSmall = base.copy(fontSize = 14.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold),
     bodyLarge = base.copy(fontSize = 16.sp, lineHeight = 26.sp, fontWeight = FontWeight.Normal),
     bodyMedium = base.copy(fontSize = 14.sp, lineHeight = 22.sp, fontWeight = FontWeight.Normal),
     bodySmall = base.copy(fontSize = 12.sp, lineHeight = 18.sp, fontWeight = FontWeight.Normal),
     labelLarge = base.copy(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold),
-    labelMedium = base.copy(fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
-    labelSmall = base.copy(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.02.em),
+    labelMedium = base.copy(fontSize = 12.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
+    labelSmall = base.copy(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.02.em),
 )
+
+/** Label styles for [com.ravango.core.designsystem.component.RgButtonSize]: larger buttons get larger, bolder labels. */
+object ButtonText {
+    val small = base.copy(fontSize = 13.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold)
+    val medium = base.copy(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold)
+    val large = base.copy(fontSize = 15.sp, lineHeight = 22.sp, fontWeight = FontWeight.Bold)
+    val hero = base.copy(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold)
+}
+
+/** Tabular (fixed-width) digits for counters, timers and prices so numbers don't jitter as they change. */
+val TabularNumbers: TextStyle = TextStyle(fontFeatureSettings = "tnum")

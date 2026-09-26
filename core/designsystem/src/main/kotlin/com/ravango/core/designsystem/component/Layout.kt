@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -53,6 +54,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ravango.core.designsystem.theme.Dimens
 import com.ravango.core.designsystem.theme.Radius
 import com.ravango.core.designsystem.theme.RgTheme
 import com.ravango.core.designsystem.theme.Spacing
@@ -77,18 +79,28 @@ fun RgTopBar(
     ) {
         if (onBack != null) {
             // AutoMirrored icon flips automatically in RTL.
-            RgIconButton(Icons.AutoMirrored.Rounded.ArrowBack, backContentDescription, onBack, container = RgTheme.colors.surface.copy(alpha = 0.7f))
+            RgIconButton(
+                Icons.AutoMirrored.Rounded.ArrowBack,
+                backContentDescription,
+                onBack,
+                container = if (RgTheme.colors.isDark) RgTheme.colors.surfaceMuted.copy(alpha = 0.8f) else RgTheme.colors.surface.copy(alpha = 0.8f),
+            )
             Spacer(Modifier.width(Spacing.md))
         } else {
             Spacer(Modifier.width(Spacing.sm))
         }
-        Column(Modifier.weight(1f)) {
+        Column(Modifier.weight(1f).padding(vertical = Spacing.sm)) {
             Text(title, style = MaterialTheme.typography.headlineSmall, color = RgTheme.colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (subtitle != null) {
                 Text(subtitle, style = MaterialTheme.typography.bodySmall, color = RgTheme.colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalAlignment = Alignment.CenterVertically, content = actions)
+        Row(
+            Modifier.padding(start = Spacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            content = actions,
+        )
     }
 }
 
@@ -118,18 +130,41 @@ fun RgScreen(
     }
 }
 
+/**
+ * Section title with an optional trailing action. The row always reserves the action's 40dp height, so sections with
+ * and without an action keep the same vertical rhythm, and the action label is pulled to the gutter so its text lines
+ * up with the cards below.
+ */
 @Composable
-fun SectionHeader(title: String, modifier: Modifier = Modifier, action: String? = null, onAction: (() -> Unit)? = null) {
+fun SectionHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+    action: String? = null,
+    subtitle: String? = null,
+    onAction: (() -> Unit)? = null,
+) {
     Row(
-        modifier.fillMaxWidth().padding(horizontal = Spacing.gutter, vertical = Spacing.sm),
+        modifier
+            .fillMaxWidth()
+            .padding(start = Spacing.gutter, end = Spacing.gutter - 12.dp, top = Spacing.xs, bottom = Spacing.xs)
+            .heightIn(min = Dimens.controlMedium),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(title, style = MaterialTheme.typography.titleLarge, color = RgTheme.colors.textPrimary, modifier = Modifier.weight(1f))
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(title, style = MaterialTheme.typography.titleLarge, color = RgTheme.colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (subtitle != null) {
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = RgTheme.colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
         if (action != null && onAction != null) RgTextButton(action, onAction)
     }
 }
 
-/** Settings/list row with icon bubble, title, subtitle and trailing content (chevron by default). */
+/**
+ * Settings/list row with icon bubble, title, subtitle and trailing content (chevron by default). Min 56dp; the icon
+ * bubble, title block and trailing control are vertically centered; the pressed highlight is concentric with the
+ * enclosing [RgGroup] card.
+ */
 @Composable
 fun RgListItem(
     title: String,
@@ -139,31 +174,48 @@ fun RgListItem(
     iconTint: Color = RgTheme.colors.accent,
     iconBackground: Color = RgTheme.colors.accentSoft,
     onClick: (() -> Unit)? = null,
-    trailing: (@Composable () -> Unit)? = if (onClick != null) ({ Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = RgTheme.colors.textTertiary) }) else null,
+    trailing: (@Composable () -> Unit)? = if (onClick != null) ({ Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = RgTheme.colors.textTertiary, modifier = Modifier.size(Dimens.iconMedium)) }) else null,
 ) {
+    val shape = RoundedCornerShape(Radius.lg - Spacing.xs)
     Row(
         modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.md))
-            .then(if (onClick != null) Modifier.pressable(onClick = onClick) else Modifier)
-            .padding(horizontal = Spacing.md, vertical = Spacing.md),
+            .heightIn(min = Dimens.listRowMin)
+            .clip(shape)
+            .then(if (onClick != null) Modifier.pressable(shape = shape, onClick = onClick) else Modifier)
+            .padding(horizontal = Spacing.md, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
-            Box(Modifier.size(40.dp).clip(RoundedCornerShape(Radius.sm)).background(iconBackground), contentAlignment = Alignment.Center) {
-                Icon(icon, null, tint = iconTint, modifier = Modifier.size(22.dp))
+            Box(Modifier.size(Dimens.listIcon).clip(RoundedCornerShape(Radius.sm)).background(iconBackground), contentAlignment = Alignment.Center) {
+                Icon(icon, null, tint = iconTint, modifier = Modifier.size(Dimens.iconMedium + 2.dp))
             }
             Spacer(Modifier.width(Spacing.md))
         }
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, color = RgTheme.colors.textPrimary)
-            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = RgTheme.colors.textSecondary)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, color = RgTheme.colors.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = RgTheme.colors.textSecondary, maxLines = 3, overflow = TextOverflow.Ellipsis)
         }
         if (trailing != null) {
-            Spacer(Modifier.width(Spacing.sm))
+            Spacer(Modifier.width(Spacing.md))
             trailing()
         }
     }
+}
+
+/**
+ * Hairline separator for rows inside an [RgGroup]/[RgCard]. [inset] aligns it with the row text (skips the icon
+ * bubble), iOS-style.
+ */
+@Composable
+fun RgDivider(modifier: Modifier = Modifier, inset: Boolean = true) {
+    Box(
+        modifier
+            .fillMaxWidth()
+            .padding(start = if (inset) Spacing.md + Dimens.listIcon + Spacing.md else Spacing.md, end = Spacing.md)
+            .height(Dimens.hairline)
+            .background(RgTheme.colors.divider),
+    )
 }
 
 /** Grouped card of list rows (iOS-style inset group, pastel). */
@@ -171,7 +223,12 @@ fun RgListItem(
 fun RgGroup(modifier: Modifier = Modifier, title: String? = null, content: @Composable ColumnScope.() -> Unit) {
     Column(modifier.fillMaxWidth().padding(horizontal = Spacing.gutter)) {
         if (title != null) {
-            Text(title, style = MaterialTheme.typography.labelLarge, color = RgTheme.colors.textSecondary, modifier = Modifier.padding(start = Spacing.sm, bottom = Spacing.sm, top = Spacing.md))
+            Text(
+                title,
+                style = MaterialTheme.typography.labelLarge,
+                color = RgTheme.colors.textSecondary,
+                modifier = Modifier.padding(start = Spacing.md, end = Spacing.md, bottom = Spacing.sm, top = Spacing.lg),
+            )
         }
         RgCard(contentPadding = PaddingValues(Spacing.xs), content = content)
     }
@@ -186,22 +243,26 @@ fun EmptyState(
     actionText: String? = null,
     onAction: (() -> Unit)? = null,
 ) {
+    val colors = RgTheme.colors
     Column(
-        modifier.fillMaxWidth().padding(Spacing.xxxl),
+        modifier.fillMaxWidth().padding(horizontal = Spacing.xxxl, vertical = Spacing.xxl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Box(
-            Modifier.size(88.dp).clip(CircleShape).background(RgTheme.colors.brandGradientSoft),
-            contentAlignment = Alignment.Center,
-        ) { Icon(icon, null, tint = RgTheme.colors.accent, modifier = Modifier.size(40.dp)) }
+        // Halo + gradient disc: a soft, layered illustration instead of a flat circle.
+        Box(Modifier.size(112.dp).clip(CircleShape).background(colors.accentSoft.copy(alpha = if (colors.isDark) 0.35f else 0.5f)), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier.size(84.dp).clip(CircleShape).background(colors.brandGradientSoft),
+                contentAlignment = Alignment.Center,
+            ) { Icon(icon, null, tint = colors.accent, modifier = Modifier.size(36.dp)) }
+        }
         Spacer(Modifier.height(Spacing.xl))
-        Text(title, style = MaterialTheme.typography.titleLarge, color = RgTheme.colors.textPrimary, textAlign = TextAlign.Center)
+        Text(title, style = MaterialTheme.typography.titleLarge, color = colors.textPrimary, textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 320.dp))
         Spacer(Modifier.height(Spacing.sm))
-        Text(message, style = MaterialTheme.typography.bodyMedium, color = RgTheme.colors.textSecondary, textAlign = TextAlign.Center)
+        Text(message, style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary, textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 320.dp))
         if (actionText != null && onAction != null) {
-            Spacer(Modifier.height(Spacing.xl))
-            RgPrimaryButton(actionText, onAction, size = RgButtonSize.MEDIUM)
+            Spacer(Modifier.height(Spacing.xxl))
+            RgPrimaryButton(actionText, onAction, size = RgButtonSize.LARGE)
         }
     }
 }
@@ -225,7 +286,7 @@ fun RgBottomSheet(
         containerColor = if (dark) Color(0xF2141220) else colors.backgroundElevated,
         shape = RoundedCornerShape(topStart = Radius.xl, topEnd = Radius.xl),
         dragHandle = {
-            Box(Modifier.padding(top = 10.dp, bottom = 6.dp).size(width = 40.dp, height = 5.dp).clip(CircleShape).background(colors.outlineStrong))
+            Box(Modifier.padding(top = 10.dp, bottom = 6.dp).size(width = 36.dp, height = 4.dp).clip(CircleShape).background(if (dark) Color.White.copy(alpha = 0.25f) else colors.outlineStrong))
         },
     ) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = Spacing.lg)) {
@@ -257,7 +318,7 @@ fun RgConfirmDialog(
         onDismissRequest = onDismiss,
         containerColor = colors.backgroundElevated,
         shape = RoundedCornerShape(Radius.xl),
-        title = { Text(title, style = MaterialTheme.typography.titleLarge) },
+        title = { Text(title, style = MaterialTheme.typography.titleLarge, color = colors.textPrimary) },
         text = { Text(message, style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary) },
         confirmButton = { RgTextButton(confirmText, onConfirm, color = if (destructive) colors.danger else colors.accent) },
         dismissButton = { RgTextButton(dismissText, onDismiss, color = colors.textSecondary) },
@@ -268,15 +329,21 @@ fun RgConfirmDialog(
 @Composable
 fun ShimmerBox(modifier: Modifier = Modifier, shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(Radius.md)) {
     val colors = RgTheme.colors
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val x by transition.animateFloat(-1f, 2f, infiniteRepeatable(tween(1300, easing = LinearEasing), RepeatMode.Restart), label = "x")
+    // Static sheen when the user asked for reduced motion.
+    val x = if (RgTheme.reduceMotion) {
+        0.3f
+    } else {
+        val transition = rememberInfiniteTransition(label = "shimmer")
+        val animated by transition.animateFloat(-1f, 2f, infiniteRepeatable(tween(1300, easing = LinearEasing), RepeatMode.Restart), label = "x")
+        animated
+    }
     Box(
         modifier
             .clip(shape)
             .background(colors.surfaceMuted)
             .background(
                 Brush.linearGradient(
-                    listOf(Color.Transparent, colors.glassHighlight.copy(alpha = 0.6f), Color.Transparent),
+                    listOf(Color.Transparent, Color.White.copy(alpha = if (colors.isDark) 0.06f else 0.55f), Color.Transparent),
                     start = androidx.compose.ui.geometry.Offset(x * 600f, 0f),
                     end = androidx.compose.ui.geometry.Offset(x * 600f + 400f, 400f),
                 ),

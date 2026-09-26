@@ -58,6 +58,28 @@ object Motion {
     const val PressScale = 0.96f
 }
 
+/**
+ * Component size scale. Every control in a row shares one of these heights so mixed rows (chip + button + icon)
+ * line up: 32 (chips, small buttons), 40 (medium buttons, segmented control, compact icon buttons),
+ * 48 (large buttons, standard touch target), 56 (hero calls to action).
+ */
+object Dimens {
+    val controlSmall = 32.dp
+    val controlMedium = 40.dp
+    val controlLarge = 48.dp
+    val controlHero = 56.dp
+    /** Minimum touch target (Material / WCAG 2.5.8). Smaller visuals still get this hit area from Compose. */
+    val touchTarget = 48.dp
+    val iconSmall = 16.dp
+    val iconMedium = 20.dp
+    val icon = 24.dp
+    /** Icon "bubble" leading list rows. */
+    val listIcon = 40.dp
+    /** Minimum height of a single-line list row; two-line rows grow to ~64dp. */
+    val listRowMin = 56.dp
+    val hairline = 1.dp
+}
+
 object Elevation {
     val none = 0.dp
     val low = 2.dp

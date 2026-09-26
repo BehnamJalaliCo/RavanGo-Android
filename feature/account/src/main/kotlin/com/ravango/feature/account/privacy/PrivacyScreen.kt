@@ -16,6 +16,7 @@ import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Insights
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -91,67 +92,20 @@ fun PrivacyScreen(onBack: () -> Unit, viewModel: PrivacyViewModel = hiltViewMode
         }
     }
 
-    RgScreen(title = stringResource(R.string.account_privacy), onBack = onBack, snackbarHostState = snackbar) { padding ->
-        Column(
-            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = Spacing.xxl),
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-        ) {
-            RgGroup(title = stringResource(R.string.account_privacy_choices)) {
-                SwitchRow(
-                    stringResource(R.string.account_analytics_consent),
-                    state.analyticsConsent,
-                    { viewModel.setAnalytics(it) },
-                    subtitle = stringResource(R.string.account_analytics_consent_sub),
-                    icon = Icons.Rounded.Insights,
-                )
-                SwitchRow(
-                    stringResource(R.string.account_crash_consent),
-                    state.crashReportsConsent,
-                    { viewModel.setCrashReports(it) },
-                    subtitle = stringResource(R.string.account_crash_consent_sub),
-                    icon = Icons.Rounded.BugReport,
-                )
-            }
-            RgGroup(title = stringResource(R.string.account_privacy_your_data)) {
-                RgListItem(
-                    stringResource(R.string.account_export_data),
-                    subtitle = stringResource(R.string.account_export_data_sub),
-                    icon = Icons.Rounded.Download,
-                    onClick = if (state.busy) null else ({
-                        val date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
-                        exporter.launch("ravango-export-$date.json")
-                    }),
-                )
-                RgListItem(
-                    stringResource(R.string.account_delete_local),
-                    subtitle = stringResource(R.string.account_delete_local_sub),
-                    icon = Icons.Rounded.DeleteSweep,
-                    iconTint = RgTheme.colors.danger,
-                    iconBackground = RgTheme.colors.danger.copy(alpha = 0.12f),
-                    onClick = if (state.busy) null else ({ confirmLocal = true }),
-                )
-                if (state.signedIn) {
-                    RgListItem(
-                        stringResource(R.string.account_delete),
-                        subtitle = stringResource(R.string.account_delete_subtitle),
-                        icon = Icons.Rounded.DeleteForever,
-                        iconTint = RgTheme.colors.danger,
-                        iconBackground = RgTheme.colors.danger.copy(alpha = 0.12f),
-                        onClick = { confirmAccount = true },
-                    )
-                }
-                if (state.privacyUrl.isNotBlank()) {
-                    RgListItem(
-                        stringResource(R.string.account_privacy_online),
-                        subtitle = state.privacyUrl,
-                        icon = Icons.AutoMirrored.Rounded.OpenInNew,
-                        onClick = { context.openUrl(state.privacyUrl) },
-                    )
-                }
-            }
-            policySections.forEach { (title, body) -> LegalSection(stringResource(title), stringResource(body)) }
-        }
-    }
+    PrivacyContent(
+        state = state,
+        snackbar = snackbar,
+        onBack = onBack,
+        onAnalytics = viewModel::setAnalytics,
+        onCrashReports = viewModel::setCrashReports,
+        onExport = {
+            val date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+            exporter.launch("ravango-export-$date.json")
+        },
+        onDeleteLocal = { confirmLocal = true },
+        onDeleteAccount = { confirmAccount = true },
+        onOpenOnline = { context.openUrl(state.privacyUrl) },
+    )
 
     if (confirmLocal) {
         RgConfirmDialog(
@@ -177,5 +131,78 @@ fun PrivacyScreen(onBack: () -> Unit, viewModel: PrivacyViewModel = hiltViewMode
             onConfirm = { wipe -> viewModel.deleteAccount(wipe) },
             onDismiss = { if (!state.busy) confirmAccount = false },
         )
+    }
+}
+
+/** Stateless privacy screen: consent switches, data controls and the in-app policy. */
+@Composable
+internal fun PrivacyContent(
+    state: PrivacyUiState,
+    snackbar: SnackbarHostState?,
+    onBack: () -> Unit,
+    onAnalytics: (Boolean) -> Unit,
+    onCrashReports: (Boolean) -> Unit,
+    onExport: () -> Unit,
+    onDeleteLocal: () -> Unit,
+    onDeleteAccount: () -> Unit,
+    onOpenOnline: () -> Unit,
+) {
+    RgScreen(title = stringResource(R.string.account_privacy), onBack = onBack, snackbarHostState = snackbar) { padding ->
+        Column(
+            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = Spacing.xxl),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            RgGroup(title = stringResource(R.string.account_privacy_choices)) {
+                SwitchRow(
+                    stringResource(R.string.account_analytics_consent),
+                    state.analyticsConsent,
+                    onAnalytics,
+                    subtitle = stringResource(R.string.account_analytics_consent_sub),
+                    icon = Icons.Rounded.Insights,
+                )
+                SwitchRow(
+                    stringResource(R.string.account_crash_consent),
+                    state.crashReportsConsent,
+                    onCrashReports,
+                    subtitle = stringResource(R.string.account_crash_consent_sub),
+                    icon = Icons.Rounded.BugReport,
+                )
+            }
+            RgGroup(title = stringResource(R.string.account_privacy_your_data)) {
+                RgListItem(
+                    stringResource(R.string.account_export_data),
+                    subtitle = stringResource(R.string.account_export_data_sub),
+                    icon = Icons.Rounded.Download,
+                    onClick = if (state.busy) null else onExport,
+                )
+                RgListItem(
+                    stringResource(R.string.account_delete_local),
+                    subtitle = stringResource(R.string.account_delete_local_sub),
+                    icon = Icons.Rounded.DeleteSweep,
+                    iconTint = RgTheme.colors.danger,
+                    iconBackground = RgTheme.colors.danger.copy(alpha = 0.12f),
+                    onClick = if (state.busy) null else onDeleteLocal,
+                )
+                if (state.signedIn) {
+                    RgListItem(
+                        stringResource(R.string.account_delete),
+                        subtitle = stringResource(R.string.account_delete_subtitle),
+                        icon = Icons.Rounded.DeleteForever,
+                        iconTint = RgTheme.colors.danger,
+                        iconBackground = RgTheme.colors.danger.copy(alpha = 0.12f),
+                        onClick = onDeleteAccount,
+                    )
+                }
+                if (state.privacyUrl.isNotBlank()) {
+                    RgListItem(
+                        stringResource(R.string.account_privacy_online),
+                        subtitle = state.privacyUrl,
+                        icon = Icons.AutoMirrored.Rounded.OpenInNew,
+                        onClick = onOpenOnline,
+                    )
+                }
+            }
+            policySections.forEach { (title, body) -> LegalSection(stringResource(title), stringResource(body)) }
+        }
     }
 }

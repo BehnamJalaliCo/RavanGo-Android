@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -99,12 +100,17 @@ private val avatarGradients = listOf(
 internal fun InitialsAvatar(initials: String, seed: String, size: Dp = 72.dp, modifier: Modifier = Modifier) {
     val colors = avatarGradients[(seed.hashCode() and Int.MAX_VALUE) % avatarGradients.size]
     Box(modifier.size(size).clip(CircleShape).background(Brush.linearGradient(colors)), contentAlignment = Alignment.Center) {
-        Text(
-            initials,
-            style = if (size >= 64.dp) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-        )
+        if (initials.isBlank()) {
+            // Guest: a person glyph instead of an empty disc.
+            Icon(Icons.Rounded.Person, null, tint = Color.White, modifier = Modifier.size(size * 0.5f))
+        } else {
+            Text(
+                initials,
+                style = if (size >= 64.dp) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+            )
+        }
     }
 }
 
