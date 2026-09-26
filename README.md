@@ -289,6 +289,8 @@ Workflow: [`.github/workflows/android.yml`](.github/workflows/android.yml)
 
 - تست‌های واحد JVM برای منطق خالص: پارسر و زمان‌بندی تله‌پرامپتر، DSP صدا (FFT، حذف نویز، لیمیتر، سکوت‌یابی)، انتخاب رزولوشن/FPS و محاسبات دوربین، هندسه و کنترل کیفیت بیوتی، ریاضیات تایم‌لاین و تاریخچه‌ی ادیتور، زیرنویس‌ساز و پارس خروجی LLM، سیاست ادغام همگام‌سازی، محاسبه‌ی Entitlement و اعتبار، ایمپورترهای اسکریپت.
 - اجرای همه‌ی تست‌ها: `./gradlew testDebugUnitTest`
+- **تست روی دستگاه (Maestro):** برنامه‌ی واقعی روی شبیه‌ساز اندروید اجرا می‌شود و همه‌ی بخش‌ها یکی‌یکی پیمایش می‌شوند (آشنایی، خانه، متن‌ها، تله‌پرامپتر، استودیوی دوربین با لنز/فیلتر/بیوتی و ضبط، ضبط صدا، ادیتور و خروجی، هوش مصنوعی، پروژه‌ها، تنظیمات، پرداخت) — به فارسی و انگلیسی. کرش و ANR ثبت و گزارش می‌شود، از هر مرحله اسکرین‌شات گرفته می‌شود. نتیجه‌ی آخرین اجرا: Release با نام [`device-tests`](../../releases/tag/device-tests) (`summary.md` و `device-tests.zip`). اجرای محلی: `maestro test .maestro/` — راهنما: [`docs/dev/DEVICE_TESTS.md`](docs/dev/DEVICE_TESTS.md).
+- **On-device tests (Maestro):** the real app runs on Android emulators and every screen is walked through step by step in Persian and English; crashes/ANRs are captured with stack traces and every step is screenshotted. Latest results: the [`device-tests`](../../releases/tag/device-tests) release. Local run: `maestro test .maestro/` — see [`docs/dev/DEVICE_TESTS.md`](docs/dev/DEVICE_TESTS.md).
 
 ---
 
@@ -315,7 +317,7 @@ Persian is the primary language (full RTL); English is fully supported.
 
 - **Stack:** Kotlin 2.2, Jetpack Compose (custom pastel/glass design system), Hilt, Room, DataStore, Camera2 + EGL/GLES + MediaCodec, MediaPipe Face Landmarker + Selfie Segmenter (Snapchat-style 3D face mesh, UV-space makeup, mesh-warp reshape, 12 face lenses, swipeable LUT filters, virtual background), Media3 1.8 (Transformer/Effect/CompositionPlayer), Anthropic Java SDK (Claude via a server-side gateway), Supabase (auth, RLS sync, storage), Google Play Billing 8.
 - **Modules:** `core:*` foundations, `engine:*` (render, camera, audio, beauty, teleprompter, editor, ai), `platform:*` (auth, cloud, billing), `feature:*` screens. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-- **Build:** `./gradlew :app:assembleDebug` / `:app:assembleRelease`; tests: `./gradlew testDebugUnitTest`.
+- **Build:** `./gradlew :app:assembleDebug` / `:app:assembleRelease`; tests: `./gradlew testDebugUnitTest`; on-device Maestro walkthrough: `maestro test .maestro/` ([docs](docs/dev/DEVICE_TESTS.md), CI results in the `device-tests` release).
 - **Downloads:** GitHub Releases → `latest-build` (built by [CI](.github/workflows/android.yml) on every push).
 - **Configuration:** `secrets.properties` or `RAVANGO_*` env vars; everything works offline, and features that need a service explain exactly which one. Backend setup: [`backend/README.md`](backend/README.md), AI gateway: [`backend/README-ai.md`](backend/README-ai.md).
 - **Monetization:** Free / Pro (monthly, yearly with trial) / Lifetime + AI credit packs, no ads — [`docs/MONETIZATION.md`](docs/MONETIZATION.md).
