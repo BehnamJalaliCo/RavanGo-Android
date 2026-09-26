@@ -109,4 +109,11 @@ class ProjectsScreenshotTest {
     fun templatesFull() = captureAllVariants("templates-full", qualifiers = "w412dp-h1700dp") { SyncLocale();
         TemplatesContent(TemplatesUiState(templates = BuiltInPresets.templates), remember { SnackbarHostState() }, onBack = {}, onSelect = {})
     }
+
+    /** A tapped template expanded into the start-project card (the container-transform end state). */
+    @Test
+    fun templatesExpanded() = captureAllVariants("templates-expanded") { SyncLocale();
+        val templates = BuiltInPresets.templates
+        TemplatesContent(TemplatesUiState(templates = templates, selected = templates.first()), remember { SnackbarHostState() }, onBack = {}, onSelect = {})
+    }
 }

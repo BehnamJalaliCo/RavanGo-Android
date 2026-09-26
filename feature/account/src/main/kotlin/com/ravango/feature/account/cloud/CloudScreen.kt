@@ -1,5 +1,6 @@
 package com.ravango.feature.account.cloud
 
+import com.ravango.feature.account.common.iconTone
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -176,7 +177,7 @@ internal fun CloudContent(
                 RgListItem(
                     title = stringResource(R.string.account_cloud_what_syncs),
                     subtitle = stringResource(if (s.canSyncProjects) R.string.account_cloud_syncs_pro else R.string.account_cloud_syncs_free),
-                    icon = Icons.Rounded.Cloud,
+                    icon = Icons.Rounded.Cloud, iconTint = iconTone(Icons.Rounded.Cloud).content, iconBackground = iconTone(Icons.Rounded.Cloud).container,
                     onClick = if (s.canSyncProjects) null else ({ onRequirePro(ProFeature.CLOUD_PROJECT_SYNC) }),
                     trailing = if (s.canSyncProjects) null else ({ ProBadge() }),
                 )

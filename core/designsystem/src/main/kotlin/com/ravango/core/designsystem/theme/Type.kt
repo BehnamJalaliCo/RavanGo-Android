@@ -105,3 +105,15 @@ object ButtonText {
 
 /** Tabular (fixed-width) digits for counters, timers and prices so numbers don't jitter as they change. */
 val TabularNumbers: TextStyle = TextStyle(fontFeatureSettings = "tnum")
+
+/**
+ * Balanced line breaking for short, prominent paragraphs (hero copy, empty states): lines come out of similar length,
+ * so a single word never dangles on the last line. Falls back to greedy breaking below Android 13.
+ */
+val BalancedLines: TextStyle = TextStyle(
+    lineBreak = androidx.compose.ui.text.style.LineBreak(
+        strategy = androidx.compose.ui.text.style.LineBreak.Strategy.Balanced,
+        strictness = androidx.compose.ui.text.style.LineBreak.Strictness.Normal,
+        wordBreak = androidx.compose.ui.text.style.LineBreak.WordBreak.Phrase,
+    ),
+)

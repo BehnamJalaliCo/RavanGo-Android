@@ -6,7 +6,7 @@
     <string name="ai_hero_body">Turn an idea into a teleprompter-ready script, sharpen your words, and get hooks, titles and captions in seconds.</string>
     <string name="ai_credits_remaining">%1$s of %2$s credits left this month</string>
     <string name="ai_credits_short">%1$s credits</string>
-    <string name="ai_own_key_no_credits">Using your own API key — RavanGo credits are not used</string>
+    <string name="ai_own_key_no_credits">Using your own API key, so RavanGo credits are not used</string>
     <string name="ai_get_more_credits">Get more credits</string>
 
     <string name="ai_provider_gateway">RavanGo AI</string>
@@ -109,7 +109,7 @@
     <string name="ai_regenerate">Regenerate</string>
     <string name="ai_stop">Stop</string>
     <string name="ai_generating">Writing…</string>
-    <string name="ai_stopped">Stopped — partial result</string>
+    <string name="ai_stopped">Stopped: partial result</string>
     <string name="ai_result">Result</string>
     <string name="ai_credits_used">%1$s credits used</string>
     <string name="ai_pick_variants">Tap to select the ones you like</string>
@@ -152,4 +152,5 @@
     <string name="ai_video_eye_unavailable">Needs a server-side gaze model</string>
     <string name="ai_video_open_projects">Open projects</string>
     <string name="ai_back_to_tools">Back to tools</string>
+    <string name="ai_credits_of_total">of %1$s credits left this month</string>
 </resources>

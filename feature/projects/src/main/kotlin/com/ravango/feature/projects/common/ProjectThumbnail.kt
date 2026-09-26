@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -70,10 +71,15 @@ fun ProjectThumbnail(
     audioOnly: Boolean = false,
 ) {
     val colors = RgTheme.colors
-    val pastel = remember(accentSeed, colors) {
-        val options = listOf(colors.pastelLavender, colors.pastelRose, colors.pastelPeach, colors.pastelMint, colors.pastelSky, colors.pastelButter)
-        val i = (accentSeed.hashCode() and Int.MAX_VALUE) % options.size
-        Brush.linearGradient(listOf(options[i], options[(i + 1) % options.size]))
+    val tone = remember(accentSeed, colors) { colors.tones.forSeed(accentSeed) }
+    val pastel = remember(tone, colors) {
+        // Tone wash with a soft top-lit sheen: reads as a designed placeholder, not an empty box.
+        if (colors.isDark) {
+            // Dark tone containers are deep; lift them with a wash of the tone's own light content color.
+            Brush.linearGradient(listOf(tone.content.copy(alpha = 0.26f).compositeOver(tone.container), tone.container))
+        } else {
+            Brush.linearGradient(listOf(tone.container, colors.tones.forSeed(accentSeed + "b").container))
+        }
     }
     var failed by remember(source) { mutableStateOf(false) }
     Box(modifier.background(pastel), contentAlignment = Alignment.Center) {
@@ -81,7 +87,7 @@ fun ProjectThumbnail(
             Icon(
                 if (audioOnly) Icons.Rounded.GraphicEq else Icons.Rounded.Movie,
                 contentDescription = null,
-                tint = colors.accent.copy(alpha = 0.55f),
+                tint = tone.content.copy(alpha = 0.7f),
                 modifier = Modifier.size(34.dp),
             )
         }

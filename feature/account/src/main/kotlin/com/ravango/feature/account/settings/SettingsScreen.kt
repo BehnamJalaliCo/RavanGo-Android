@@ -1,5 +1,6 @@
 package com.ravango.feature.account.settings
 
+import com.ravango.feature.account.common.iconTone
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
@@ -242,12 +243,12 @@ internal fun SettingsContent(state: SettingsUiState, snackbar: SnackbarHostState
                                 PermissionStatus.PERMANENTLY_DENIED -> R.string.account_notifications_blocked
                             },
                         ),
-                        icon = Icons.Rounded.Notifications,
+                        icon = Icons.Rounded.Notifications, iconTint = iconTone(Icons.Rounded.Notifications).content, iconBackground = iconTone(Icons.Rounded.Notifications).container,
                         onClick = if (requester.allGranted) null else requester::request,
                         trailing = if (requester.allGranted) null else ({ RgTextButton(stringResource(R.string.account_allow), requester::request) }),
                     )
                 } else {
-                    RgListItem(stringResource(R.string.account_notifications), subtitle = stringResource(R.string.account_notifications_on), icon = Icons.Rounded.Notifications)
+                    RgListItem(stringResource(R.string.account_notifications), subtitle = stringResource(R.string.account_notifications_on), icon = Icons.Rounded.Notifications, iconTint = iconTone(Icons.Rounded.Notifications).content, iconBackground = iconTone(Icons.Rounded.Notifications).container)
                 }
             }
 
@@ -256,12 +257,12 @@ internal fun SettingsContent(state: SettingsUiState, snackbar: SnackbarHostState
                 RgListItem(
                     stringResource(R.string.account_media_storage),
                     subtitle = stringResource(R.string.account_media_storage_sub, formatBytes(state.mediaBytes)),
-                    icon = Icons.Rounded.Storage,
+                    icon = Icons.Rounded.Storage, iconTint = iconTone(Icons.Rounded.Storage).content, iconBackground = iconTone(Icons.Rounded.Storage).container,
                 )
                 RgListItem(
                     stringResource(R.string.account_cache),
                     subtitle = stringResource(R.string.account_cache_sub, formatBytes(state.cacheBytes)),
-                    icon = Icons.Rounded.CleaningServices,
+                    icon = Icons.Rounded.CleaningServices, iconTint = iconTone(Icons.Rounded.CleaningServices).content, iconBackground = iconTone(Icons.Rounded.CleaningServices).container,
                     trailing = { RgTextButton(stringResource(R.string.account_clear), viewModel::clearCache, enabled = !state.clearingCache && state.cacheBytes > 0) },
                 )
             }
@@ -284,7 +285,7 @@ private fun QualityChip(quality: ExportQuality, selected: Boolean, unlocked: Boo
 @Composable
 private fun LabeledControl(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, content: @Composable () -> Unit) {
     Column(Modifier.fillMaxWidth()) {
-        RgListItem(title, icon = icon)
+        RgListItem(title, icon = icon, iconTint = iconTone(icon).content, iconBackground = iconTone(icon).container)
         Column(Modifier.fillMaxWidth().padding(start = Spacing.md, end = Spacing.md, bottom = Spacing.md)) { content() }
     }
 }
@@ -381,7 +382,7 @@ private fun KeyEditor(label: String, hasKey: Boolean, onSave: (String) -> Unit, 
             RgListItem(
                 title = label,
                 subtitle = "••••••••••••  " + stringResource(R.string.account_key_stored),
-                icon = Icons.Rounded.Key,
+                icon = Icons.Rounded.Key, iconTint = iconTone(Icons.Rounded.Key).content, iconBackground = iconTone(Icons.Rounded.Key).container,
                 trailing = {
                     Row {
                         RgTextButton(stringResource(R.string.account_replace), { editing = true })

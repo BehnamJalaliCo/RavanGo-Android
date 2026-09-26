@@ -2,4 +2,5 @@
 <resources>
     <color name="rg_background">#0E0C16</color>
     <color name="rg_logo_ink">#FFFFFF</color>
+    <color name="rg_window_background">#070A13</color>
 </resources>

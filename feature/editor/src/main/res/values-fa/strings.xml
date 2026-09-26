@@ -22,7 +22,7 @@
     <string name="editor_adj_tint">ته‌رنگ</string>
     <string name="editor_adj_vibrance">سرزندگی</string>
     <string name="editor_adj_vignette">وینیت</string>
-    <string name="editor_ai_autoedit_body">یک پیشنهاد کامل تدوین بگیرید — برش‌ها، زیرنویس و لحظه‌های برتر — و پیش از اعمال بررسی‌اش کنید.</string>
+    <string name="editor_ai_autoedit_body">یک پیشنهاد کامل تدوین (برش‌ها، زیرنویس و لحظه‌های برتر) بگیرید و پیش از اعمال بررسی‌اش کنید.</string>
     <string name="editor_ai_autoedit_title">تدوین خودکار</string>
     <string name="editor_ai_cleanup">پاک‌سازی هوشمند</string>
     <string name="editor_ai_create_project">ساخت پروژه</string>
@@ -40,12 +40,12 @@
     <string name="editor_ai_none_found">چیزی در این ویدیو پیدا نشد.</string>
     <string name="editor_ai_not_configured">سرویس هوش مصنوعی پیکربندی نشده است؛ ممکن است برخی ابزارها کار نکنند.</string>
     <string name="editor_ai_plan">ساخت برنامه</string>
-    <string name="editor_ai_plan_summary">%1$s برش (%2$s) · %3$s زیرنویس</string>
+    <string name="editor_ai_plan_summary">%1$s برش (%2$s)، %3$s زیرنویس</string>
     <string name="editor_ai_short_created">پروژه ساخته شد</string>
     <string name="editor_ai_shorts_body">ضبط طولانی را به کلیپ‌های کوتاه عمودی تبدیل می‌کند و هرکدام را پروژهٔ جدیدی ذخیره می‌کند.</string>
     <string name="editor_ai_shorts_title">شورتس و ریلز</string>
     <string name="editor_ai_silence_body">مکث‌ها را روی دستگاه تشخیص می‌دهد و با یک لمس حذف می‌کند.</string>
-    <string name="editor_ai_silence_result">%1$s مکث پیدا شد · در مجموع %2$s</string>
+    <string name="editor_ai_silence_result">%1$s مکث پیدا شد، در مجموع %2$s</string>
     <string name="editor_ai_silence_title">حذف سکوت‌ها</string>
     <string name="editor_ai_suggested_title">عنوان پیشنهادی: %1$s</string>
     <string name="editor_align_center">وسط</string>
@@ -144,7 +144,7 @@
     <string name="editor_export_codec">کدک</string>
     <string name="editor_export_codec_fallback">HEVC در دسترس نبود؛ از H.264 استفاده شد.</string>
     <string name="editor_export_done">ویدیوی شما آماده است</string>
-    <string name="editor_export_estimate">%1$s · %2$s مگابیت بر ثانیه · حدود %3$s برای %4$s</string>
+    <string name="editor_export_estimate">%1$s، %2$s مگابیت بر ثانیه، حدود %3$s برای %4$s</string>
     <string name="editor_export_failed">ساخت خروجی ناموفق بود</string>
     <string name="editor_export_fps">نرخ فریم</string>
     <string name="editor_export_hevc_note">HEVC فایل کوچک‌تری می‌سازد، اما برخی برنامه‌های قدیمی آن را پخش نمی‌کنند.</string>
