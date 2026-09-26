@@ -24,7 +24,7 @@ tags:
     when:
       visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*'
     file: ../subflows/onboarding_quick.yaml
-- tapOn: 'Record|ضبط'
+- tapOn: 'Start recording|شروع ضبط'
 - extendedWaitUntil:
     visible: 'Allow access|اجازه دسترسی'
     timeout: 20000

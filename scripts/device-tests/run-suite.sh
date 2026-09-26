@@ -160,6 +160,10 @@ for LOCALE in $LOCALES; do
       done
     fi
 
+    # The app's diagnostics event log (camera fallbacks, gave-up entries, …; cumulative per locale).
+    adb exec-out run-as "$APP_ID" cat files/diagnostics/events.log > "$DIR/app-events.log" 2>/dev/null || true
+    [ -s "$DIR/app-events.log" ] || rm -f "$DIR/app-events.log"
+
     CRASH=0
     ANR=0
     if grep -qE "Process: $APP_ID(,| )|>>> $APP_ID <<<|Fatal signal .*\($APP_ID\)|name: .* >>> $APP_ID" "$DIR/crash_buffer.txt" "$DIR/logcat.txt" 2>/dev/null; then

@@ -8,6 +8,9 @@ tags:
 - runFlow: ../subflows/launch.yaml
 - tapOn: 'Audio only|فقط صدا'
 - extendedWaitUntil:
+    visible: 'Close studio|بستن استودیو'
+    timeout: 30000
+- extendedWaitUntil:
     visible: 'Start recording|شروع ضبط'
     timeout: 30000
 - runFlow:

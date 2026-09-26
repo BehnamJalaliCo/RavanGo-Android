@@ -133,6 +133,7 @@ def main(out_dir):
     device = read(out / "device.txt").strip()
     total_crashes = total_anrs = failed = 0
     details = []
+    camera_md = []
     seen_reports = {}
     table = ["| Locale | Flow | Result | Time | Crash | ANR | Screenshots |", "|---|---|---|---|---|---|---|"]
     for r in rows:
@@ -157,6 +158,13 @@ def main(out_dir):
         seen = seen_reports.setdefault(r["locale"], set())
         new_reports = [n for n in all_reports if n not in seen]
         seen.update(all_reports)
+        cam = [re.sub(r"^(\d\d-\d\d )?(\d\d:\d\d:\d\d)\.\d+\s+\d+\s+\d+\s+(\w)\s+", r"\2 \3 ", l)
+               for l in logcat.splitlines()
+               if re.search(r"RG/CameraEngine: (recording|take stopped)|RG/CameraSession: .*(error|failed)|RG/RecFinalizer|RG/SegmentedMuxer: .*failed|RG/VideoEncoder: started", l)]
+        if cam:
+            if len(cam) > 20:
+                cam = cam[:8] + [f"... ({len(cam) - 16} more)"] + cam[-8:]
+            camera_md.append(f"**{r['locale']} / {r['flow']}**\n```\n" + "\n".join(cam) + "\n```")
         shots = screenshots(d)
         icon = {"passed": "✅ pass", "failed": "❌ fail", "timeout": "⏱ timeout"}.get(r["status"], r["status"])
         table.append(f"| {r['locale']} | {r['flow']} | {icon} | {r['seconds']}s | {'💥 yes' if crashed else '–'} | {'🧊 yes' if anred else '–'} | {len(shots)} |")
@@ -217,6 +225,8 @@ def main(out_dir):
         *table,
         "",
     ]
+    if camera_md:
+        md += ["## Camera engine log (recording, stops, session errors)", "", *camera_md, ""]
     if instr_md:
         md += ["## Instrumented tests (androidTest)", "", *instr_md, ""]
     if details:
@@ -224,7 +234,7 @@ def main(out_dir):
     md += [
         "Per flow folder: `maestro.log` (step log), `report.xml` (JUnit), "
         "`screenshots/` (one per step), `failure.png` (screen when a flow failed), `debug/` (Maestro command log + view hierarchy), `logcat.txt`, `crash_buffer.txt`, `dropbox_*.txt`, "
-        "`app-crash-reports/` (the app's own reports), `video/` (only for failed/crashed flows). Instrumented test output: `instrumented/`.",
+        "`app-crash-reports/` (the app's own reports), `app-events.log` (the app's diagnostics events), `video/` (only for failed/crashed flows). Instrumented test output: `instrumented/`.",
         "",
     ]
     (out / "summary.md").write_text("\n".join(md))

@@ -6,7 +6,7 @@ tags:
 ---
 - runFlow: ../subflows/launch.yaml
 - takeScreenshot: home_top
-- assertVisible: 'Record|ضبط'
+- assertVisible: 'Start recording|شروع ضبط'
 - assertVisible: 'Scripts|متن.ها'
 - assertVisible: 'Projects|پروژه.ها'
 - scrollUntilVisible:

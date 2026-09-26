@@ -1,13 +1,13 @@
-# From Home: open Camera Studio (Record button) and wait until the shutter is ready.
+# From Home: open Camera Studio (the hero's "Start recording" button) and wait until the shutter is ready.
+# The studio's own controls (Close studio) tell it apart from Home, whose hero button has the same label.
 appId: com.ravango.app.debug
 ---
-- tapOn: 'Record|ضبط'
+- tapOn: 'Start recording|شروع ضبط'
 - extendedWaitUntil:
-    visible: 'Start recording|شروع ضبط|.*The camera stopped.*|.*دوربین متوقف شد.*|.*No camera found.*|.*دوربینی پیدا نشد.*'
+    visible: 'Close studio|بستن استودیو'
     timeout: 30000
-- runFlow:
-    when:
-      visible: '.*The camera stopped.*|.*دوربین متوقف شد.*|.*No camera found.*|.*دوربینی پیدا نشد.*'
-    commands:
-      - takeScreenshot: camera_error_state
+- extendedWaitUntil:
+    visible: 'Start recording|شروع ضبط|.*The camera stopped.*|.*دوربین متوقف شد.*|.*This setting isn.t supported.*|.*این تنظیم پشتیبانی نمی.شود.*|.*No camera found.*|.*دوربینی پیدا نشد.*'
+    timeout: 30000
+- runFlow: camera_recover.yaml
 - assertVisible: 'Start recording|شروع ضبط'

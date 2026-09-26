@@ -82,7 +82,7 @@ tags:
     text: 'All|همه'
     optional: true
 - tapOn: 'Sort|مرتب.سازی'
-- tapOn: 'Title \(A–Z\)|عنوان \(الفبایی\)'
+- tapOn: 'Title \(A to Z\)|عنوان \(الفبایی\)'
 - takeScreenshot: scripts_sorted
 
 # Reopen, edit, and the change is saved.
