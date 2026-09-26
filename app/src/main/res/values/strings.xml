@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">RavanGo</string>
-    <string name="crash_recovered_title">We recovered your work</string>
-    <string name="crash_recovered_message">RavanGo closed unexpectedly last time. Your drafts were auto-saved and interrupted recordings have been recovered where possible.</string>
     <string name="licenses_title">Licenses</string>
     <string name="licenses_brand_font_title">Brand font: %1$s</string>
     <string name="licenses_ravagh_body">The Ravagh typeface is commercial software owned by its designer and fontiran.com, used under licence #136710. It is embedded in RavanGo only to display the app\'s interface. Copying, extracting, redistributing or modifying the font files is not permitted. More: fontiran.com/about-licenses</string>

@@ -25,10 +25,10 @@ tags:
 - takeScreenshot: settings_language_en
 - runFlow:
     when:
-      visible: 'We recovered your work|کارهایتان بازیابی شد'
+      visible: 'RavanGo closed unexpectedly|روان.گو دفعه.ی قبل ناگهان بسته شد'
     commands:
-      - takeScreenshot: crash_notice_after_recreate
-      - tapOn: 'OK|باشه'
+      - takeScreenshot: crash_report_prompt_after_recreate
+      - tapOn: 'Not now|فعلاً نه'
 - tapOn: 'فارسی'
 - waitForAnimationToEnd:
     timeout: 5000

@@ -73,6 +73,24 @@ if ! adb install -r -g "$APK" > "$OUT/install.txt" 2>&1; then
   exit 0
 fi
 
+# Instrumented (androidTest) APKs, e.g. engine/beauty's GL shader/pipeline tests: install and run each one.
+if [ -n "${TEST_APKS:-}" ]; then
+  mkdir -p "$OUT/instrumented"
+  for T in $TEST_APKS; do
+    NAME="$(basename "$T" .apk)"
+    log "Instrumented tests: $NAME"
+    BEFORE="$(adb shell pm list instrumentation | tr -d '\r' | sort)"
+    adb install -r -g -t "$T" > "$OUT/instrumented/$NAME.install.txt" 2>&1 || { cat "$OUT/instrumented/$NAME.install.txt"; continue; }
+    INSTR="$(comm -13 <(echo "$BEFORE") <(adb shell pm list instrumentation | tr -d '\r' | sort) | head -1 | sed -E 's/^instrumentation:([^ ]+) .*/\1/')"
+    [ -z "$INSTR" ] && INSTR="$(adb shell pm list instrumentation | tr -d '\r' | grep -i "$(echo "$NAME" | cut -d- -f1)" | head -1 | sed -E 's/^instrumentation:([^ ]+) .*/\1/')"
+    echo "$INSTR" > "$OUT/instrumented/$NAME.runner.txt"
+    adb logcat -c 2>/dev/null || true
+    timeout 1200 adb shell am instrument -w "$INSTR" > "$OUT/instrumented/$NAME.txt" 2>&1
+    adb logcat -d -v threadtime > "$OUT/instrumented/$NAME.logcat.txt" 2>&1 || true
+    tail -5 "$OUT/instrumented/$NAME.txt"
+  done
+fi
+
 if [ -n "${FLOWS:-}" ]; then
   FLOW_FILES="$FLOWS"
 else
@@ -133,6 +151,14 @@ for LOCALE in $LOCALES; do
     for TAG in data_app_crash data_app_native_crash data_app_anr SYSTEM_TOMBSTONE; do
       adb shell dumpsys dropbox --print "$TAG" > "$DIR/dropbox_$TAG.txt" 2>/dev/null || true
     done
+
+    # The app's own on-device crash reports (core:common CrashReporter → files/diagnostics/reports).
+    if adb exec-out run-as "$APP_ID" sh -c 'ls files/diagnostics/reports 2>/dev/null' | grep -q .; then
+      mkdir -p "$DIR/app-crash-reports"
+      for F in $(adb exec-out run-as "$APP_ID" sh -c 'ls files/diagnostics/reports' | tr -d '\r'); do
+        adb exec-out run-as "$APP_ID" cat "files/diagnostics/reports/$F" > "$DIR/app-crash-reports/$F" 2>/dev/null || true
+      done
+    fi
 
     CRASH=0
     ANR=0

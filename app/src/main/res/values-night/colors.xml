@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="rg_background">#0E0C16</color>
+    <color name="rg_logo_ink">#FFFFFF</color>
 </resources>

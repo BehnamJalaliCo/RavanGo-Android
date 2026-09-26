@@ -61,7 +61,6 @@ class MainActivity : AppCompatActivity() {
                     RavanGoApp(
                         onboardingCompleted = prefs.onboardingCompleted,
                         sharedText = sharedText,
-                        previousCrash = viewModel.previousCrash,
                     )
                 }
             }

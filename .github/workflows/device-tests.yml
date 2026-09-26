@@ -66,10 +66,15 @@ jobs:
         env:
           RAVANGO_OWNER_CODE_SHA256: ${{ secrets.RAVANGO_OWNER_CODE_SHA256 }}
         run: ./gradlew :app:assembleDebug -Pravango.emulatorAbi=true --stacktrace
+      # Instrumented GL tests (shader compilation + effects pipeline) run on the same emulators.
+      - name: Build instrumented test APKs
+        run: ./gradlew :engine:beauty:assembleDebugAndroidTest --stacktrace
       - uses: actions/upload-artifact@v4
         with:
           name: emulator-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            engine/beauty/build/outputs/apk/androidTest/debug/*.apk
           retention-days: 7
 
   device:
@@ -112,6 +117,7 @@ jobs:
         env:
           OWNER_CODE_CONFIGURED: ${{ needs.build.outputs.owner_code }}
           FLOWS: ${{ github.event.inputs.flows }}
+          TEST_APKS: apk/engine/beauty/build/outputs/apk/androidTest/debug/*.apk
         with:
           api-level: ${{ matrix.api }}
           target: google_apis
@@ -123,7 +129,7 @@ jobs:
           disable-animations: true
           # Emulated front + back cameras; audio stays on so the microphone exists for audio recording.
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -camera-back emulated -camera-front emulated
-          script: bash scripts/device-tests/run-suite.sh apk/app-debug.apk results "${{ github.event.inputs.locales || matrix.locales }}"
+          script: bash scripts/device-tests/run-suite.sh apk/app/build/outputs/apk/debug/app-debug.apk results "${{ github.event.inputs.locales || matrix.locales }}"
       - name: Result
         id: result
         if: always()
@@ -147,7 +153,8 @@ jobs:
           if [ "${CRASHES:-0}" != "0" ]; then echo "::error::App crashed in $CRASHES flow(s) — see summary.md"; fi
           if [ "${ANRS:-0}" != "0" ]; then echo "::error::App ANR in $ANRS flow(s) — see summary.md"; fi
           if [ "${FAILED_FLOWS:-0}" != "0" ]; then echo "::error::$FAILED_FLOWS flow(s) failed — see summary.md"; fi
-          [ "${CRASHES:-0}" = "0" ] && [ "${ANRS:-0}" = "0" ] && [ "${FAILED_FLOWS:-0}" = "0" ]
+          if [ "${INSTRUMENTED_FAILED:-0}" != "0" ]; then echo "::error::Instrumented tests failed — see summary.md"; fi
+          [ "${CRASHES:-0}" = "0" ] && [ "${ANRS:-0}" = "0" ] && [ "${FAILED_FLOWS:-0}" = "0" ] && [ "${INSTRUMENTED_FAILED:-0}" = "0" ]
 
   publish:
     name: Publish results (release "device-tests")

@@ -133,6 +133,7 @@ def main(out_dir):
     device = read(out / "device.txt").strip()
     total_crashes = total_anrs = failed = 0
     details = []
+    seen_reports = {}
     table = ["| Locale | Flow | Result | Time | Crash | ANR | Screenshots |", "|---|---|---|---|---|---|---|"]
     for r in rows:
         d = out / r["locale"] / r["flow"]
@@ -151,11 +152,16 @@ def main(out_dir):
         total_anrs += int(anred)
         if r["status"] != "passed":
             failed += 1
+        reports_dir = d / "app-crash-reports"
+        all_reports = sorted(p.name for p in reports_dir.glob("*")) if reports_dir.exists() else []
+        seen = seen_reports.setdefault(r["locale"], set())
+        new_reports = [n for n in all_reports if n not in seen]
+        seen.update(all_reports)
         shots = screenshots(d)
         icon = {"passed": "✅ pass", "failed": "❌ fail", "timeout": "⏱ timeout"}.get(r["status"], r["status"])
         table.append(f"| {r['locale']} | {r['flow']} | {icon} | {r['seconds']}s | {'💥 yes' if crashed else '–'} | {'🧊 yes' if anred else '–'} | {len(shots)} |")
 
-        if r["status"] != "passed" or crashed or anred:
+        if r["status"] != "passed" or crashed or anred or new_reports:
             sec = [f"### {r['locale']} / {r['flow']} — {r['status']}"]
             if r["status"] != "passed":
                 sec.append("Maestro (last relevant lines):")
@@ -166,6 +172,9 @@ def main(out_dir):
                 sec.append("**App crash (native):**\n```\n" + t + "\n```")
             for t in an:
                 sec.append("**ANR:**\n```\n" + t + "\n```")
+            for n in new_reports:
+                body = read(reports_dir / n)
+                sec.append(f"**App's own crash report** (`{r['locale']}/{r['flow']}/app-crash-reports/{n}`):\n```\n" + "\n".join(body.splitlines()[:40]) + "\n```")
             if (d / "failure.png").exists():
                 sec.append(f"Failure screenshot: `{r['locale']}/{r['flow']}/failure.png`")
             if shots:
@@ -173,6 +182,23 @@ def main(out_dir):
             if (d / "video").exists():
                 sec.append(f"Video: `{r['locale']}/{r['flow']}/video/`")
             details.append("\n\n".join(sec))
+
+    instr_md, instr_failed = [], 0
+    idir = out / "instrumented"
+    if idir.exists():
+        for f in sorted(idir.glob("*.txt")):
+            if f.name.endswith((".install.txt", ".runner.txt", ".logcat.txt")):
+                continue
+            text = read(f)
+            ok = re.search(r"^OK \((\d+) tests?\)", text, re.M)
+            if not ok:
+                instr_failed += 1
+            status = f"✅ {ok.group(1)} tests passed" if ok else "❌ failed"
+            instr_md.append(f"### {f.stem} — {status}")
+            if not ok:
+                instr_md.append("```\n" + "\n".join(text.strip().splitlines()[-60:]) + "\n```")
+            else:
+                instr_md.append("```\n" + "\n".join(l for l in text.splitlines() if l.strip())[-400:] + "\n```")
 
     verdict = "✅ all flows passed, no crashes or ANRs" if rows and not (failed or total_crashes or total_anrs) else (
         f"❌ {failed} failed flow(s), {total_crashes} with app crash(es), {total_anrs} with ANR(s)" if rows else "❌ no flows ran")
@@ -191,19 +217,21 @@ def main(out_dir):
         *table,
         "",
     ]
+    if instr_md:
+        md += ["## Instrumented tests (androidTest)", "", *instr_md, ""]
     if details:
         md += ["## Failures, crashes and ANRs", "", *details, ""]
     md += [
         "Per flow folder: `maestro.log` (step log), `report.xml` (JUnit), "
         "`screenshots/` (one per step), `failure.png` (screen when a flow failed), `debug/` (Maestro command log + view hierarchy), `logcat.txt`, `crash_buffer.txt`, `dropbox_*.txt`, "
-        "`video/` (only for failed/crashed flows).",
+        "`app-crash-reports/` (the app's own reports), `video/` (only for failed/crashed flows). Instrumented test output: `instrumented/`.",
         "",
     ]
     (out / "summary.md").write_text("\n".join(md))
     env = read(out / "result.env")
     if "INSTALL_FAILED" not in env:
         (out / "result.env").write_text(
-            f"FLOWS={len(rows)}\nFAILED_FLOWS={failed}\nCRASHES={total_crashes}\nANRS={total_anrs}\n")
+            f"FLOWS={len(rows)}\nFAILED_FLOWS={failed}\nCRASHES={total_crashes}\nANRS={total_anrs}\nINSTRUMENTED_FAILED={instr_failed}\n")
     print("\n".join(md))
 
 

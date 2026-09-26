@@ -177,9 +177,10 @@ internal fun LensCarousel(
  * or a Pro note for locked lenses.
  */
 @Composable
-internal fun LensNameToast(lens: Lens?, locked: Boolean, needsFace: Boolean, modifier: Modifier = Modifier) {
+internal fun LensNameToast(lens: Lens?, locked: Boolean, needsFace: Boolean, modifier: Modifier = Modifier, unavailable: Boolean = false) {
     AnimatedContent(
-        targetState = Triple(lens, locked, needsFace),
+        // An unavailable lens (no face tracking / GPU pass off on this device) says so instead of doing nothing.
+        targetState = Triple(lens, locked, if (unavailable) null else needsFace),
         transitionSpec = { (fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 3 }) togetherWith fadeOut(tween(120)) },
         label = "lensToast",
         modifier = modifier,
@@ -201,6 +202,7 @@ internal fun LensNameToast(lens: Lens?, locked: Boolean, needsFace: Boolean, mod
             val hint = when {
                 isLocked -> stringResource(R.string.camera_lens_hint_pro)
                 l == null -> null
+                faceMissing == null -> stringResource(R.string.camera_lens_hint_unavailable)
                 faceMissing -> stringResource(R.string.camera_lens_hint_face)
                 l.hasTrigger -> stringResource(R.string.camera_lens_hint_mouth)
                 else -> null

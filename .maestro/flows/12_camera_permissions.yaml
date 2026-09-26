@@ -12,14 +12,14 @@ tags:
       all: deny
 - runFlow: ../subflows/dismiss_system_dialogs.yaml
 - extendedWaitUntil:
-    visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*|.*New recording.*|.*ضبط جدید.*|We recovered your work|کارهایتان بازیابی شد'
+    visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*|.*New recording.*|.*ضبط جدید.*|RavanGo closed unexpectedly|روان.گو دفعه.ی قبل ناگهان بسته شد'
     timeout: 45000
 - runFlow:
     when:
-      visible: 'We recovered your work|کارهایتان بازیابی شد'
+      visible: 'RavanGo closed unexpectedly|روان.گو دفعه.ی قبل ناگهان بسته شد'
     commands:
-      - takeScreenshot: crash_recovered_dialog
-      - tapOn: 'OK|باشه'
+      - takeScreenshot: crash_report_prompt
+      - tapOn: 'Not now|فعلاً نه'
 - runFlow:
     when:
       visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*'

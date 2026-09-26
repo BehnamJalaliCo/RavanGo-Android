@@ -32,7 +32,9 @@ class DeviceProfiler @Inject constructor(@ApplicationContext private val context
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val mem = ActivityManager.MemoryInfo().also { am.getMemoryInfo(it) }
         val ramMb = mem.totalMem / (1024 * 1024)
-        val cores = Runtime.getRuntime().availableProcessors()
+        // availableProcessors() counts *online* cores only; big.LITTLE phones hotplug cores off when idle, which
+        // made 8-core phones look like 4-core LOW-tier devices (beauty capped at LIGHT). Use the present cores.
+        val cores = maxOf(Runtime.getRuntime().availableProcessors(), presentCpuCount())
         val mpc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Build.VERSION.MEDIA_PERFORMANCE_CLASS else 0
         val soc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Build.SOC_MODEL else null
         val tier = when {
@@ -40,6 +42,7 @@ class DeviceProfiler @Inject constructor(@ApplicationContext private val context
             mpc >= Build.VERSION_CODES.TIRAMISU || (ramMb >= 7_000 && cores >= 8) -> DeviceTier.HIGH
             else -> DeviceTier.MID
         }
+        com.ravango.core.common.diagnostics.Diagnostics.setEnv("device.tier", "$tier (ram ${ramMb}MB, cores $cores, mpc $mpc, soc $soc)")
         return DeviceProfile(
             tier = tier,
             totalRamMb = ramMb,
@@ -51,5 +54,19 @@ class DeviceProfiler @Inject constructor(@ApplicationContext private val context
             model = Build.MODEL,
             sdkInt = Build.VERSION.SDK_INT,
         )
+    }
+
+    private fun presentCpuCount(): Int = runCatching {
+        CpuRanges.count(java.io.File("/sys/devices/system/cpu/present").readText())
+    }.getOrDefault(0)
+}
+
+/** Parses Linux CPU range lists such as `0-7` or `0-3,6`. */
+object CpuRanges {
+    fun count(text: String): Int = text.trim().split(',').filter { it.isNotBlank() }.sumOf { part ->
+        val bounds = part.trim().split('-')
+        val start = bounds[0].trim().toIntOrNull() ?: return@sumOf 0
+        val end = bounds.getOrNull(1)?.trim()?.toIntOrNull() ?: start
+        if (end >= start) end - start + 1 else 0
     }
 }

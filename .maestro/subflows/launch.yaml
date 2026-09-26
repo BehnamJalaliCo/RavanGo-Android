@@ -1,6 +1,6 @@
 # Starts (or restarts) the app with every runtime permission granted and lands on Home.
-# Completes onboarding quickly if the app is on its first run, and dismisses the
-# "we recovered your work" dialog (which itself means the app crashed earlier — it is screenshotted).
+# Completes onboarding quickly if the app is on its first run, and dismisses the in-app
+# "RavanGo closed unexpectedly" crash-report prompt (it means the app crashed earlier — it is screenshotted).
 appId: com.ravango.app.debug
 ---
 - launchApp:
@@ -9,18 +9,18 @@ appId: com.ravango.app.debug
     permissions:
       all: allow
 - extendedWaitUntil:
-    visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*|.*New recording.*|.*ضبط جدید.*|We recovered your work|کارهایتان بازیابی شد|.*isn.t responding.*|.*keeps stopping.*'
+    visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*|.*New recording.*|.*ضبط جدید.*|RavanGo closed unexpectedly|روان.گو دفعه.ی قبل ناگهان بسته شد|.*isn.t responding.*|.*keeps stopping.*'
     timeout: 45000
 - runFlow: dismiss_system_dialogs.yaml
 - extendedWaitUntil:
-    visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*|.*New recording.*|.*ضبط جدید.*|We recovered your work|کارهایتان بازیابی شد'
+    visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*|.*New recording.*|.*ضبط جدید.*|RavanGo closed unexpectedly|روان.گو دفعه.ی قبل ناگهان بسته شد'
     timeout: 30000
 - runFlow:
     when:
-      visible: 'We recovered your work|کارهایتان بازیابی شد'
+      visible: 'RavanGo closed unexpectedly|روان.گو دفعه.ی قبل ناگهان بسته شد'
     commands:
-      - takeScreenshot: crash_recovered_dialog
-      - tapOn: 'OK|باشه'
+      - takeScreenshot: crash_report_prompt
+      - tapOn: 'Not now|فعلاً نه'
 - runFlow:
     when:
       visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*'
