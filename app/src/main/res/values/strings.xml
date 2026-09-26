@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">RavanGo</string>
+    <string name="crash_recovered_title">We recovered your work</string>
+    <string name="crash_recovered_message">RavanGo closed unexpectedly last time. Your drafts were auto-saved and interrupted recordings have been recovered where possible.</string>
+</resources>

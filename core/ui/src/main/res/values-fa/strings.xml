@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_ok">باشه</string>
+    <string name="action_cancel">انصراف</string>
+    <string name="action_save">ذخیره</string>
+    <string name="action_delete">حذف</string>
+    <string name="action_retry">تلاش دوباره</string>
+    <string name="action_done">تمام</string>
+    <string name="action_close">بستن</string>
+    <string name="action_back">بازگشت</string>
+    <string name="action_share">اشتراک‌گذاری</string>
+    <string name="action_rename">تغییر نام</string>
+    <string name="action_duplicate">کپی</string>
+    <string name="action_edit">ویرایش</string>
+    <string name="action_undo">واگرد</string>
+    <string name="action_redo">ازنو</string>
+    <string name="action_reset">بازنشانی</string>
+    <string name="action_apply">اعمال</string>
+    <string name="action_continue">ادامه</string>
+    <string name="action_skip">رد شدن</string>
+    <string name="action_search">جستجو</string>
+    <string name="action_more">بیشتر</string>
+    <string name="action_copy">کپی</string>
+    <string name="action_upgrade">ارتقا به نسخه حرفه‌ای</string>
+    <string name="copied">کپی شد</string>
+    <string name="pro_feature">قابلیت حرفه‌ای</string>
+
+    <string name="permission_allow">اجازه دسترسی</string>
+    <string name="permission_open_settings">باز کردن تنظیمات</string>
+    <string name="permission_camera_title">دسترسی به دوربین</string>
+    <string name="permission_camera_message">روان‌گو برای ضبط ویدیو به دوربین نیاز دارد. ویدیوها روی گوشی شما می‌مانند، مگر اینکه خودتان پشتیبان‌گیری را فعال کنید.</string>
+    <string name="permission_mic_title">دسترسی به میکروفون</string>
+    <string name="permission_mic_message">برای ضبط صدای شما همراه ویدیو لازم است. پردازش صدا روی خود گوشی انجام می‌شود.</string>
+    <string name="permission_notifications_title">اعلان‌ها</string>
+    <string name="permission_notifications_message">وقتی خروجی گرفتن یا آپلود طولانی تمام شد، باخبر شوید.</string>
+
+    <string name="error_network">اتصال اینترنت برقرار نیست. دوباره تلاش کنید.</string>
+    <string name="error_auth">لطفاً دوباره وارد حساب شوید.</string>
+    <string name="error_permission">نیاز به مجوز دسترسی است.</string>
+    <string name="error_storage_full">فضای ذخیره‌سازی کافی نیست.</string>
+    <string name="error_not_supported">این دستگاه از این قابلیت پشتیبانی نمی‌کند.</string>
+    <string name="error_quota">به سقف استفاده در طرح فعلی رسیده‌اید.</string>
+    <string name="error_invalid_input">لطفاً اطلاعات واردشده را بررسی کنید.</string>
+    <string name="error_not_configured">این سرویس در این نسخه پیکربندی نشده است.</string>
+    <string name="error_cancelled">لغو شد.</string>
+    <string name="error_unknown">مشکلی پیش آمد. دوباره تلاش کنید.</string>
+</resources>

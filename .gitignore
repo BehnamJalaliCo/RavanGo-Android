@@ -1,0 +1,23 @@
+# Gradle / build
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Local configuration & secrets — never commit
+local.properties
+secrets.properties
+*.jks
+*.keystore
+google-services.json
+
+# Misc
+*.log

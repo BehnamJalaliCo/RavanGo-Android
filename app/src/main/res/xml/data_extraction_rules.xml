@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="ravango_secure.xml" />
+        <exclude domain="file" path="crash/" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="ravango_secure.xml" />
+    </device-transfer>
+</data-extraction-rules>
