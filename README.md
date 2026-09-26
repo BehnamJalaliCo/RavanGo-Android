@@ -1,3 +1,9 @@
+<div dir="rtl" align="center">
+
+<img src="docs/brand/ravango-logo.svg" alt="RavanGo" width="180"/>
+
+</div>
+
 <div dir="rtl">
 
 # روان‌گو | RavanGo

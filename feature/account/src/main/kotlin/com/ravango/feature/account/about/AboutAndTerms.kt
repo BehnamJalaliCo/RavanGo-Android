@@ -1,5 +1,7 @@
 package com.ravango.feature.account.about
 
+import com.ravango.core.designsystem.component.RavanGoLogo
+import com.ravango.core.designsystem.component.RavanGoLogoStyle
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
@@ -210,14 +212,13 @@ internal fun AboutContent(
         ) {
             GlassSurface(Modifier.padding(horizontal = Spacing.gutter).fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        Modifier.size(72.dp).clip(RoundedCornerShape(Radius.lg)).background(RgTheme.colors.brandGradient),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(stringResource(R.string.account_app_initial), style = MaterialTheme.typography.headlineMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(Modifier.height(Spacing.md))
-                    Text(stringResource(R.string.account_app_name), style = MaterialTheme.typography.headlineSmall, color = RgTheme.colors.textPrimary)
+                    RavanGoLogo(
+                        style = RavanGoLogoStyle.STACKED,
+                        height = 64.dp,
+                        contentDescription = stringResource(R.string.account_app_name),
+                        modifier = Modifier.padding(top = Spacing.sm),
+                    )
+                    Spacer(Modifier.height(Spacing.sm))
                     Text(
                         stringResource(R.string.account_version, "$versionName ($versionCode)".localizeDigits()),
                         style = MaterialTheme.typography.bodyMedium,
