@@ -1,0 +1,13 @@
+# From Home: open Camera Studio (Record button) and wait until the shutter is ready.
+appId: com.ravango.app.debug
+---
+- tapOn: 'Record|ضبط'
+- extendedWaitUntil:
+    visible: 'Start recording|شروع ضبط|.*The camera stopped.*|.*دوربین متوقف شد.*|.*No camera found.*|.*دوربینی پیدا نشد.*'
+    timeout: 30000
+- runFlow:
+    when:
+      visible: '.*The camera stopped.*|.*دوربین متوقف شد.*|.*No camera found.*|.*دوربینی پیدا نشد.*'
+    commands:
+      - takeScreenshot: camera_error_state
+- assertVisible: 'Start recording|شروع ضبط'

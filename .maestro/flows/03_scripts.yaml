@@ -1,0 +1,104 @@
+# Scripts: create, markup tools, preview, save, find in library, search, actions sheet, duplicate, reopen, edit.
+appId: com.ravango.app.debug
+name: 03 Scripts (create, edit, save)
+tags:
+  - smoke
+---
+- runFlow: ../subflows/launch.yaml
+- runFlow:
+    file: ../subflows/create_script.yaml
+    env:
+      SCRIPT_TITLE: Maestro script
+- takeScreenshot: scripts_editor_typed
+
+# Markup toolbar inserts markup at the cursor.
+- tapOn: 'Section|بخش'
+- tapOn: 'Highlight|برجسته'
+- tapOn: 'Emphasis|تأکید'
+- tapOn: 'Pause|مکث'
+- tapOn: 'Undo|واگرد'
+- takeScreenshot: scripts_editor_markup
+- hideKeyboard
+
+# Preview mode and back to editing.
+- tapOn: 'Preview|پیش.نمایش'
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: scripts_editor_preview
+- tapOn: 'Edit|ویرایش'
+
+# Overflow menu opens and closes.
+- tapOn: 'More|بیشتر'
+- assertVisible: 'Prompter settings for this script|تنظیمات پرامپتر برای این متن'
+- takeScreenshot: scripts_editor_menu
+- back
+- extendedWaitUntil:
+    visible: '.*Saved.*|.*ذخیره شد.*'
+    timeout: 15000
+
+# Back to the library: the new script is listed.
+- back
+- extendedWaitUntil:
+    visible: '.*Maestro script.*'
+    timeout: 15000
+- takeScreenshot: scripts_library_with_script
+
+# Search
+- tapOn: '.*Search titles and text.*|.*جست.وجو در عنوان و متن.*'
+- inputText: Maestro
+- extendedWaitUntil:
+    visible: '.*Maestro script.*'
+    timeout: 10000
+- takeScreenshot: scripts_search_hit
+- eraseText: 20
+- inputText: zzqqxx
+- extendedWaitUntil:
+    visible: '.*No matches.*|.*نتیجه.ای پیدا نشد.*'
+    timeout: 10000
+- takeScreenshot: scripts_search_empty
+- eraseText: 20
+- hideKeyboard
+
+# Long-press → actions sheet → Duplicate
+- longPressOn: '.*Maestro script.*'
+- extendedWaitUntil:
+    visible: 'Duplicate|کپی'
+    timeout: 10000
+- takeScreenshot: scripts_actions_sheet
+- tapOn: 'Duplicate|کپی'
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: scripts_duplicated
+
+# Favorites filter and sort menu
+- tapOn:
+    text: 'Favorites|محبوب.ها'
+    optional: true
+- takeScreenshot: scripts_favorites_filter
+- tapOn:
+    text: 'All|همه'
+    optional: true
+- tapOn: 'Sort|مرتب.سازی'
+- tapOn: 'Title \(A–Z\)|عنوان \(الفبایی\)'
+- takeScreenshot: scripts_sorted
+
+# Reopen, edit, and the change is saved.
+- tapOn:
+    text: '.*Maestro script.*'
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: script_body
+    timeout: 15000
+- tapOn:
+    id: script_body
+- inputText: " Edited again."
+- extendedWaitUntil:
+    visible: '.*Saved.*|.*ذخیره شد.*'
+    timeout: 15000
+- takeScreenshot: scripts_reopened_edited
+- hideKeyboard
+- back
+- extendedWaitUntil:
+    visible: '.*Maestro script.*'
+    timeout: 10000

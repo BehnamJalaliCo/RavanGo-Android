@@ -1,0 +1,55 @@
+# AI Studio without a configured AI service: it must say so honestly ("Setup needed" + how to fix),
+# and trying a tool must fail gracefully — no crash, no fake output.
+appId: com.ravango.app.debug
+name: 08 AI Studio (service not configured)
+tags:
+  - smoke
+---
+- runFlow: ../subflows/launch.yaml
+- tapOn: 'AI Studio|هوش مصنوعی'
+- extendedWaitUntil:
+    visible: 'Script from topic|متن از روی موضوع'
+    timeout: 15000
+- takeScreenshot: ai_studio_home
+- assertVisible: 'Setup needed|نیاز به تنظیم|.*This build has no RavanGo AI server configured.*|.*در این نسخه سرور هوش مصنوعی روان.گو تنظیم نشده است.*|.*Sign in to use RavanGo AI.*|.*برای استفاده از هوش مصنوعی روان.گو.*'
+- scroll
+- takeScreenshot: ai_studio_tools
+
+# Open a tool, enter a topic, try to generate.
+- scrollUntilVisible:
+    element: 'Script from topic|متن از روی موضوع'
+    direction: UP
+    timeout: 10000
+- tapOn: 'Script from topic|متن از روی موضوع'
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: ai_tool_script
+- tapOn:
+    text: '.*e\.g\. 3 habits that doubled my productivity.*|.*مثلاً: سه عادتی که بهره.وری.ام را دو برابر کرد.*'
+    optional: true
+- inputText: Three habits for better videos
+- hideKeyboard
+- scrollUntilVisible:
+    element: 'Generate|بساز'
+    direction: DOWN
+    timeout: 10000
+    optional: true
+- tapOn:
+    text: 'Generate|بساز'
+    optional: true
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 3000
+- takeScreenshot: ai_generate_attempt
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow:
+    when:
+      notVisible: '.*New recording.*|.*ضبط جدید.*'
+    commands:
+      - back
+- extendedWaitUntil:
+    visible: '.*New recording.*|.*ضبط جدید.*'
+    timeout: 15000

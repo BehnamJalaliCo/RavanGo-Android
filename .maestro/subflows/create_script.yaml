@@ -1,0 +1,31 @@
+# From Home: Scripts → New script → Write a new script → type a title and body.
+# Leaves the script editor open. SCRIPT_TITLE sets the title (ASCII only: adb text input).
+appId: com.ravango.app.debug
+---
+- tapOn: 'Scripts|متن.ها'
+- extendedWaitUntil:
+    visible: 'New script|متن تازه'
+    timeout: 15000
+- tapOn:
+    text: 'New script|متن تازه'
+    index: 0
+- extendedWaitUntil:
+    visible: '.*Write a new script.*|.*نوشتن متن تازه.*'
+    timeout: 10000
+- tapOn: '.*Write a new script.*|.*نوشتن متن تازه.*'
+- extendedWaitUntil:
+    visible:
+      id: script_title
+    timeout: 15000
+- tapOn:
+    id: script_title
+- inputText: "${typeof SCRIPT_TITLE !== 'undefined' ? SCRIPT_TITLE : 'Device test script'}"
+- tapOn:
+    id: script_body
+- inputText: "Hello from the RavanGo device test. This paragraph checks that the teleprompter scrolls smoothly."
+- pressKey: Enter
+- pressKey: Enter
+- inputText: "Second paragraph for the reading line and the section jump."
+- extendedWaitUntil:
+    visible: '.*Saved.*|.*ذخیره شد.*'
+    timeout: 15000

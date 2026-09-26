@@ -1,0 +1,18 @@
+# In Camera Studio: record for RECORD_MS (default 5 s), stop, wait for the saved-take sheet.
+appId: com.ravango.app.debug
+---
+- tapOn: 'Start recording|شروع ضبط'
+- extendedWaitUntil:
+    visible: 'Stop recording|پایان ضبط'
+    timeout: 15000
+- runFlow:
+    file: wait.yaml
+    env:
+      WAIT_MS: "${typeof RECORD_MS !== 'undefined' ? RECORD_MS : 5000}"
+- takeScreenshot: camera_recording
+- tapOn: 'Stop recording|پایان ضبط'
+- extendedWaitUntil:
+    visible: 'Open in Editor|باز کردن در ویرایشگر|.*We couldn.t save this take to a project.*|.*ذخیرهٔ این برداشت در پروژه ممکن نشد.*|.*Nothing was recorded.*|.*چیزی ضبط نشد.*'
+    timeout: 60000
+- takeScreenshot: camera_take_saved
+- assertVisible: 'Open in Editor|باز کردن در ویرایشگر'

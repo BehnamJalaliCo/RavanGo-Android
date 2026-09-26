@@ -1,0 +1,106 @@
+# Editor: record a short take, open it, play, select the clip, split + delete (trim), filter, add a text
+# overlay, then export a short clip and wait for the result.
+appId: com.ravango.app.debug
+name: 07 Editor (timeline, trim/split, text, export)
+tags:
+  - smoke
+  - editor
+---
+- runFlow: ../subflows/launch.yaml
+- runFlow: ../subflows/open_camera.yaml
+- runFlow:
+    file: ../subflows/record_take.yaml
+    env:
+      RECORD_MS: 5000
+- tapOn: 'Open in Editor|باز کردن در ویرایشگر'
+- extendedWaitUntil:
+    visible: 'Export|خروجی'
+    timeout: 30000
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 2500
+- takeScreenshot: editor_opened
+
+# Play ~2 s so the playhead sits inside the clip.
+- tapOn: 'Play|پخش'
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 2000
+- tapOn:
+    text: 'Pause|مکث'
+    optional: true
+- takeScreenshot: editor_after_play
+
+# Edit tool → select the clip at the playhead → split, then delete the second half (= trim).
+- tapOn: 'Edit|ویرایش'
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    text: 'Select|انتخاب'
+    optional: true
+- takeScreenshot: editor_edit_panel
+- tapOn: 'Split|برش'
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: editor_split
+- tapOn:
+    text: 'Delete|حذف'
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: editor_trimmed
+- tapOn:
+    text: 'Undo|واگرد'
+    optional: true
+- takeScreenshot: editor_undo
+
+# Filters
+- tapOn:
+    text: 'Filters|فیلترها'
+    optional: true
+- tapOn:
+    text: 'Warm|گرم'
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: editor_filter
+
+# Text overlay
+- scrollUntilVisible:
+    element: 'Text|متن'
+    direction: RIGHT
+    timeout: 10000
+    optional: true
+- tapOn:
+    text: 'Text|متن'
+    index: 0
+- extendedWaitUntil:
+    visible: '.*Type your text….*|.*متن خود را بنویسید….*'
+    timeout: 10000
+- tapOn: '.*Type your text….*|.*متن خود را بنویسید….*'
+- inputText: Hello RavanGo
+- tapOn: 'Add text|افزودن متن'
+- hideKeyboard
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: editor_text_added
+
+# Export a short clip.
+- tapOn: 'Export|خروجی'
+- scrollUntilVisible:
+    element: 'Export video|ساخت خروجی ویدیو'
+    direction: DOWN
+    timeout: 15000
+- takeScreenshot: export_settings
+- tapOn: 'Export video|ساخت خروجی ویدیو'
+- extendedWaitUntil:
+    visible: '.*Your video is ready.*|.*ویدیوی شما آماده است.*|.*Export failed.*|.*ساخت خروجی ناموفق بود.*'
+    timeout: 300000
+- takeScreenshot: export_result
+- assertVisible: '.*Your video is ready.*|.*ویدیوی شما آماده است.*'
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: export_back

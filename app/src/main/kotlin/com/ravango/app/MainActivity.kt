@@ -9,7 +9,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.core.os.LocaleListCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,11 +56,14 @@ class MainActivity : AppCompatActivity() {
                 navigationBarStyle = if (dark) SystemBarStyle.dark(android.graphics.Color.TRANSPARENT) else SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
             )
             RavanGoTheme(darkTheme = dark, hapticsEnabled = prefs.hapticsEnabled, reduceMotion = prefs.reduceMotion) {
-                RavanGoApp(
-                    onboardingCompleted = prefs.onboardingCompleted,
-                    sharedText = sharedText,
-                    previousCrash = viewModel.previousCrash,
-                )
+                // testTagsAsResourceId: exposes Modifier.testTag values as view ids for UI automation (Maestro).
+                Box(Modifier.fillMaxSize().semantics { testTagsAsResourceId = true }) {
+                    RavanGoApp(
+                        onboardingCompleted = prefs.onboardingCompleted,
+                        sharedText = sharedText,
+                        previousCrash = viewModel.previousCrash,
+                    )
+                }
             }
         }
     }

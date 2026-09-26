@@ -1,0 +1,93 @@
+# Teleprompter: open from a script, play, pause, speed/size steppers, mirror, settings screen, resume prompt.
+appId: com.ravango.app.debug
+name: 04 Teleprompter
+tags:
+  - smoke
+---
+- runFlow: ../subflows/launch.yaml
+- runFlow:
+    file: ../subflows/create_script.yaml
+    env:
+      SCRIPT_TITLE: Prompter script
+- hideKeyboard
+- tapOn: 'Teleprompter|پرامپتر'
+- extendedWaitUntil:
+    visible: 'Play|پخش'
+    timeout: 20000
+- takeScreenshot: prompter_ready
+
+# Play for a few seconds (countdown + scrolling), then touch to bring the controls back and pause.
+- tapOn: 'Play|پخش'
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 5000
+- takeScreenshot: prompter_scrolling
+- tapOn:
+    point: 50%,35%
+- runFlow:
+    when:
+      visible: 'Pause|توقف'
+    commands:
+      - tapOn: 'Pause|توقف'
+- extendedWaitUntil:
+    visible: 'Play|پخش'
+    timeout: 10000
+- takeScreenshot: prompter_paused
+
+# Steppers and chips
+- tapOn: 'Faster|تندتر'
+- tapOn: 'Faster|تندتر'
+- tapOn: 'Slower|آهسته.تر'
+- tapOn: 'Larger text|متن بزرگ.تر'
+- tapOn: 'Smaller text|متن کوچک.تر'
+- takeScreenshot: prompter_adjusted
+- tapOn:
+    text: 'Mirror ↔|آینه ↔'
+    optional: true
+- takeScreenshot: prompter_mirrored
+- tapOn:
+    text: 'Mirror ↔|آینه ↔'
+    optional: true
+- tapOn: 'Restart|شروع دوباره'
+
+# Settings screen for this script
+- tapOn: 'Prompter settings|تنظیمات پرامپتر'
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: prompter_settings_top
+- tapOn:
+    text: 'Large text|متن درشت'
+    optional: true
+- scroll
+- takeScreenshot: prompter_settings_mid
+- scroll
+- scroll
+- takeScreenshot: prompter_settings_bottom
+- back
+- extendedWaitUntil:
+    visible: 'Play|پخش'
+    timeout: 15000
+- takeScreenshot: prompter_after_settings
+
+# Play again, leave mid-script, reopen: the resume prompt may appear.
+- tapOn: 'Play|پخش'
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 4000
+- back
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow:
+    when:
+      visible: 'Teleprompter|پرامپتر'
+    commands:
+      - tapOn: 'Teleprompter|پرامپتر'
+      - waitForAnimationToEnd:
+          timeout: 4000
+      - takeScreenshot: prompter_reopened
+      - tapOn:
+          text: 'From the beginning|از ابتدا'
+          optional: true
+      - back

@@ -1,0 +1,26 @@
+# Starts (or restarts) the app with every runtime permission granted and lands on Home.
+# Completes onboarding quickly if the app is on its first run, and dismisses the
+# "we recovered your work" dialog (which itself means the app crashed earlier — it is screenshotted).
+appId: com.ravango.app.debug
+---
+- launchApp:
+    appId: com.ravango.app.debug
+    stopApp: true
+    permissions:
+      all: allow
+- extendedWaitUntil:
+    visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*|.*New recording.*|.*ضبط جدید.*|We recovered your work|کارهایتان بازیابی شد'
+    timeout: 45000
+- runFlow:
+    when:
+      visible: 'We recovered your work|کارهایتان بازیابی شد'
+    commands:
+      - takeScreenshot: crash_recovered_dialog
+      - tapOn: 'OK|باشه'
+- runFlow:
+    when:
+      visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*'
+    file: onboarding_quick.yaml
+- extendedWaitUntil:
+    visible: '.*New recording.*|.*ضبط جدید.*'
+    timeout: 30000

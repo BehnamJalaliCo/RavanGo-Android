@@ -1,0 +1,55 @@
+# Audio-only recording from Home: record ~4 s with the microphone, stop, saved-audio sheet.
+appId: com.ravango.app.debug
+name: 06 Audio-only recording
+tags:
+  - smoke
+  - camera
+---
+- runFlow: ../subflows/launch.yaml
+- tapOn: 'Audio only|فقط صدا'
+- extendedWaitUntil:
+    visible: 'Start recording|شروع ضبط'
+    timeout: 30000
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 1500
+- takeScreenshot: audio_ready
+- tapOn:
+    text: 'Audio|صدا'
+    above:
+      text: 'Start recording|شروع ضبط'
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: audio_input_sheet
+- runFlow:
+    when:
+      notVisible: 'Start recording|شروع ضبط'
+    commands:
+      - back
+- tapOn: 'Start recording|شروع ضبط'
+- extendedWaitUntil:
+    visible: 'Stop recording|پایان ضبط'
+    timeout: 15000
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 4000
+- takeScreenshot: audio_recording
+- tapOn: 'Stop recording|پایان ضبط'
+- extendedWaitUntil:
+    visible: '.*Audio saved.*|.*صدا ذخیره شد.*|.*Take saved.*|.*برداشت ذخیره شد.*|.*We couldn.t save this take to a project.*|.*ذخیرهٔ این برداشت در پروژه ممکن نشد.*|.*Nothing was recorded.*|.*چیزی ضبط نشد.*'
+    timeout: 60000
+- takeScreenshot: audio_saved
+- assertVisible: '.*Audio saved.*|.*صدا ذخیره شد.*'
+- tapOn:
+    text: 'Record another take|ضبط برداشت دیگر'
+    optional: true
+- extendedWaitUntil:
+    visible: 'Start recording|شروع ضبط'
+    timeout: 20000
+- tapOn: 'Close studio|بستن استودیو'
+- extendedWaitUntil:
+    visible: '.*New recording.*|.*ضبط جدید.*'
+    timeout: 20000

@@ -1,0 +1,281 @@
+# Camera Studio: preview, flip, lens carousel (several lenses), swipe filters, Filters & background sheet,
+# beauty panel (tabs, sliders, looks), top-bar/rail sheets, then a ~5 s recording → Open in Editor.
+# The emulator's cameras show a synthetic scene with no face: face lenses and beauty apply but have nothing
+# to track, so this verifies the pipeline does not crash, not how the effects look.
+appId: com.ravango.app.debug
+name: 05 Camera Studio
+tags:
+  - smoke
+  - camera
+---
+- runFlow: ../subflows/launch.yaml
+- runFlow: ../subflows/open_camera.yaml
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 2000
+- takeScreenshot: camera_preview_back_or_front
+
+# Flip camera both ways.
+- tapOn: 'Switch camera|تعویض دوربین'
+- extendedWaitUntil:
+    visible: 'Start recording|شروع ضبط'
+    timeout: 20000
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 2000
+- takeScreenshot: camera_flipped
+- tapOn: 'Switch camera|تعویض دوربین'
+- extendedWaitUntil:
+    visible: 'Start recording|شروع ضبط'
+    timeout: 20000
+
+# Lens carousel: tap lenses one after another (each tap scrolls it under the shutter and applies it).
+- tapOn: 'Lenses|لنزها'
+- extendedWaitUntil:
+    visible: 'Big Eyes|چشم درشت'
+    timeout: 10000
+- takeScreenshot: camera_lenses_open
+- tapOn: 'Big Eyes|چشم درشت'
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 1500
+- takeScreenshot: camera_lens_big_eyes
+- tapOn: 'Puffy Cheeks|لپ.تپلی'
+- tapOn: 'Tiny Face|صورت کوچولو'
+- takeScreenshot: camera_lens_tiny_face_pro
+- tapOn:
+    text: 'Swirl|گرداب'
+    optional: true
+- tapOn:
+    text: 'Soft Glow|درخشش نرم'
+    optional: true
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 1500
+- takeScreenshot: camera_lens_soft_glow
+- tapOn:
+    text: 'Freckles \& Blush|کک.ومک و سرخاب'
+    optional: true
+- tapOn:
+    text: 'Sparkles|ستاره.باران'
+    optional: true
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 1500
+- takeScreenshot: camera_lens_sparkles
+- tapOn:
+    text: 'Shades|عینک آفتابی'
+    optional: true
+- tapOn:
+    text: 'Kitty|گربه.ای'
+    optional: true
+- takeScreenshot: camera_lens_kitty
+- tapOn:
+    text: 'Crown|تاج'
+    optional: true
+- tapOn:
+    text: 'Rainbow|رنگین.کمان'
+    optional: true
+- takeScreenshot: camera_lens_rainbow
+- tapOn: 'Close lenses|بستن لنزها'
+- extendedWaitUntil:
+    visible: 'Start recording|شروع ضبط'
+    timeout: 10000
+
+# Swipe the preview to change live filters.
+- swipe:
+    start: 85%, 45%
+    end: 15%, 45%
+    duration: 400
+- takeScreenshot: camera_filter_swipe_1
+- swipe:
+    start: 85%, 45%
+    end: 15%, 45%
+    duration: 400
+- takeScreenshot: camera_filter_swipe_2
+- swipe:
+    start: 85%, 45%
+    end: 15%, 45%
+    duration: 400
+- takeScreenshot: camera_filter_swipe_3
+- swipe:
+    start: 15%, 45%
+    end: 85%, 45%
+    duration: 400
+- takeScreenshot: camera_filter_swipe_back
+
+# Filters & background sheet
+- tapOn:
+    text: 'Filters \& background|فیلتر و پس.زمینه'
+    index: 0
+- extendedWaitUntil:
+    visible: 'Filters|فیلترها'
+    timeout: 10000
+- takeScreenshot: camera_effects_filters
+- tapOn:
+    text: 'Warm|گرم'
+    optional: true
+- tapOn:
+    text: 'Noir|نوآر'
+    optional: true
+- takeScreenshot: camera_effects_filter_picked
+- tapOn: 'Background|پس.زمینه'
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: camera_effects_background
+- tapOn:
+    text: 'Portrait blur|محوِ پرتره'
+    optional: true
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 2500
+- takeScreenshot: camera_effects_background_blur
+- tapOn:
+    text: 'None|هیچ'
+    optional: true
+- tapOn:
+    text: 'Remove all effects|حذف همهٔ جلوه.ها'
+    optional: true
+- back
+- extendedWaitUntil:
+    visible: 'Start recording|شروع ضبط'
+    timeout: 10000
+
+# Beauty panel: tabs, a slider per tab, looks (Pro-gated for free users → paywall → back).
+- tapOn: 'Beauty|زیبایی'
+- extendedWaitUntil:
+    visible: 'Skin|پوست'
+    timeout: 10000
+- takeScreenshot: beauty_panel_open
+- tapOn: 'Skin|پوست'
+- tapOn:
+    text: 'Smooth skin|صاف.کردن پوست'
+    index: 0
+- tapOn:
+    text: 'Smooth skin|صاف.کردن پوست'
+    index: 2
+    optional: true
+- swipe:
+    from:
+      text: 'Smooth skin|صاف.کردن پوست'
+      index: 2
+    direction: RIGHT
+    optional: true
+- takeScreenshot: beauty_skin_slider
+- tapOn: 'Face|فرم صورت'
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 800
+- takeScreenshot: beauty_face_tab
+- runFlow: ../subflows/dismiss_paywall.yaml
+- runFlow:
+    when:
+      notVisible: 'Skin|پوست'
+    commands:
+      - tapOn: 'Beauty|زیبایی'
+- tapOn: 'Eyes|چشم'
+- takeScreenshot: beauty_eyes_tab
+- tapOn: 'Makeup|آرایش'
+- takeScreenshot: beauty_makeup_tab
+- tapOn: 'Looks|استایل.ها'
+- takeScreenshot: beauty_looks_tab
+- tapOn: 'Natural|طبیعی'
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 1500
+- takeScreenshot: beauty_look_natural
+- runFlow: ../subflows/dismiss_paywall.yaml
+- extendedWaitUntil:
+    visible: 'Start recording|شروع ضبط|Skin|پوست'
+    timeout: 20000
+- runFlow:
+    when:
+      visible: 'Soft Glam|گلم ملایم'
+    commands:
+      - tapOn: 'Soft Glam|گلم ملایم'
+      - runFlow: ../subflows/dismiss_paywall.yaml
+- runFlow:
+    when:
+      visible: 'Skin|پوست'
+    commands:
+      - takeScreenshot: beauty_panel_final
+      - back
+- extendedWaitUntil:
+    visible: 'Start recording|شروع ضبط'
+    timeout: 20000
+
+# Rail and top-bar sheets open and close.
+- tapOn: 'Studio settings|تنظیمات استودیو'
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: camera_settings_sheet
+- back
+- tapOn:
+    text: 'Audio|صدا'
+    above:
+      text: 'Start recording|شروع ضبط'
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: camera_audio_sheet
+- back
+- extendedWaitUntil:
+    visible: 'Start recording|شروع ضبط'
+    timeout: 10000
+# Video ↔ Audio mode switch under the shutter.
+- tapOn:
+    text: 'Audio|صدا'
+    below:
+      text: 'Start recording|شروع ضبط'
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 1500
+- takeScreenshot: camera_mode_audio
+- tapOn: 'Video|ویدیو'
+- extendedWaitUntil:
+    visible: 'Start recording|شروع ضبط'
+    timeout: 20000
+- tapOn:
+    text: 'Pro controls|کنترل.های حرفه.ای'
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: camera_pro_controls
+- runFlow: ../subflows/dismiss_paywall.yaml
+- tapOn:
+    text: 'Pro controls|کنترل.های حرفه.ای'
+    optional: true
+- tapOn:
+    text: '.*Grid.*|.*خطوط راهنما.*'
+    optional: true
+- takeScreenshot: camera_grid
+- tapOn:
+    text: 'Teleprompter|تله.پرامپتر'
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: camera_prompter
+- back
+- extendedWaitUntil:
+    visible: 'Start recording|شروع ضبط'
+    timeout: 20000
+
+# Record ~5 s, stop, and open the take in the editor.
+- runFlow: ../subflows/record_take.yaml
+- tapOn: 'Open in Editor|باز کردن در ویرایشگر'
+- extendedWaitUntil:
+    visible: 'Export|خروجی'
+    timeout: 30000
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 2000
+- takeScreenshot: camera_to_editor
