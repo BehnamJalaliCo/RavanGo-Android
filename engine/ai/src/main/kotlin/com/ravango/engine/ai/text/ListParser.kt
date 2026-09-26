@@ -32,6 +32,9 @@ object ListParser {
     private fun clean(s: String): String {
         var t = s.trim()
         t = t.removeSurrounding("**").trim()
+        // The item marker regex may already have consumed an opening "**".
+        if (t.endsWith("**") && t.indexOf("**") == t.length - 2) t = t.dropLast(2).trim()
+        if (t.startsWith("**") && t.lastIndexOf("**") == 0) t = t.drop(2).trim()
         if (t.length >= 2) {
             val pairs = listOf('"' to '"', '«' to '»', '“' to '”', '\'' to '\'')
             for ((a, b) in pairs) if (t.first() == a && t.last() == b && t.count { it == a || it == b } == 2) t = t.substring(1, t.length - 1).trim()
