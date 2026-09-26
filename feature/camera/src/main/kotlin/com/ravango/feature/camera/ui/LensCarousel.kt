@@ -129,6 +129,7 @@ internal fun LensCarousel(
     tray: LensTrayState = LensTrayState.LensesOnly,
     trayActions: LensTrayActions = LensTrayActions(),
     needsFace: Boolean = false,
+    lensUnavailable: Boolean = false,
     initialCategory: TrayCategory? = null,
     shutter: @Composable () -> Unit,
 ) {
@@ -185,6 +186,7 @@ internal fun LensCarousel(
             tray = tray,
             locked = LensTrayLogic.locked(focused, entitlements),
             needsFace = needsFace,
+            lensUnavailable = lensUnavailable && focused is TrayItem.Fx && (focused as TrayItem.Fx).lens == applied,
             actions = trayActions,
         )
         Spacer(Modifier.height(4.dp))
@@ -371,6 +373,7 @@ private fun TrayHeader(
     tray: LensTrayState,
     locked: Boolean,
     needsFace: Boolean,
+    lensUnavailable: Boolean,
     actions: LensTrayActions,
 ) {
     val activeLook = tray.looks?.active
@@ -415,6 +418,7 @@ private fun TrayHeader(
             val hint = when {
                 locked && item is TrayItem.Look -> stringResource(R.string.camera_tray_hint_look_pro)
                 locked -> stringResource(R.string.camera_lens_hint_pro)
+                item is TrayItem.Fx && lensUnavailable -> stringResource(R.string.camera_lens_hint_unavailable)
                 item is TrayItem.Fx && needsFace -> stringResource(R.string.camera_lens_hint_face)
                 item is TrayItem.Fx && item.lens.hasTrigger -> stringResource(R.string.camera_lens_hint_mouth)
                 item is TrayItem.Fx && activeLook != null -> stringResource(R.string.camera_tray_look_active, lookName(activeLook))
@@ -569,9 +573,10 @@ private fun CategoryTabs(categories: List<TrayCategory>, selected: TrayCategory,
  * or a Pro note for locked lenses. (Outside the tray: the applied lens.)
  */
 @Composable
-internal fun LensNameToast(lens: Lens?, locked: Boolean, needsFace: Boolean, modifier: Modifier = Modifier) {
+internal fun LensNameToast(lens: Lens?, locked: Boolean, needsFace: Boolean, modifier: Modifier = Modifier, unavailable: Boolean = false) {
     AnimatedContent(
-        targetState = Triple(lens, locked, needsFace),
+        // An unavailable lens (no face tracking / GPU pass off on this device) says so instead of doing nothing.
+        targetState = Triple(lens, locked, if (unavailable) null else needsFace),
         transitionSpec = { (fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 3 }) togetherWith fadeOut(tween(120)) },
         label = "lensToast",
         modifier = modifier,
@@ -593,6 +598,7 @@ internal fun LensNameToast(lens: Lens?, locked: Boolean, needsFace: Boolean, mod
             val hint = when {
                 isLocked -> stringResource(R.string.camera_lens_hint_pro)
                 l == null -> null
+                faceMissing == null -> stringResource(R.string.camera_lens_hint_unavailable)
                 faceMissing -> stringResource(R.string.camera_lens_hint_face)
                 l.hasTrigger -> stringResource(R.string.camera_lens_hint_mouth)
                 else -> null

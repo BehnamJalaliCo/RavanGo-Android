@@ -751,6 +751,7 @@ internal fun CameraStudioContent(
                     lens = if (lensMode) focusedLens else state.effects.lens,
                     locked = lensMode && focusedLocked,
                     needsFace = state.effectsStatus.lensNeedsFace,
+                    unavailable = state.effectsStatus.lensUnavailable && (!lensMode || focusedLens == state.effects.lens),
                 )
             }
             if (video && state.isStreaming && !lensMode) {
@@ -784,6 +785,7 @@ internal fun CameraStudioContent(
                         tray = tray,
                         trayActions = trayActions,
                         needsFace = state.effectsStatus.lensNeedsFace,
+                        lensUnavailable = state.effectsStatus.lensUnavailable,
                     ) {
                         RecordButton(
                             recording = false,

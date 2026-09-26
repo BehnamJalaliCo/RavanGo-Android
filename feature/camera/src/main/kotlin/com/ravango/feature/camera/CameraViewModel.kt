@@ -45,7 +45,9 @@ import com.ravango.engine.camera.encoder.BitrateCalculator
 import com.ravango.engine.camera.recovery.RecordingRecovery
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -54,6 +56,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -63,8 +66,10 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
+@OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CameraViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
@@ -104,10 +109,22 @@ class CameraViewModel @Inject constructor(
     private val scriptId = MutableStateFlow(args.scriptId)
     private val prompterVisible = MutableStateFlow(true)
 
+    /**
+     * Any failure in this screen's coroutines (DataStore/Room I/O, engine calls) is logged and recorded instead of
+     * crashing the app: `viewModelScope` has no exception handler of its own.
+     */
+    private val failureHandler = CoroutineExceptionHandler { _, t -> RgLog.e(TAG, "Camera studio task failed", t) }
+
+    private fun launchSafely(block: suspend CoroutineScope.() -> Unit): Job = viewModelScope.launch(failureHandler, block = block)
+
+    /** Identifies this studio instance; only the newest one may shut the (shared) camera down when cleared. */
+    private val generation = latestGeneration.incrementAndGet()
+
     private var foreground = false
     private var cameraGranted = false
     private var micGranted = false
-    private var cameraRunning = false
+    /** Null until this instance decided once: a previous studio may have left the shared camera running. */
+    private var cameraRunning: Boolean? = null
     private var audioPreviewRunning = false
     private var countdownJob: Job? = null
     private var storageJob: Job? = null
@@ -115,7 +132,7 @@ class CameraViewModel @Inject constructor(
     init {
         bindPreviewBypass(beautyEngine.previewBypass)
         saver.target = SaveTarget(args.projectId, args.scriptId, args.templateId, _state.value.settings.aspectRatio)
-        viewModelScope.launch {
+        launchSafely {
             saver.events.collect { e ->
                 _state.update {
                     it.copy(
@@ -128,31 +145,42 @@ class CameraViewModel @Inject constructor(
                 }
             }
         }
-        viewModelScope.launch { initialize() }
+        launchSafely { initialize() }
         collectEngine()
         collectAudio()
         collectPrompter()
-        viewModelScope.launch {
+        launchSafely {
             entitlementProvider.entitlements.collect { e ->
                 _state.update { it.copy(entitlements = e) }
-                reapplyEffectsGating(e)
                 if (_state.value.initialized) reapplyGating(e)
             }
         }
-        viewModelScope.launch {
+        launchSafely {
+            // Pro effects are only switched off once entitlements have settled: right after process start the
+            // provider still reports its default (free) plan for a moment, which used to reset a Pro user's saved
+            // filter/background (and the owner's Pro test mode choices) every time the camera opened.
+            entitlementProvider.entitlements
+                .debounce(EffectsGating.SETTLE_MS)
+                .collect { e -> reapplyEffectsGating(e) }
+        }
+        launchSafely {
             projects.observeRecent(1).collect { list ->
                 val p = list.firstOrNull()
                 _state.update { it.copy(lastProjectId = p?.id, lastThumbnailPath = p?.thumbnailPath) }
             }
         }
-        viewModelScope.launch { importRecovered() }
+        launchSafely { importRecovered() }
     }
 
     private suspend fun initialize() {
-        var settings = preferences.cameraSettings.first()
-        args.templateId?.let { templates.template(it) }?.let { t ->
-            settings = settings.copy(aspectRatio = t.aspectRatio, frameRate = t.cameraFrameRate)
-        }
+        var settings = runCatching { preferences.cameraSettings.first() }
+            .onFailure { RgLog.e(TAG, "camera settings unreadable; using defaults", it) }
+            .getOrElse { CameraSettings() }
+        runCatching { args.templateId?.let { templates.template(it) } }
+            .onFailure { RgLog.w(TAG, "template unavailable", it) }
+            .getOrNull()?.let { t ->
+                settings = settings.copy(aspectRatio = t.aspectRatio, frameRate = t.cameraFrameRate)
+            }
         settings = if (args.audioOnly) {
             settings.copy(captureMode = CaptureMode.AUDIO_ONLY)
         } else if (settings.captureMode == CaptureMode.AUDIO_ONLY) {
@@ -169,10 +197,10 @@ class CameraViewModel @Inject constructor(
     }
 
     private fun collectEngine() {
-        viewModelScope.launch {
+        launchSafely {
             engine.state.collect { s -> _state.update { it.copy(cameraState = s) } }
         }
-        viewModelScope.launch {
+        launchSafely {
             combine(engine.inventory, engine.capabilities) { inv, caps -> inv to caps }.collect { (inv, caps) ->
                 val facing = caps?.facing ?: _state.value.settings.lensFacing
                 _state.update {
@@ -185,7 +213,7 @@ class CameraViewModel @Inject constructor(
                 }
             }
         }
-        viewModelScope.launch {
+        launchSafely {
             engine.settings.collect { effective ->
                 // The engine may have fallen back (e.g. a session rejected 4K60): reflect it.
                 if (effective != null && _state.value.mode == StudioMode.VIDEO) {
@@ -193,32 +221,32 @@ class CameraViewModel @Inject constructor(
                 }
             }
         }
-        viewModelScope.launch { engine.controls.collect { c -> _state.update { it.copy(controls = c) } } }
-        viewModelScope.launch { engine.focus.collect { f -> _state.update { it.copy(focus = f) } } }
-        viewModelScope.launch { engine.liveExposure.collect { l -> _state.update { it.copy(live = l) } } }
-        viewModelScope.launch { engine.previewFrame.collect { p -> _state.update { it.copy(previewFrame = p) } } }
+        launchSafely { engine.controls.collect { c -> _state.update { it.copy(controls = c) } } }
+        launchSafely { engine.focus.collect { f -> _state.update { it.copy(focus = f) } } }
+        launchSafely { engine.liveExposure.collect { l -> _state.update { it.copy(live = l) } } }
+        launchSafely { engine.previewFrame.collect { p -> _state.update { it.copy(previewFrame = p) } } }
         // PipelineStats are not mirrored into the UI state (nothing shows them; they would recompose the studio
         // every second). Diagnostics read engine.stats directly.
-        viewModelScope.launch { engine.thermal.collect { t -> _state.update { it.copy(thermal = t) } } }
-        viewModelScope.launch {
+        launchSafely { engine.thermal.collect { t -> _state.update { it.copy(thermal = t) } } }
+        launchSafely {
             // Only phase-level changes reach the UI state; the ticking clock is [recordingClock].
             engine.recording
                 .distinctUntilChanged { a, b -> a.phase == b.phase && a.captureMode == b.captureMode && a.output == b.output && a.frameRate == b.frameRate }
                 .collect { r -> _state.update { it.copy(recording = r, lensTrayOpen = if (r.isActive) false else it.lensTrayOpen) } }
         }
-        viewModelScope.launch { cameraEffects.effects.collect { e -> _state.update { it.copy(effects = e) } } }
-        viewModelScope.launch { cameraEffects.effectsStatus.collect { e -> _state.update { it.copy(effectsStatus = e) } } }
-        viewModelScope.launch { cameraEffects.hasBackgroundImage.collect { h -> _state.update { it.copy(hasBackgroundImage = h) } } }
-        viewModelScope.launch {
+        launchSafely { cameraEffects.effects.collect { e -> _state.update { it.copy(effects = e) } } }
+        launchSafely { cameraEffects.effectsStatus.collect { e -> _state.update { it.copy(effectsStatus = e) } } }
+        launchSafely { cameraEffects.hasBackgroundImage.collect { h -> _state.update { it.copy(hasBackgroundImage = h) } } }
+        launchSafely {
             beautyEngine.status.map { it.faceCount }.distinctUntilChanged().collect { n -> _state.update { it.copy(facesTracked = n) } }
         }
-        viewModelScope.launch {
+        launchSafely {
             engine.recording.map { it.phase }.distinctUntilChanged().collect { phase ->
                 runCatching { beautyEngine.setRecording(phase == RecordingPhase.RECORDING || phase == RecordingPhase.PAUSED || phase == RecordingPhase.STARTING) }
                 if (phase == RecordingPhase.IDLE) refreshStorageEstimate()
             }
         }
-        viewModelScope.launch {
+        launchSafely {
             engine.events.collect { event ->
                 when (event) {
                     is CameraEvent.RecordingFinished -> Unit // saved by RecordingSaver
@@ -233,15 +261,15 @@ class CameraViewModel @Inject constructor(
     }
 
     private fun collectAudio() {
-        viewModelScope.launch {
+        launchSafely {
             preferences.audioSettings.collect { s ->
                 _state.update { it.copy(audioSettings = s) }
                 applyAudioSettings(s, _state.value.entitlements)
             }
         }
-        viewModelScope.launch { audioEngine.inputs.collect { l -> _state.update { it.copy(audioInputs = l) } } }
-        viewModelScope.launch { audioEngine.activeInput.collect { d -> _state.update { it.copy(activeInput = d) } } }
-        viewModelScope.launch { audioEngine.monitoringAvailable.collect { m -> _state.update { it.copy(monitoringAvailable = m) } } }
+        launchSafely { audioEngine.inputs.collect { l -> _state.update { it.copy(audioInputs = l) } } }
+        launchSafely { audioEngine.activeInput.collect { d -> _state.update { it.copy(activeInput = d) } } }
+        launchSafely { audioEngine.monitoringAvailable.collect { m -> _state.update { it.copy(monitoringAvailable = m) } } }
     }
 
     private fun applyAudioSettings(s: AudioSettings, e: Entitlements) {
@@ -253,7 +281,7 @@ class CameraViewModel @Inject constructor(
     }
 
     private fun collectPrompter() {
-        viewModelScope.launch {
+        launchSafely {
             val scriptFlow = scriptId.flatMapLatest { id -> if (id == null) flowOf(null) else scripts.observeScript(id) }
             combine(scriptFlow, preferences.prompterDefaults, prompterVisible) { script, defaults, visible ->
                 script?.let {
@@ -288,7 +316,9 @@ class CameraViewModel @Inject constructor(
         if (wentBackground) {
             countdownJob?.cancel()
             _state.update { it.copy(countdown = null) }
-            if (_state.value.isRecording) viewModelScope.launch { engine.stopRecording(StopReason.LIFECYCLE) }
+            // A filter swipe interrupted by leaving the screen must not keep the split preview in the engine.
+            runCatching { cameraEffects.setFilterSwipe(null) }
+            if (_state.value.isRecording) launchSafely { engine.stopRecording(StopReason.LIFECYCLE) }
         }
         applyActivation()
     }
@@ -297,12 +327,13 @@ class CameraViewModel @Inject constructor(
         val s = _state.value
         if (!s.initialized) return
         val wantCamera = foreground && cameraGranted && s.mode == StudioMode.VIDEO && !s.noCamera
-        if (wantCamera && !cameraRunning) {
+        if (wantCamera && cameraRunning != true) {
+            // Always (re)attach the effects processor: a previous studio's teardown may have cleared the list.
             runCatching { engine.setFrameProcessors(listOf(beautyEngine.processor)) }
                 .onFailure { RgLog.w(TAG, "beauty processor unavailable", it) }
             engine.start(s.settings)
             cameraRunning = true
-        } else if (!wantCamera && cameraRunning) {
+        } else if (!wantCamera && cameraRunning != false) {
             engine.stop()
             cameraRunning = false
         }
@@ -338,7 +369,7 @@ class CameraViewModel @Inject constructor(
         val sanitized = sanitize(current, e)
         if (sanitized != current && !_state.value.isRecording) {
             _state.update { it.copy(settings = sanitized) }
-            if (cameraRunning) engine.updateSettings(sanitized)
+            if (cameraRunning == true) engine.updateSettings(sanitized)
         }
         applyAudioSettings(_state.value.audioSettings, e)
     }
@@ -349,8 +380,8 @@ class CameraViewModel @Inject constructor(
         val next = sanitize(transform(current), _state.value.entitlements)
         if (next == current) return
         _state.update { it.copy(settings = next) }
-        if (cameraRunning) engine.updateSettings(next)
-        viewModelScope.launch {
+        if (cameraRunning == true) engine.updateSettings(next)
+        launchSafely {
             preferences.updateCameraSettings {
                 // Persist the user's choice (not template/audio-only overrides of this session).
                 next.copy(captureMode = if (next.captureMode == CaptureMode.AUDIO_ONLY) it.captureMode else next.captureMode)
@@ -390,7 +421,7 @@ class CameraViewModel @Inject constructor(
 
     private fun refreshStorageEstimate() {
         storageJob?.cancel()
-        storageJob = viewModelScope.launch {
+        storageJob = launchSafely {
             val s = _state.value
             val seconds = withContext(io) {
                 if (s.mode == StudioMode.AUDIO) {
@@ -432,7 +463,7 @@ class CameraViewModel @Inject constructor(
 
     /** Mirrors an effect engine's preview-bypass flag (e.g. `BeautyEngine.previewBypass`) into the camera pipeline. */
     fun bindPreviewBypass(bypass: Flow<Boolean>) {
-        viewModelScope.launch { bypass.distinctUntilChanged().collect { engine.setPreviewBypass(it || _state.value.comparing) } }
+        launchSafely { bypass.distinctUntilChanged().collect { engine.setPreviewBypass(it || _state.value.comparing) } }
     }
 
     fun openSheet(sheet: StudioSheet) = _state.update { it.copy(sheet = sheet, proControlsOpen = false, lensTrayOpen = false) }
@@ -489,7 +520,7 @@ class CameraViewModel @Inject constructor(
 
     fun onBackgroundPhotoPicked(uri: Uri) {
         if (!EffectsGating.backgroundAllowed(BackgroundEffect.Image, _state.value.entitlements)) return
-        viewModelScope.launch {
+        launchSafely {
             if (cameraEffects.setBackgroundImage(uri)) {
                 cameraEffects.setBackground(BackgroundEffect.Image)
             } else {
@@ -508,9 +539,10 @@ class CameraViewModel @Inject constructor(
     /** A downgrade (or expired trial) must not keep Pro effects running. */
     private fun reapplyEffectsGating(e: Entitlements) {
         val fx = cameraEffects.effects.value
-        fx.lens?.let { if (!EffectsGating.lensAllowed(it, e)) cameraEffects.setLens(null) }
-        if (!EffectsGating.filterAllowed(fx.filter, e)) cameraEffects.setFilter(LiveFilter.NONE)
-        if (!EffectsGating.backgroundAllowed(fx.background, e)) cameraEffects.setBackground(BackgroundEffect.None)
+        val next = EffectsGating.downgrade(fx, e) ?: return
+        if (next.lens != fx.lens) cameraEffects.setLens(next.lens)
+        if (next.filter != fx.filter) cameraEffects.setFilter(next.filter)
+        if (next.background != fx.background) cameraEffects.setBackground(next.background)
     }
 
     // ---------------------------------------------------------------------------------------------------------
@@ -518,7 +550,7 @@ class CameraViewModel @Inject constructor(
     // ---------------------------------------------------------------------------------------------------------
 
     fun updateAudio(transform: (AudioSettings) -> AudioSettings) {
-        viewModelScope.launch { preferences.updateAudioSettings(transform) }
+        launchSafely { preferences.updateAudioSettings(transform) }
     }
 
     // ---------------------------------------------------------------------------------------------------------
@@ -557,7 +589,7 @@ class CameraViewModel @Inject constructor(
         if (s.mode == StudioMode.VIDEO && s.cameraState !is com.ravango.engine.camera.CameraState.Streaming) return
         if (s.mode == StudioMode.AUDIO && !micGranted) return
         val seconds = s.settings.timerSeconds
-        countdownJob = viewModelScope.launch {
+        countdownJob = launchSafely {
             for (i in seconds downTo 1) {
                 _state.update { it.copy(countdown = i) }
                 delay(1_000)
@@ -585,7 +617,7 @@ class CameraViewModel @Inject constructor(
     }
 
     fun stopRecording() {
-        viewModelScope.launch { engine.stopRecording(StopReason.USER) }
+        launchSafely { engine.stopRecording(StopReason.USER) }
     }
 
     fun pauseOrResume() {
@@ -614,11 +646,14 @@ class CameraViewModel @Inject constructor(
     override fun onCleared() {
         countdownJob?.cancel()
         publishTarget()
-        // Closing the studio finalizes a running take; RecordingSaver saves it in the app scope.
+        // Closing the studio finalizes a running take; RecordingSaver saves it in the app scope. Only the newest
+        // studio shuts the shared camera down: when the camera is reopened quickly, the old instance is cleared
+        // *after* the new one started it, and its stop used to close the new session (black preview) and drop the
+        // effects processor (no effects until the app was restarted).
+        val mine = generation
         appScope.launch {
             engine.stopRecording(StopReason.LIFECYCLE)
-            engine.stop()
-            engine.setFrameProcessors(emptyList())
+            if (latestGeneration.get() == mine) engine.stop()
         }
         runCatching { audioEngine.stopPreview() }
         runCatching { beautyEngine.setCompareMode(false) }
@@ -630,5 +665,6 @@ class CameraViewModel @Inject constructor(
 
     private companion object {
         const val TAG = "CameraVM"
+        val latestGeneration = AtomicInteger(0)
     }
 }

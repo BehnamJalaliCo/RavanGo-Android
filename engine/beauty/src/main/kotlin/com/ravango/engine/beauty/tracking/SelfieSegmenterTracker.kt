@@ -10,6 +10,7 @@ import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.imagesegmenter.ImageSegmenter
 import com.google.mediapipe.tasks.vision.imagesegmenter.ImageSegmenterResult
+import com.ravango.core.common.diagnostics.Diagnostics
 import com.ravango.core.common.log.RgLog
 import com.ravango.engine.beauty.effects.MaskSmoother
 import java.io.FileInputStream
@@ -18,6 +19,7 @@ import java.nio.ByteOrder
 import java.nio.channels.FileChannel
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -36,6 +38,7 @@ internal class SelfieSegmenterTracker(context: Context) {
     private val executor: ExecutorService = Executors.newSingleThreadExecutor { r ->
         Thread(r, "rg-selfie-segmenter").apply { isDaemon = true; priority = Thread.NORM_PRIORITY }
     }
+    private val policy = DelegatePolicy(appContext, "selfie_segmenter")
 
     @Volatile var state: State = State.INITIALIZING; private set
     @Volatile var usingGpu: Boolean = false; private set
@@ -76,8 +79,24 @@ internal class SelfieSegmenterTracker(context: Context) {
     @Volatile var hasMask: Boolean = false; private set
 
     fun start() {
-        executor.execute { initialize(preferGpu = true) }
+        submit { initialize(preferGpu = true) }
     }
+
+    /** Runs [block] on the tracker thread; rejected work after [close] is dropped instead of crashing the caller. */
+    private fun submit(block: () -> Unit): Boolean = try {
+        executor.execute {
+            try {
+                block()
+            } catch (t: Throwable) {
+                Diagnostics.record(TAG, "Selfie segmenter task failed", t)
+            }
+        }
+        true
+    } catch (e: RejectedExecutionException) {
+        false
+    }
+
+    private fun Throwable.brief(): String = "${javaClass.simpleName}: ${message?.take(160)}"
 
     /** Forgets the temporal history (e.g. after the effect was off for a while). */
     fun reset() {
@@ -138,10 +157,11 @@ internal class SelfieSegmenterTracker(context: Context) {
     fun close() {
         if (closed) return
         closed = true
-        executor.execute {
+        submit {
             runCatching { segmenter?.close() }
             segmenter = null
             model = null
+            if (usingGpu) policy.gpuStopped()
         }
         executor.shutdown()
     }
@@ -154,25 +174,35 @@ internal class SelfieSegmenterTracker(context: Context) {
         val buffer = model ?: try {
             loadModel().also { model = it }
         } catch (t: Throwable) {
-            RgLog.e(TAG, "Selfie segmenter model could not be loaded", t)
+            Diagnostics.record(TAG, "Selfie segmenter model could not be loaded", t)
+            Diagnostics.setEnv("mediapipe.segmenter", "FAILED (model)")
             state = State.FAILED
             return
         }
         runCatching { segmenter?.close() }
         segmenter = null
-        val order = if (preferGpu) arrayOf(Delegate.GPU, Delegate.CPU) else arrayOf(Delegate.CPU)
+        val order = if (preferGpu && policy.gpuAllowed()) arrayOf(Delegate.GPU, Delegate.CPU) else arrayOf(Delegate.CPU)
+        val failures = ArrayList<String>()
         for (delegate in order) {
+            if (closed) return
+            val gpu = delegate == Delegate.GPU
+            if (gpu) policy.beginGpuInit()
             try {
                 segmenter = ImageSegmenter.createFromOptions(appContext, options(buffer, delegate))
-                usingGpu = delegate == Delegate.GPU
+                if (gpu) policy.endGpuInit(success = true)
+                usingGpu = gpu
                 consecutiveErrors = 0
                 state = State.READY
+                Diagnostics.setEnv("mediapipe.segmenter", "$delegate" + if (failures.isEmpty()) "" else " (after: ${failures.joinToString()})")
                 RgLog.i(TAG, "Selfie segmenter ready on $delegate in ${SystemClock.elapsedRealtime() - started} ms")
                 return
             } catch (t: Throwable) {
-                RgLog.w(TAG, "Selfie segmenter init on $delegate failed", t)
+                if (gpu) policy.endGpuInit(success = false)
+                failures += "$delegate ${t.brief()}"
+                Diagnostics.record(TAG, "Selfie segmenter init on $delegate failed", t)
             }
         }
+        Diagnostics.setEnv("mediapipe.segmenter", "FAILED (${failures.joinToString()})")
         state = State.FAILED
     }
 
@@ -261,10 +291,14 @@ internal class SelfieSegmenterTracker(context: Context) {
         if (consecutiveErrors == 1 || consecutiveErrors == MAX_ERRORS) RgLog.w(TAG, "Selfie segmenter error ($consecutiveErrors)", e)
         if (consecutiveErrors >= MAX_ERRORS && !closed) {
             if (usingGpu) {
-                RgLog.w(TAG, "Falling back to the CPU delegate")
+                Diagnostics.record(TAG, "Repeated errors on the GPU delegate; falling back to CPU", e)
+                policy.gpuStopped()
+                usingGpu = false
                 state = State.INITIALIZING
-                executor.execute { initialize(preferGpu = false) }
+                if (!submit { initialize(preferGpu = false) }) state = State.FAILED
             } else {
+                Diagnostics.record(TAG, "Selfie segmenter failed repeatedly on CPU; background effects are off", e)
+                Diagnostics.setEnv("mediapipe.segmenter", "FAILED (runtime errors)")
                 state = State.FAILED
             }
         }

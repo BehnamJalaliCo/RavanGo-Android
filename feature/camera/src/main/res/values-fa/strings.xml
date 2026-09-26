@@ -200,6 +200,7 @@
     <string name="camera_lens_hint_face">صورتت را جلوی دوربین بیاور</string>
     <string name="camera_lens_hint_mouth">دهانت را باز کن ✨</string>
     <string name="camera_lens_hint_pro">لنز حرفه‌ای · برای باز کردن، حلقهٔ ضبط را بزن</string>
+    <string name="camera_lens_hint_unavailable">این لنز روی این دستگاه کار نمی‌کند</string>
     <string name="camera_filter_none">اصلی</string>
     <string name="camera_filter_vivid">پرانرژی</string>
     <string name="camera_filter_warm">گرم</string>

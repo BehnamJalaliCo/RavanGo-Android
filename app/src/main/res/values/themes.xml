@@ -9,7 +9,7 @@
 
     <style name="Theme.RavanGo.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/rg_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_mark</item>
         <item name="postSplashScreenTheme">@style/Theme.RavanGo</item>
     </style>
 </resources>

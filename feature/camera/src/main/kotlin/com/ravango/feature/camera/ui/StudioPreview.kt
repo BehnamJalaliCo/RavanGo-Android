@@ -206,6 +206,10 @@ internal fun StudioPreview(
                         val slop = viewConfiguration.touchSlop
                         var mode = GESTURE_UNDECIDED
                         var pan = Offset.Zero
+                        var released = false
+                        // If this detector is cancelled mid-swipe (the key changed, the screen left), the engine
+                        // would keep showing the half-swiped split: always settle the swipe.
+                        try {
                         while (true) {
                             val event = awaitPointerEvent()
                             val pressed = event.changes.count { it.pressed }
@@ -240,7 +244,7 @@ internal fun StudioPreview(
                                     val steps = (dragAccumulator / stepPx).toInt()
                                     if (steps != 0) {
                                         dragAccumulator -= steps * stepPx
-                                        val range = currentCaps!!.exposureCompensationRange
+                                        val range = currentCaps?.exposureCompensationRange ?: continue
                                         val next = (currentControls.exposureCompensation + steps).coerceIn(range)
                                         if (next != currentControls.exposureCompensation) {
                                             haptics.perform(HapticEvent.TICK)
@@ -256,7 +260,13 @@ internal fun StudioPreview(
                             }
                             event.changes.firstOrNull { it.id == down.id }?.let { velocity.addPosition(it.uptimeMillis, it.position) }
                         }
-                        if (mode == GESTURE_SWIPE && size.width > 0) filterRelease(velocity.calculateVelocity().x / size.width)
+                        if (mode == GESTURE_SWIPE && size.width > 0) {
+                            released = true
+                            filterRelease(velocity.calculateVelocity().x / size.width)
+                        }
+                        } finally {
+                            if (mode == GESTURE_SWIPE && !released) filterRelease(0f)
+                        }
                     }
                 },
         )

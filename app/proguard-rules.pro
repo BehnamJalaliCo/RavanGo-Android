@@ -1,5 +1,10 @@
 # ---- RavanGo release rules ----
 
+# Crash reports (Settings → About → Crash reports) must be readable without a mapping file: keep file names, line
+# numbers and our own class/method names (code is still shrunk and optimized; only renaming is skipped).
+-keepattributes SourceFile,LineNumberTable
+-keepnames class com.ravango.** { *; }
+
 # Strip debug/verbose logging.
 -assumenosideeffects class android.util.Log {
     public static int d(...);

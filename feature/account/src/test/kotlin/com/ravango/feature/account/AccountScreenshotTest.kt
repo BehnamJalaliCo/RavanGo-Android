@@ -1,6 +1,9 @@
 package com.ravango.feature.account
 
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import com.ravango.core.model.AuthProviderType
@@ -184,7 +187,33 @@ class AccountScreenshotTest {
         AboutContent(
             versionName = "1.1.0", versionCode = "2", supportEmail = "support@ravango.app", testerActive = false,
             onBack = {}, onVersionTap = {}, onLicenses = {}, onPrivacy = {}, onTerms = {}, onContactSupport = {}, onDisableTester = {},
+            crashReportCount = 2,
         )
+    }
+
+    private val sampleCrash = com.ravango.core.common.diagnostics.CrashReport(
+        id = "crash-1", kind = com.ravango.core.common.diagnostics.CrashKind.NATIVE, timeMillis = 1_790_000_000_000L,
+        summary = "Native crash · SIGSEGV · in libmediapipe_tasks_jni.so",
+        body = "RavanGo crash report\nKind: native crash\n\n== Device & app ==\nApp: RavanGo 1.1.0 (2)\nDevice: samsung SM-A546E\n" +
+            "Android: 14 (API 34)\n\n== Details ==\nreason: CRASH_NATIVE\n-- tombstone (readable strings) --\nSIGSEGV\n" +
+            "/data/app/~~x/com.ravango.app/lib/arm64/libmediapipe_tasks_jni.so\n",
+    )
+
+    @Test
+    fun crashPrompt() = captureAllVariants("crash_prompt") {
+        SyncLocale()
+        androidx.compose.foundation.layout.Box(
+            androidx.compose.ui.Modifier.fillMaxSize().padding(24.dp),
+            contentAlignment = androidx.compose.ui.Alignment.Center,
+        ) {
+            com.ravango.feature.account.diagnostics.CrashReportPromptCard(sampleCrash, earlier = 1, onView = {}, onShare = {}, onDismiss = {})
+        }
+    }
+
+    @Test
+    fun crashViewer() = captureAllVariants("crash_viewer") {
+        SyncLocale()
+        com.ravango.feature.account.diagnostics.CrashReportViewerContent(sampleCrash, onShare = {}, onCopy = {})
     }
 
     @Test

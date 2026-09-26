@@ -1,5 +1,7 @@
 package com.ravango.feature.account.about
 
+import com.ravango.core.designsystem.component.RavanGoLogo
+import com.ravango.core.designsystem.component.RavanGoLogoStyle
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
@@ -71,6 +73,10 @@ import com.ravango.core.designsystem.theme.Spacing
 import com.ravango.core.ui.openUrl
 import com.ravango.feature.account.R
 import com.ravango.feature.account.common.LegalSection
+import com.ravango.feature.account.diagnostics.CrashReportsSheet
+import com.ravango.feature.account.diagnostics.CrashReportsViewModel
+import com.ravango.feature.account.diagnostics.crashReportsSubtitle
+import androidx.compose.material.icons.rounded.BugReport
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
@@ -143,6 +149,10 @@ fun AboutScreen(
     var showUnlock by remember { mutableStateOf(false) }
     val testerActive by viewModel.testerActive.collectAsStateWithLifecycle()
     val unlockResult by viewModel.unlockResult.collectAsStateWithLifecycle()
+    val crashViewModel: CrashReportsViewModel = hiltViewModel()
+    val crashReports by crashViewModel.reports.collectAsStateWithLifecycle()
+    var showCrashReports by remember { mutableStateOf(false) }
+    if (showCrashReports) CrashReportsSheet(onDismiss = { showCrashReports = false }, viewModel = crashViewModel)
     if (showUnlock) {
         TesterUnlockDialog(
             failed = unlockResult == false,
@@ -185,6 +195,8 @@ fun AboutScreen(
             }
         },
         onDisableTester = viewModel::disableTester,
+        crashReportCount = crashReports.size,
+        onCrashReports = { showCrashReports = true },
     )
 }
 
@@ -202,6 +214,8 @@ internal fun AboutContent(
     onTerms: () -> Unit,
     onContactSupport: () -> Unit,
     onDisableTester: () -> Unit,
+    crashReportCount: Int = 0,
+    onCrashReports: () -> Unit = {},
 ) {
     RgScreen(title = stringResource(R.string.account_about), onBack = onBack) { padding ->
         Column(
@@ -210,14 +224,13 @@ internal fun AboutContent(
         ) {
             GlassSurface(Modifier.padding(horizontal = Spacing.gutter).fillMaxWidth()) {
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        Modifier.size(72.dp).clip(RoundedCornerShape(Radius.lg)).background(RgTheme.colors.brandGradient),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(stringResource(R.string.account_app_initial), style = MaterialTheme.typography.headlineMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-                    Spacer(Modifier.height(Spacing.md))
-                    Text(stringResource(R.string.account_app_name), style = MaterialTheme.typography.headlineSmall, color = RgTheme.colors.textPrimary)
+                    RavanGoLogo(
+                        style = RavanGoLogoStyle.STACKED,
+                        height = 64.dp,
+                        contentDescription = stringResource(R.string.account_app_name),
+                        modifier = Modifier.padding(top = Spacing.sm),
+                    )
+                    Spacer(Modifier.height(Spacing.sm))
                     Text(
                         stringResource(R.string.account_version, "$versionName ($versionCode)".localizeDigits()),
                         style = MaterialTheme.typography.bodyMedium,
@@ -264,6 +277,12 @@ internal fun AboutContent(
                     subtitle = stringResource(R.string.account_licenses_sub),
                     icon = Icons.Rounded.Description,
                     onClick = onLicenses,
+                )
+                RgListItem(
+                    stringResource(R.string.account_crash_reports),
+                    subtitle = crashReportsSubtitle(crashReportCount),
+                    icon = Icons.Rounded.BugReport,
+                    onClick = onCrashReports,
                 )
             }
             RgGroup(title = stringResource(R.string.account_fonts_title)) {

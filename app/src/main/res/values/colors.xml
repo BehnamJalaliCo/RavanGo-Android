@@ -2,4 +2,6 @@
 <resources>
     <color name="rg_background">#F7F5FD</color>
     <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- Logo ink: near-black by day, white at night (splash). -->
+    <color name="rg_logo_ink">#0B0F1B</color>
 </resources>

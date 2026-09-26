@@ -8,7 +8,7 @@ import java.util.zip.ZipInputStream
 /** Subtitles (.srt / .vtt): keeps the spoken lines, drops indices, timecodes, cue settings and styling tags. */
 object SubtitleText {
     private val TIMECODE = Regex("""^\s*(\d{1,2}:)?\d{1,2}:\d{2}[.,]\d{1,3}\s*-->\s*(\d{1,2}:)?\d{1,2}:\d{2}[.,]\d{1,3}.*$""")
-    private val TAGS = Regex("""<[^>]+>|\{\\[^}]*}""")
+    private val TAGS = Regex("""<[^>]+>|\{\\[^}]*\}""")
 
     fun extract(text: String): String {
         val lines = text.replace("\r\n", "\n").replace('\r', '\n').lines()
