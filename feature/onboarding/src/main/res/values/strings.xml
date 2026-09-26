@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_page_indicator">Step %1$s of %2$s</string>
+    <string name="onboarding_get_started">Get started</string>
+
+    <string name="onboarding_welcome_title">Welcome to RavanGo</string>
+    <string name="onboarding_language_body">Choose the language you\'d like to use. You can change it anytime in Settings.</string>
+    <string name="onboarding_language_persian_hint">Persian · right-to-left</string>
+    <string name="onboarding_language_english_hint">English · left-to-right</string>
+
+    <string name="onboarding_prompter_title">Read naturally, right at the lens</string>
+    <string name="onboarding_prompter_body">A smooth teleprompter sits right under your camera and scrolls at your speaking pace, so you keep eye contact from the first word to the last.</string>
+
+    <string name="onboarding_beauty_title">Look your best, edit in minutes</string>
+    <string name="onboarding_beauty_body">Natural real-time touch-ups while you record, a simple timeline, and AI that helps you write, caption and trim.</string>
+
+    <string name="onboarding_privacy_title">Your videos stay yours</string>
+    <string name="onboarding_promise_device_title">Recordings stay on your device</string>
+    <string name="onboarding_promise_device_body">Everything you record and edit is stored locally. Nothing is uploaded unless you turn on cloud backup.</string>
+    <string name="onboarding_promise_consent_title">AI and cloud only with your consent</string>
+    <string name="onboarding_promise_consent_body">Text or audio is sent to an AI service only when you use an AI feature and agree to it.</string>
+    <string name="onboarding_promise_control_title">You\'re in control</string>
+    <string name="onboarding_promise_control_body">Change any of these choices later in Settings.</string>
+
+    <string name="onboarding_section_sharing">Help improve RavanGo (optional)</string>
+    <string name="onboarding_analytics_title">Anonymous usage statistics</string>
+    <string name="onboarding_analytics_body">Which features are used — never your content.</string>
+    <string name="onboarding_crash_title">Crash reports</string>
+    <string name="onboarding_crash_body">Technical details when something breaks, so we can fix it.</string>
+
+    <string name="onboarding_section_theme">Appearance</string>
+    <string name="onboarding_theme_system">System</string>
+    <string name="onboarding_theme_light">Light</string>
+    <string name="onboarding_theme_dark">Dark</string>
+
+    <string name="onboarding_section_focus">What do you create?</string>
+    <string name="onboarding_focus_hint">Pick any that fit — we\'ll suggest the right templates first.</string>
+    <string name="onboarding_focus_reels">Reels &amp; Shorts</string>
+    <string name="onboarding_focus_youtube">YouTube</string>
+    <string name="onboarding_focus_podcast">Podcast</string>
+    <string name="onboarding_focus_business">Business</string>
+    <string name="onboarding_focus_education">Teaching</string>
+    <string name="onboarding_focus_vlog">Vlog</string>
+</resources>

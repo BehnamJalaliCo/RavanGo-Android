@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_app_name">روان‌گو</string>
+    <string name="home_greeting_morning">صبح بخیر</string>
+    <string name="home_greeting_afternoon">روزتان بخیر</string>
+    <string name="home_greeting_evening">عصرتان بخیر</string>
+    <string name="home_greeting_night">شبتان بخیر</string>
+    <string name="home_account">حساب کاربری</string>
+    <string name="home_go_pro">نسخهٔ حرفه‌ای</string>
+    <string name="home_plan_pro">حرفه‌ای</string>
+    <string name="home_plan_lifetime">مادام‌العمر</string>
+
+    <string name="home_sync_syncing">در حال همگام‌سازی</string>
+    <string name="home_sync_idle">همگام است</string>
+    <string name="home_sync_offline">آفلاین؛ تغییرات بعداً همگام می‌شوند</string>
+    <string name="home_sync_error">مشکل در همگام‌سازی</string>
+
+    <string name="home_new_recording">ضبط جدید</string>
+    <string name="home_new_recording_body">تله‌پرامپتر، زیباسازی و کنترل‌های حرفه‌ای؛ همه با یک لمس.</string>
+    <string name="home_audio_only">فقط صدا</string>
+    <string name="home_record">ضبط</string>
+
+    <string name="home_action_teleprompter">پرامپتر</string>
+    <string name="home_action_scripts">متن‌ها</string>
+    <string name="home_action_ai">هوش مصنوعی</string>
+    <string name="home_action_editor">تدوین</string>
+    <string name="home_action_projects">پروژه‌ها</string>
+    <string name="home_action_drafts">پیش‌نویس‌ها</string>
+    <string name="home_action_templates">قالب‌ها</string>
+    <string name="home_action_cloud">فضای ابری</string>
+
+    <string name="home_continue_label">از همان‌جایی که ماندید ادامه دهید</string>
+    <string name="home_continue_edited">ویرایش: %1$s</string>
+    <string name="home_continue_action">ادامهٔ ویرایش</string>
+
+    <string name="home_welcome_title">بیایید اولین ویدیویتان را بسازیم</string>
+    <string name="home_welcome_body">حرفی را که می‌خواهید بزنید بنویسید، بعد با تله‌پرامپتری که درست زیر دوربین است ضبطش کنید.</string>
+    <string name="home_welcome_write">نوشتن اولین متن</string>
+    <string name="home_welcome_record">ضبط اولین ویدیو</string>
+
+    <string name="home_recent_projects">پروژه‌های اخیر</string>
+    <string name="home_recent_scripts">متن‌های اخیر</string>
+    <string name="home_templates">شروع با یک قالب</string>
+    <string name="home_see_all">همه</string>
+    <string name="home_untitled_script">متن بی‌عنوان</string>
+    <string name="home_play_prompter">باز کردن در تله‌پرامپتر</string>
+
+    <string name="home_status_recorded">ضبط‌شده</string>
+    <string name="home_status_editing">در حال ویرایش</string>
+    <string name="home_status_exported">خروجی‌گرفته</string>
+
+    <plurals name="home_words">
+        <item quantity="one">%1$s کلمه</item>
+        <item quantity="other">%1$s کلمه</item>
+    </plurals>
+    <plurals name="home_read_minutes">
+        <item quantity="one">حدود %1$s دقیقه خواندن</item>
+        <item quantity="other">حدود %1$s دقیقه خواندن</item>
+    </plurals>
+    <string name="home_read_under_minute">کمتر از یک دقیقه</string>
+</resources>

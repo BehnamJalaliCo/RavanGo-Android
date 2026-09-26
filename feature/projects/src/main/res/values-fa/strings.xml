@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="projects_title">پروژه‌ها</string>
+    <string name="projects_tab_all">همه</string>
+    <string name="projects_tab_drafts">پیش‌نویس‌ها</string>
+    <string name="projects_tab_exported">خروجی‌گرفته</string>
+    <string name="projects_sort_recent">جدیدترین</string>
+    <string name="projects_sort_name">نام</string>
+    <string name="projects_search_hint">جستجو در پروژه‌ها</string>
+    <string name="projects_storage_used">رسانه‌ها %1$s</string>
+    <string name="projects_import">وارد کردن</string>
+    <string name="projects_select_all">انتخاب همه</string>
+    <plurals name="projects_selected">
+        <item quantity="one">%1$s مورد انتخاب شد</item>
+        <item quantity="other">%1$s مورد انتخاب شد</item>
+    </plurals>
+
+    <string name="projects_status_recorded">ضبط‌شده</string>
+    <string name="projects_status_editing">در حال ویرایش</string>
+    <string name="projects_status_exported">خروجی‌گرفته</string>
+
+    <string name="projects_open_in_editor">باز کردن در ویرایشگر</string>
+    <string name="projects_share_export">اشتراک‌گذاری آخرین خروجی</string>
+    <string name="projects_share_not_exported">ابتدا از این پروژه خروجی بگیرید</string>
+    <string name="projects_share_unavailable">فایل خروجی دیگر در دسترس نیست.</string>
+    <string name="projects_copy_suffix">(کپی)</string>
+    <string name="projects_duplicated">«%1$s» ساخته شد</string>
+    <string name="projects_rename_title">تغییر نام پروژه</string>
+    <string name="projects_rename_hint">نام پروژه</string>
+
+    <plurals name="projects_delete_title">
+        <item quantity="one">این پروژه حذف شود؟</item>
+        <item quantity="other">%1$s پروژه حذف شود؟</item>
+    </plurals>
+    <string name="projects_delete_message">ویدیوهایی که در روان‌گو ضبط شده‌اند از دستگاه پاک می‌شوند. رسانه‌هایی که از گالری وارد کرده‌اید دست‌نخورده باقی می‌مانند.</string>
+    <plurals name="projects_deleted">
+        <item quantity="one">پروژه حذف شد</item>
+        <item quantity="other">%1$s پروژه حذف شد</item>
+    </plurals>
+
+    <string name="projects_empty_title">هنوز پروژه‌ای ندارید</string>
+    <string name="projects_empty_message">یک ویدیو ضبط کنید یا کلیپ‌هایی را از گالری وارد کنید تا اولین پروژه‌تان ساخته شود.</string>
+    <string name="projects_empty_search_title">چیزی پیدا نشد</string>
+    <string name="projects_empty_search_message">نام دیگری را امتحان کنید.</string>
+    <string name="projects_empty_drafts_title">پیش‌نویسی ندارید</string>
+    <string name="projects_empty_drafts_message">پروژه‌هایی که در حال ویرایششان هستید، به‌طور خودکار ذخیره می‌شوند و اینجا نمایش داده می‌شوند.</string>
+    <string name="projects_empty_exported_title">هنوز خروجی نگرفته‌اید</string>
+    <string name="projects_empty_exported_message">ویدیوهای نهایی‌ای که خروجی می‌گیرید اینجا آمادهٔ اشتراک‌گذاری هستند.</string>
+
+    <string name="projects_templates_title">قالب‌ها</string>
+    <string name="projects_templates_subtitle">با یک ساختار آزموده، سریع‌تر شروع کنید</string>
+    <string name="projects_templates_intro">هر قالب کادر مناسب، ساختار متن و سبک زیرنویس را آماده می‌کند. یکی را انتخاب کنید و در چند ثانیه ضبط را شروع کنید.</string>
+</resources>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Relative time -->
+    <string name="home_time_just_now">Just now</string>
+    <string name="home_time_yesterday">Yesterday</string>
+    <plurals name="home_time_minutes">
+        <item quantity="one">%1$s min ago</item>
+        <item quantity="other">%1$s min ago</item>
+    </plurals>
+    <plurals name="home_time_hours">
+        <item quantity="one">%1$s hour ago</item>
+        <item quantity="other">%1$s hours ago</item>
+    </plurals>
+    <plurals name="home_time_days">
+        <item quantity="one">%1$s day ago</item>
+        <item quantity="other">%1$s days ago</item>
+    </plurals>
+
+    <!-- Durations -->
+    <plurals name="home_duration_seconds">
+        <item quantity="one">%1$s sec</item>
+        <item quantity="other">%1$s sec</item>
+    </plurals>
+    <plurals name="home_duration_minutes">
+        <item quantity="one">%1$s min</item>
+        <item quantity="other">%1$s min</item>
+    </plurals>
+
+    <!-- Templates -->
+    <string name="home_template_reel">Instagram Reel</string>
+    <string name="home_template_reel_desc">A vertical reel with a strong hook, one clear idea and a call to action.</string>
+    <string name="home_template_youtube">YouTube video</string>
+    <string name="home_template_youtube_desc">A classic widescreen video with an intro, three key points and an outro.</string>
+    <string name="home_template_short">Short video</string>
+    <string name="home_template_short_desc">A punchy 30-second vertical clip for Shorts and TikTok that loops back to the start.</string>
+    <string name="home_template_linkedin">LinkedIn post</string>
+    <string name="home_template_linkedin_desc">A professional 4:5 video: an insight, a short story and a takeaway.</string>
+    <string name="home_template_product">Product showcase</string>
+    <string name="home_template_product_desc">Introduce a product: the problem, the solution, its benefits and your offer.</string>
+    <string name="home_template_tutorial">Tutorial</string>
+    <string name="home_template_tutorial_desc">Teach something step by step, then recap what viewers learned.</string>
+    <string name="home_template_podcast">Video podcast</string>
+    <string name="home_template_podcast_desc">A square podcast episode with an opening, the topic, guest questions and a closing.</string>
+
+    <string name="home_template_auto_captions">Auto captions</string>
+    <string name="home_template_outline">Script outline</string>
+    <string name="home_template_more_sections">+%1$s more sections</string>
+    <string name="home_template_start_with_script">Start with script</string>
+    <string name="home_template_write_with_ai">Write with AI</string>
+    <string name="home_template_record_without_script">Record without script</string>
+
+    <!-- Outline sections -->
+    <string name="home_outline_hook">Hook</string>
+    <string name="home_outline_hook_3s">Hook (3s)</string>
+    <string name="home_outline_value">Value</string>
+    <string name="home_outline_cta">Call to action</string>
+    <string name="home_outline_intro">Intro</string>
+    <string name="home_outline_main_point">Main point %1$s</string>
+    <string name="home_outline_outro">Outro</string>
+    <string name="home_outline_payoff">Payoff</string>
+    <string name="home_outline_loop_back">Loop back</string>
+    <string name="home_outline_insight">Insight</string>
+    <string name="home_outline_story">Story</string>
+    <string name="home_outline_takeaway">Takeaway</string>
+    <string name="home_outline_problem">Problem</string>
+    <string name="home_outline_product">Product</string>
+    <string name="home_outline_benefits">Benefits</string>
+    <string name="home_outline_offer">Offer</string>
+    <string name="home_outline_learn">What you\'ll learn</string>
+    <string name="home_outline_step">Step %1$s</string>
+    <string name="home_outline_recap">Recap</string>
+    <string name="home_outline_opening">Opening</string>
+    <string name="home_outline_topic">Topic</string>
+    <string name="home_outline_guest_questions">Guest questions</string>
+    <string name="home_outline_closing">Closing</string>
+
+    <!-- Import -->
+    <string name="home_imported_title">Imported project</string>
+    <string name="home_importing">Preparing your media…</string>
+</resources>

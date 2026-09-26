@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Relative time -->
+    <string name="home_time_just_now">همین حالا</string>
+    <string name="home_time_yesterday">دیروز</string>
+    <plurals name="home_time_minutes">
+        <item quantity="one">%1$s دقیقه پیش</item>
+        <item quantity="other">%1$s دقیقه پیش</item>
+    </plurals>
+    <plurals name="home_time_hours">
+        <item quantity="one">%1$s ساعت پیش</item>
+        <item quantity="other">%1$s ساعت پیش</item>
+    </plurals>
+    <plurals name="home_time_days">
+        <item quantity="one">%1$s روز پیش</item>
+        <item quantity="other">%1$s روز پیش</item>
+    </plurals>
+
+    <!-- Durations -->
+    <plurals name="home_duration_seconds">
+        <item quantity="one">%1$s ثانیه</item>
+        <item quantity="other">%1$s ثانیه</item>
+    </plurals>
+    <plurals name="home_duration_minutes">
+        <item quantity="one">%1$s دقیقه</item>
+        <item quantity="other">%1$s دقیقه</item>
+    </plurals>
+
+    <!-- Templates -->
+    <string name="home_template_reel">ریلز اینستاگرام</string>
+    <string name="home_template_reel_desc">ویدیوی عمودی با یک شروع گیرا، یک ایدهٔ روشن و دعوت به اقدام.</string>
+    <string name="home_template_youtube">ویدیوی یوتیوب</string>
+    <string name="home_template_youtube_desc">ویدیوی افقی کلاسیک با مقدمه، سه نکتهٔ اصلی و جمع‌بندی.</string>
+    <string name="home_template_short">ویدیوی کوتاه</string>
+    <string name="home_template_short_desc">کلیپ عمودی ۳۰ ثانیه‌ای و پرانرژی برای شورتز و تیک‌تاک که به شروعش گره می‌خورد.</string>
+    <string name="home_template_linkedin">پست لینکدین</string>
+    <string name="home_template_linkedin_desc">ویدیوی حرفه‌ای ۴:۵ با یک بینش، یک داستان کوتاه و یک نکتهٔ کلیدی.</string>
+    <string name="home_template_product">معرفی محصول</string>
+    <string name="home_template_product_desc">محصولتان را معرفی کنید: مسئله، راه‌حل، مزایا و پیشنهاد ویژه.</string>
+    <string name="home_template_tutorial">آموزش گام‌به‌گام</string>
+    <string name="home_template_tutorial_desc">چیزی را قدم‌به‌قدم آموزش دهید و در پایان آموخته‌ها را مرور کنید.</string>
+    <string name="home_template_podcast">پادکست تصویری</string>
+    <string name="home_template_podcast_desc">قسمتی مربعی از پادکست با شروع، موضوع، پرسش از مهمان و پایان‌بندی.</string>
+
+    <string name="home_template_auto_captions">زیرنویس خودکار</string>
+    <string name="home_template_outline">ساختار متن</string>
+    <string name="home_template_more_sections">+%1$s بخش دیگر</string>
+    <string name="home_template_start_with_script">شروع با متن</string>
+    <string name="home_template_write_with_ai">نوشتن با هوش مصنوعی</string>
+    <string name="home_template_record_without_script">ضبط بدون متن</string>
+
+    <!-- Outline sections -->
+    <string name="home_outline_hook">قلاب (شروع گیرا)</string>
+    <string name="home_outline_hook_3s">قلاب (۳ ثانیه)</string>
+    <string name="home_outline_value">ارزش اصلی</string>
+    <string name="home_outline_cta">دعوت به اقدام</string>
+    <string name="home_outline_intro">مقدمه</string>
+    <string name="home_outline_main_point">نکتهٔ اصلی %1$s</string>
+    <string name="home_outline_outro">جمع‌بندی و خداحافظی</string>
+    <string name="home_outline_payoff">نتیجه</string>
+    <string name="home_outline_loop_back">بازگشت به شروع</string>
+    <string name="home_outline_insight">بینش</string>
+    <string name="home_outline_story">داستان</string>
+    <string name="home_outline_takeaway">نکتهٔ کلیدی</string>
+    <string name="home_outline_problem">مسئله</string>
+    <string name="home_outline_product">محصول</string>
+    <string name="home_outline_benefits">مزایا</string>
+    <string name="home_outline_offer">پیشنهاد ویژه</string>
+    <string name="home_outline_learn">چه چیزی یاد می‌گیرید</string>
+    <string name="home_outline_step">گام %1$s</string>
+    <string name="home_outline_recap">مرور</string>
+    <string name="home_outline_opening">شروع</string>
+    <string name="home_outline_topic">موضوع</string>
+    <string name="home_outline_guest_questions">پرسش از مهمان</string>
+    <string name="home_outline_closing">پایان‌بندی</string>
+
+    <!-- Import -->
+    <string name="home_imported_title">پروژهٔ واردشده</string>
+    <string name="home_importing">در حال آماده‌سازی رسانه‌ها…</string>
+</resources>
