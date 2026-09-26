@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="editor_engine_notif_channel">خروجی ویدیو</string>
+    <string name="editor_engine_notif_channel_desc">پیشرفت ساخت خروجی ویدیوها از ویرایشگر</string>
+    <string name="editor_engine_notif_exporting">در حال ساخت خروجی ویدیو…</string>
+    <string name="editor_engine_notif_preparing">در حال آماده‌سازی خروجی…</string>
+    <string name="editor_engine_notif_preparing_reverse">در حال ساخت کلیپ‌های معکوس…</string>
+    <string name="editor_engine_notif_percent">%1$d٪</string>
+    <string name="editor_engine_notif_cancel">لغو</string>
+    <string name="editor_engine_notif_done">ویدیوی شما آماده است</string>
+    <string name="editor_engine_notif_failed">ساخت خروجی ناموفق بود</string>
+</resources>

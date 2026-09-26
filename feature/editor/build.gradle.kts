@@ -2,6 +2,12 @@ plugins {
     alias(libs.plugins.ravango.android.feature)
 }
 
+kotlin {
+    compilerOptions {
+        freeCompilerArgs.addAll("-opt-in=androidx.media3.common.util.UnstableApi", "-Xannotation-default-target=param-property")
+    }
+}
+
 dependencies {
     implementation(project(":core:data"))
     implementation(project(":core:media"))
@@ -12,4 +18,6 @@ dependencies {
     implementation(libs.media3.ui)
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.activity.compose)
 }
