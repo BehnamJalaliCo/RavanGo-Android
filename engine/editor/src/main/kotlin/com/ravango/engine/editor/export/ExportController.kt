@@ -129,7 +129,7 @@ class ExportController @Inject constructor(
             }
             // 1. Make sure every reversed clip has its rendition.
             var doc = request.document
-            val toReverse = doc.mainTrack.filter { it.reversed && (it.reversedUri == null || !exists(it.reversedUri)) }
+            val toReverse = doc.mainTrack.filter { it.reversed && it.reversedUri?.let { u -> exists(u) } != true }
             toReverse.forEachIndexed { i, clip ->
                 _state.value = ExportState.Preparing(pid, PrepareStep.REVERSING, i.toFloat() / toReverse.size)
                 val uri = reverse.reverse(pid, clip) { p -> _state.value = ExportState.Preparing(pid, PrepareStep.REVERSING, (i + p) / toReverse.size) }
