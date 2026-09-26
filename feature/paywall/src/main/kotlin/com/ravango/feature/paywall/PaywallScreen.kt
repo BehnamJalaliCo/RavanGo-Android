@@ -149,6 +149,36 @@ fun PaywallScreen(
         }
     }
 
+    PaywallContent(
+        state = state,
+        snackbar = snackbar,
+        onClose = onClose,
+        onRestore = viewModel::restore,
+        onSelect = viewModel::select,
+        onRetry = viewModel::loadCatalog,
+        onManage = { viewModel.manageSubscriptionUrl()?.let(context::openUrl) },
+        onBuyPack = { pack -> context.findActivity()?.let { viewModel.purchasePack(it, pack) } },
+        onTerms = { if (state.termsUrl.isNotBlank()) context.openUrl(state.termsUrl) else onOpenTerms() },
+        onPrivacy = { if (state.privacyUrl.isNotBlank()) context.openUrl(state.privacyUrl) else onOpenPrivacy() },
+        onPurchase = { context.findActivity()?.let(viewModel::purchase) },
+    )
+}
+
+/** Stateless paywall (rendered by screenshot tests for free / loading / unavailable / owned states). */
+@Composable
+internal fun PaywallContent(
+    state: PaywallUiState,
+    snackbar: SnackbarHostState,
+    onClose: () -> Unit,
+    onRestore: () -> Unit,
+    onSelect: (PlanChoice) -> Unit,
+    onRetry: () -> Unit,
+    onManage: () -> Unit,
+    onBuyPack: (PackOffer) -> Unit,
+    onTerms: () -> Unit,
+    onPrivacy: () -> Unit,
+    onPurchase: () -> Unit,
+) {
     GradientBackground {
         Column(Modifier.fillMaxSize()) {
             LazyColumn(
@@ -156,38 +186,33 @@ fun PaywallScreen(
                 contentPadding = PaddingValues(bottom = Spacing.xl),
                 verticalArrangement = Arrangement.spacedBy(Spacing.lg),
             ) {
-                item(key = "top") { TopRow(restoring = state.restoring, onRestore = viewModel::restore, onClose = onClose) }
+                item(key = "top") { TopRow(restoring = state.restoring, onRestore = onRestore, onClose = onClose) }
                 item(key = "hero") { Hero(state) }
                 if (state.isPaid) {
                     item(key = "owned") {
-                        AlreadyPaidCard(state, onManage = { viewModel.manageSubscriptionUrl()?.let(context::openUrl) })
+                        AlreadyPaidCard(state, onManage = onManage)
                     }
                 }
                 item(key = "benefits") { Benefits(state) }
                 if (!state.isPaid || state.entitlements.plan == Plan.LIFETIME) {
                     item(key = "plans") {
-                        PlansSection(state, onSelect = viewModel::select, onRetry = viewModel::loadCatalog)
+                        PlansSection(state, onSelect = onSelect, onRetry = onRetry)
                     }
                 }
                 val packs = state.catalog?.packs.orEmpty()
                 if (packs.isNotEmpty()) {
                     item(key = "packs-header") { CreditsHeader(state) }
                     items(packs, key = { it.product.productId }) { pack ->
-                        PackRow(pack, enabled = !state.purchasing) {
-                            context.findActivity()?.let { viewModel.purchasePack(it, pack) }
-                        }
+                        PackRow(pack, enabled = !state.purchasing) { onBuyPack(pack) }
                     }
                 }
                 item(key = "footer") {
-                    Footer(
-                        onTerms = { if (state.termsUrl.isNotBlank()) context.openUrl(state.termsUrl) else onOpenTerms() },
-                        onPrivacy = { if (state.privacyUrl.isNotBlank()) context.openUrl(state.privacyUrl) else onOpenPrivacy() },
-                    )
+                    Footer(onTerms = onTerms, onPrivacy = onPrivacy)
                 }
             }
             BottomBar(
                 state = state,
-                onPurchase = { context.findActivity()?.let(viewModel::purchase) },
+                onPurchase = onPurchase,
                 onContinueFree = onClose,
             )
         }
@@ -226,13 +251,15 @@ private fun Hero(state: PaywallUiState) {
             .drawBehind {
                 val w = size.width
                 val h = size.height
+                // Brand hues deepened so the white headline and body stay legible (the pastel version measured <2:1).
                 drawRect(
                     Brush.linearGradient(
-                        listOf(Palette.Lavender500, Palette.Rose400, Palette.Peach400, Palette.Sky400),
+                        listOf(Color(0xFF6F5CEB), Color(0xFF9E5BE0), Color(0xFFD95E97), Color(0xFFE77A6C)),
                         start = Offset(-w * shift, 0f),
                         end = Offset(w * (2f - shift), h),
                     ),
                 )
+                drawRect(Brush.verticalGradient(0.4f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.16f)))
                 drawCircle(Color.White.copy(alpha = 0.16f), radius = h * 0.55f, center = Offset(w * (0.85f - 0.2f * shift), h * 0.15f))
                 drawCircle(Color.White.copy(alpha = 0.10f), radius = h * 0.4f, center = Offset(w * (0.1f + 0.15f * shift), h * 0.95f))
             }
@@ -519,7 +546,10 @@ private fun BottomBar(state: PaywallUiState, onPurchase: () -> Unit, onContinueF
                     onClick = onPurchase,
                     modifier = Modifier.fillMaxWidth(),
                     loading = state.purchasing,
+                    size = RgButtonSize.HERO,
                     brush = RgTheme.colors.proGradient,
+                    // Dark ink on the gold → rose → lavender gradient: ≥7:1 everywhere (white measured ~1.6:1 on gold).
+                    contentColor = Palette.Ink950,
                 )
                 Spacer(Modifier.height(Spacing.sm))
                 Text(terms, style = MaterialTheme.typography.bodySmall, color = RgTheme.colors.textSecondary, textAlign = TextAlign.Center)

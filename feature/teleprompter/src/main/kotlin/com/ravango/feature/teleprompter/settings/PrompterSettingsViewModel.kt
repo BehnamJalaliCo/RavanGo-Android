@@ -41,6 +41,17 @@ data class PrompterSettingsUiState(
     val volumeKeyMode: VolumeKeyMode = VolumeKeyMode.SPEED,
 )
 
+/** What the settings screen can ask for; implemented by [PrompterSettingsViewModel]. */
+interface PrompterSettingsActions {
+    fun update(transform: (TeleprompterSettings) -> TeleprompterSettings)
+    fun setScriptOnly(only: Boolean)
+    fun applyPreset(preset: TeleprompterPreset)
+    fun resetToDefaults()
+    fun savePreset(name: String)
+    fun deletePreset(preset: TeleprompterPreset)
+    fun setVolumeKeyMode(mode: VolumeKeyMode)
+}
+
 @HiltViewModel
 class PrompterSettingsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
@@ -48,7 +59,7 @@ class PrompterSettingsViewModel @Inject constructor(
     private val presets: PresetRepository,
     private val prefs: PreferencesDataSource,
     @ApplicationScope private val appScope: CoroutineScope,
-) : ViewModel() {
+) : ViewModel(), PrompterSettingsActions {
 
     private val scriptId: String? = savedStateHandle.toRoute<TeleprompterSettingsRoute>().scriptId
 
@@ -88,7 +99,7 @@ class PrompterSettingsViewModel @Inject constructor(
         }
     }
 
-    fun update(transform: (TeleprompterSettings) -> TeleprompterSettings) {
+    override fun update(transform: (TeleprompterSettings) -> TeleprompterSettings) {
         val current = draft.value ?: return
         val next = transform(current)
         if (next == current) return
@@ -115,7 +126,7 @@ class PrompterSettingsViewModel @Inject constructor(
     }
 
     /** Switches between "this script only" (stores an override) and "defaults for all scripts". */
-    fun setScriptOnly(only: Boolean) {
+    override fun setScriptOnly(only: Boolean) {
         val s = script.value ?: return
         if (only == scriptOnly.value) return
         persistJob?.cancel()
@@ -131,21 +142,21 @@ class PrompterSettingsViewModel @Inject constructor(
         }
     }
 
-    fun applyPreset(preset: TeleprompterPreset) = update { preset.settings }
+    override fun applyPreset(preset: TeleprompterPreset) = update { preset.settings }
 
-    fun resetToDefaults() = update { TeleprompterSettings() }
+    override fun resetToDefaults() = update { TeleprompterSettings() }
 
-    fun savePreset(name: String) {
+    override fun savePreset(name: String) {
         val settings = draft.value ?: return
         viewModelScope.launch { presets.savePrompterPreset(name.trim(), settings) }
     }
 
-    fun deletePreset(preset: TeleprompterPreset) {
+    override fun deletePreset(preset: TeleprompterPreset) {
         if (preset.builtIn) return
         viewModelScope.launch { presets.deletePrompterPreset(preset.id) }
     }
 
-    fun setVolumeKeyMode(mode: VolumeKeyMode) {
+    override fun setVolumeKeyMode(mode: VolumeKeyMode) {
         viewModelScope.launch { prefs.putString(VolumeKeyMode.PREF_KEY, mode.name) }
     }
 

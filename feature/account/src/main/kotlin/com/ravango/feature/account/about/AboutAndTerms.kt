@@ -107,6 +107,12 @@ private val termsSections = listOf(
 fun TermsScreen(onBack: () -> Unit, viewModel: AppInfoViewModel = hiltViewModel()) {
     val context = LocalContext.current
     val url = viewModel.config.termsUrl
+    TermsContent(url = url, onBack = onBack, onOpenOnline = { context.openUrl(url) })
+}
+
+/** Stateless terms of use. */
+@Composable
+internal fun TermsContent(url: String, onBack: () -> Unit, onOpenOnline: () -> Unit) {
     RgScreen(title = stringResource(R.string.account_terms), onBack = onBack) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = Spacing.xxl),
@@ -115,7 +121,7 @@ fun TermsScreen(onBack: () -> Unit, viewModel: AppInfoViewModel = hiltViewModel(
             termsSections.forEach { (title, body) -> LegalSection(stringResource(title), stringResource(body)) }
             if (url.isNotBlank()) {
                 RgGroup {
-                    RgListItem(stringResource(R.string.account_terms_online), subtitle = url, icon = Icons.AutoMirrored.Rounded.OpenInNew, onClick = { context.openUrl(url) })
+                    RgListItem(stringResource(R.string.account_terms_online), subtitle = url, icon = Icons.AutoMirrored.Rounded.OpenInNew, onClick = onOpenOnline)
                 }
             }
         }
@@ -151,6 +157,52 @@ fun AboutScreen(
             viewModel.clearResult()
         }
     }
+    AboutContent(
+        versionName = config.versionName,
+        versionCode = config.versionCode.toString(),
+        supportEmail = config.supportEmail,
+        testerActive = testerActive,
+        onBack = onBack,
+        onVersionTap = {
+            // Hidden entry for owners/testers: tap the version 7 times.
+            versionTaps++
+            if (versionTaps >= 7 && viewModel.testerAvailable) {
+                versionTaps = 0
+                haptics.perform(HapticEvent.CONFIRM)
+                showUnlock = true
+            }
+        },
+        onLicenses = onLicenses,
+        onPrivacy = onPrivacy,
+        onTerms = onTerms,
+        onContactSupport = {
+            runCatching {
+                context.startActivity(
+                    Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${config.supportEmail}"))
+                        .putExtra(Intent.EXTRA_SUBJECT, "RavanGo ${config.versionName}")
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+            }
+        },
+        onDisableTester = viewModel::disableTester,
+    )
+}
+
+/** Stateless about screen. */
+@Composable
+internal fun AboutContent(
+    versionName: String,
+    versionCode: String,
+    supportEmail: String,
+    testerActive: Boolean,
+    onBack: () -> Unit,
+    onVersionTap: () -> Unit,
+    onLicenses: () -> Unit,
+    onPrivacy: () -> Unit,
+    onTerms: () -> Unit,
+    onContactSupport: () -> Unit,
+    onDisableTester: () -> Unit,
+) {
     RgScreen(title = stringResource(R.string.account_about), onBack = onBack) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = Spacing.xxl),
@@ -167,20 +219,12 @@ fun AboutScreen(
                     Spacer(Modifier.height(Spacing.md))
                     Text(stringResource(R.string.account_app_name), style = MaterialTheme.typography.headlineSmall, color = RgTheme.colors.textPrimary)
                     Text(
-                        stringResource(R.string.account_version, "${config.versionName} (${config.versionCode})".localizeDigits()),
+                        stringResource(R.string.account_version, "$versionName ($versionCode)".localizeDigits()),
                         style = MaterialTheme.typography.bodyMedium,
                         color = RgTheme.colors.textSecondary,
                         modifier = Modifier
                             .clip(RoundedCornerShape(Radius.sm))
-                            .clickable(interactionSource = null, indication = null) {
-                                // Hidden entry for owners/testers: tap the version 7 times.
-                                versionTaps++
-                                if (versionTaps >= 7 && viewModel.testerAvailable) {
-                                    versionTaps = 0
-                                    haptics.perform(HapticEvent.CONFIRM)
-                                    showUnlock = true
-                                }
-                            }
+                            .clickable(interactionSource = null, indication = null, onClick = onVersionTap)
                             .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
                     )
                     Spacer(Modifier.height(Spacing.sm))
@@ -200,25 +244,17 @@ fun AboutScreen(
                         icon = Icons.Rounded.Verified,
                         iconTint = Color.White,
                         iconBackground = RgTheme.colors.accent,
-                        trailing = { RgTextButton(stringResource(R.string.account_tester_disable), viewModel::disableTester, color = RgTheme.colors.danger) },
+                        trailing = { RgTextButton(stringResource(R.string.account_tester_disable), onDisableTester, color = RgTheme.colors.danger) },
                     )
                 }
             }
             RgGroup {
-                if (config.supportEmail.isNotBlank()) {
+                if (supportEmail.isNotBlank()) {
                     RgListItem(
                         stringResource(R.string.account_contact_support),
-                        subtitle = config.supportEmail,
+                        subtitle = supportEmail,
                         icon = Icons.Rounded.Mail,
-                        onClick = {
-                            runCatching {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${config.supportEmail}"))
-                                        .putExtra(Intent.EXTRA_SUBJECT, "RavanGo ${config.versionName}")
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                                )
-                            }
-                        },
+                        onClick = onContactSupport,
                     )
                 }
                 RgListItem(stringResource(R.string.account_privacy), icon = Icons.Rounded.PrivacyTip, onClick = onPrivacy)

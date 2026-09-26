@@ -41,9 +41,6 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.media3.common.Player
-import androidx.media3.ui.compose.PlayerSurface
-import androidx.media3.ui.compose.SURFACE_TYPE_SURFACE_VIEW
 import com.ravango.core.designsystem.theme.RgTheme
 import com.ravango.core.model.EditorDocument
 import com.ravango.core.model.OverlayItem
@@ -60,7 +57,8 @@ import kotlin.math.abs
  */
 @Composable
 fun PreviewPane(
-    player: Player,
+    /** The video surface (the player's SurfaceView in the app, a still frame in screenshot tests). */
+    surface: @Composable () -> Unit,
     document: EditorDocument,
     selection: Selection,
     overlaySizes: Map<String, Pair<Float, Float>>,
@@ -80,7 +78,7 @@ fun PreviewPane(
     BoxWithConstraints(modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
         val ratio = document.canvas.aspectRatio.ratio.takeIf { it.isFinite() && it > 0f } ?: (9f / 16f)
         Box(Modifier.aspectRatio(ratio)) {
-            PlayerSurface(player = player, modifier = Modifier.fillMaxSize(), surfaceType = SURFACE_TYPE_SURFACE_VIEW)
+            surface()
             SelectionFrame(document, selection, overlaySizes, Modifier.fillMaxSize())
             Box(
                 Modifier

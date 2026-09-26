@@ -115,9 +115,9 @@ class EditorViewModel @Inject constructor(
     private val audioCleanup: AudioCleanupService,
     private val eyeContact: EyeContactService,
     private val aiText: AiTextService,
-    val thumbnails: ThumbnailProvider,
+    override val thumbnails: ThumbnailProvider,
     val waveforms: WaveformProvider,
-) : ViewModel() {
+) : ViewModel(), EditorActions {
 
     val projectId: String = savedStateHandle.toRoute<EditorRoute>().projectId
 
@@ -243,17 +243,17 @@ class EditorViewModel @Inject constructor(
     }
 
     /** Ends a continuous gesture so the next change is a new undo step. */
-    fun endGesture() = history.seal()
+    override fun endGesture() { history.seal() }
 
-    fun undo() {
+    override fun undo() {
         history.undo()?.let { publish(it) }
     }
 
-    fun redo() {
+    override fun redo() {
         history.redo()?.let { publish(it) }
     }
 
-    fun select(selection: Selection) {
+    override fun select(selection: Selection) {
         _state.update { s ->
             val tool = when (selection) {
                 is Selection.Clip -> if (s.tool == null || s.tool in setOf(EditorTool.TEXT, EditorTool.MUSIC, EditorTool.CAPTIONS, EditorTool.STICKERS)) EditorTool.EDIT else s.tool
@@ -273,20 +273,20 @@ class EditorViewModel @Inject constructor(
         refreshOverlaySize()
     }
 
-    fun selectClipAtPlayhead() {
+    override fun selectClipAtPlayhead() {
         TimelineMath.clipAt(history.current, playheadUs.value)?.let { select(Selection.Clip(it.clip.id)) }
     }
 
     /** Opens the paywall for [feature]. */
-    fun upgrade(feature: ProFeature) {
+    override fun upgrade(feature: ProFeature) {
         _events.trySend(EditorEvent.RequirePro(feature))
     }
 
-    fun openTool(tool: EditorTool?) {
+    override fun openTool(tool: EditorTool?) {
         _state.update { it.copy(tool = if (it.tool == tool) null else tool) }
     }
 
-    fun consumeMessage(id: Long) {
+    override fun consumeMessage(id: Long) {
         _state.update { if (it.message?.id == id) it.copy(message = null) else it }
     }
 
@@ -318,7 +318,7 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun cancelBusy() {
+    override fun cancelBusy() {
         busyJob?.cancel()
     }
 
@@ -332,14 +332,14 @@ class EditorViewModel @Inject constructor(
 
     // ------------------------------------------------------------------ transport
 
-    fun togglePlay() = preview.togglePlay()
+    override fun togglePlay() { preview.togglePlay() }
 
-    fun seekTo(timeUs: Long, scrubbing: Boolean = false) {
+    override fun seekTo(timeUs: Long, scrubbing: Boolean) {
         if (scrubbing && preview.isPlaying.value) preview.pause()
         preview.seekTo(timeUs.coerceIn(0, history.current.durationUs), scrubbing)
     }
 
-    fun stepFrame(forward: Boolean) {
+    override fun stepFrame(forward: Boolean) {
         preview.pause()
         val doc = history.current
         val clip = TimelineMath.clipAt(doc, playheadUs.value)?.clip
@@ -347,7 +347,7 @@ class EditorViewModel @Inject constructor(
         seekTo(playheadUs.value + if (forward) step else -step)
     }
 
-    fun onStop() {
+    override fun onStop() {
         preview.pause()
         drafts.flush()
     }
@@ -355,7 +355,7 @@ class EditorViewModel @Inject constructor(
     // ------------------------------------------------------------------ import
 
     /** Adds picked photos/videos to the project and the timeline (at the playhead, or appended). */
-    fun importMedia(uris: List<Uri>) {
+    override fun importMedia(uris: List<Uri>) {
         if (uris.isEmpty()) return
         runBusy(R.string.editor_busy_importing, cancellable = false) { progress ->
             val sources = ArrayList<MediaSource>()
@@ -414,13 +414,13 @@ class EditorViewModel @Inject constructor(
     private fun selectedClip(): VideoClip? = (state.value.selection as? Selection.Clip)?.let { s -> history.current.mainTrack.firstOrNull { it.id == s.id } }
         ?: TimelineMath.clipAt(history.current, playheadUs.value)?.clip
 
-    fun split() {
+    override fun split() {
         preview.pause()
         val r = EditOps.split(history.current, playheadUs.value)
         if (r == null) message(R.string.editor_msg_split_edge) else editResult { r }
     }
 
-    fun deleteSelection() {
+    override fun deleteSelection() {
         when (val sel = state.value.selection) {
             is Selection.Clip -> editResult { EditOps.deleteClip(it, sel.id) }
             is Selection.Overlay -> edit { EditOps.removeOverlay(it, sel.id) }
@@ -430,7 +430,7 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun duplicateSelection() {
+    override fun duplicateSelection() {
         when (val sel = state.value.selection) {
             is Selection.Clip -> editResult { EditOps.duplicateClip(it, sel.id) }
             is Selection.Overlay -> editResult { EditOps.duplicateOverlay(it, sel.id) }
@@ -443,37 +443,38 @@ class EditorViewModel @Inject constructor(
         edit(key?.let { "$it:${clip.id}" }) { EditOps.updateClip(it, clip.id, transform) }
     }
 
-    fun setSpeed(speed: Float, gesture: Boolean) {
+    override fun setSpeed(speed: Float, gesture: Boolean) {
         val clip = selectedClip() ?: return
         edit(if (gesture) "speed:${clip.id}" else null) { EditOps.setSpeed(it, clip.id, speed) }
     }
 
-    fun rotateClip() = selectedClip()?.let { c -> edit { EditOps.rotate90(it, c.id) } }
-    fun flipClip(horizontal: Boolean) = selectedClip()?.let { c -> edit { EditOps.flip(it, c.id, horizontal) } }
-    fun setCrop(crop: CropRect, gesture: Boolean) = selectedClip()?.let { c -> edit(if (gesture) "crop:${c.id}" else null) { EditOps.setCrop(it, c.id, crop) } }
-    fun resetClipTransform() = updateSelectedClip { it.copy(transform = Transform2D(), crop = CropRect(), rotationQuarterTurns = 0, flipHorizontal = false, flipVertical = false) }
+    override fun rotateClip() { selectedClip()?.let { c -> edit { EditOps.rotate90(it, c.id) } } }
+    override fun flipClip(horizontal: Boolean) { selectedClip()?.let { c -> edit { EditOps.flip(it, c.id, horizontal) } } }
+    override fun setCrop(crop: CropRect, gesture: Boolean) { selectedClip()?.let { c -> edit(if (gesture) "crop:${c.id}" else null) { EditOps.setCrop(it, c.id, crop) } } }
+    override fun resetClipTransform() { updateSelectedClip { it.copy(transform = Transform2D(), crop = CropRect(), rotationQuarterTurns = 0, flipHorizontal = false, flipVertical = false) } }
 
-    fun joinWithNext() {
+    override fun joinWithNext() {
         val c = selectedClip() ?: return
         val r = EditOps.joinWithNext(history.current, c.id)
         if (r == null) message(R.string.editor_msg_cannot_join) else editResult { r }
     }
 
-    fun canJoin(clipId: String): Boolean = EditOps.canJoinWithNext(history.current, clipId)
+    override fun canJoin(clipId: String): Boolean = EditOps.canJoinWithNext(history.current, clipId)
 
-    fun moveClip(clipId: String, toIndex: Int) = edit { EditOps.moveClip(it, clipId, toIndex) }
+    override fun moveClip(clipId: String, toIndex: Int) { edit { EditOps.moveClip(it, clipId, toIndex) } }
 
-    fun trimClip(clipId: String, edge: Edge, deltaUs: Long) = edit("trim:$clipId:$edge") { EditOps.trimClip(it, clipId, edge, deltaUs) }
+    override fun trimClip(clipId: String, edge: Edge, deltaUs: Long) { edit("trim:$clipId:$edge") { EditOps.trimClip(it, clipId, edge, deltaUs) } }
 
-    fun setTransition(clipId: String, type: TransitionType, durationUs: Long) =
-        edit { EditOps.setTransition(it, clipId, Transition(type, durationUs)) }
+    override fun setTransition(clipId: String, type: TransitionType, durationUs: Long) { edit { EditOps.setTransition(it, clipId, Transition(type, durationUs)) } }
 
     /** Applies one transition to every cut in a single undo step. */
-    fun setTransitionForAll(type: TransitionType, durationUs: Long) = edit { d ->
-        d.copy(mainTrack = d.mainTrack.mapIndexed { i, c -> if (i < d.mainTrack.lastIndex) c.copy(transitionOut = Transition(type, durationUs)) else c })
+    override fun setTransitionForAll(type: TransitionType, durationUs: Long) {
+        edit { d ->
+            d.copy(mainTrack = d.mainTrack.mapIndexed { i, c -> if (i < d.mainTrack.lastIndex) c.copy(transitionOut = Transition(type, durationUs)) else c })
+        }
     }
 
-    fun toggleReverse() {
+    override fun toggleReverse() {
         val c = selectedClip() ?: return
         if (c.source.kind != MediaKind.VIDEO) return
         if (!c.reversed && !requirePro(ProFeature.EDITOR_REVERSE)) return
@@ -511,7 +512,7 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun freezeFrame(durationUs: Long = 2_000_000) {
+    override fun freezeFrame(durationUs: Long) {
         val doc = history.current
         val p = TimelineMath.clipAt(doc, playheadUs.value) ?: return
         if (p.clip.source.kind != MediaKind.VIDEO) {
@@ -526,32 +527,32 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun setClipVolume(volume: Float, gesture: Boolean) = updateSelectedClip(if (gesture) "volume" else null) { it.copy(volume = volume, muted = false) }
-    fun toggleMute() = updateSelectedClip { it.copy(muted = !it.muted) }
-    fun setAudioFades(inUs: Long, outUs: Long, gesture: Boolean) = updateSelectedClip(if (gesture) "afade" else null) { it.copy(audioFadeInUs = inUs, audioFadeOutUs = outUs) }
-    fun setVideoFades(inUs: Long, outUs: Long, gesture: Boolean) = updateSelectedClip(if (gesture) "vfade" else null) { it.copy(videoFadeInUs = inUs, videoFadeOutUs = outUs) }
-    fun setStillDuration(us: Long, gesture: Boolean) = updateSelectedClip(if (gesture) "still" else null) { it.copy(stillDurationUs = us.coerceIn(TimelineMath.MIN_CLIP_US, EditOps.MAX_STILL_US)) }
+    override fun setClipVolume(volume: Float, gesture: Boolean) { updateSelectedClip(if (gesture) "volume" else null) { it.copy(volume = volume, muted = false) } }
+    override fun toggleMute() { updateSelectedClip { it.copy(muted = !it.muted) } }
+    override fun setAudioFades(inUs: Long, outUs: Long, gesture: Boolean) { updateSelectedClip(if (gesture) "afade" else null) { it.copy(audioFadeInUs = inUs, audioFadeOutUs = outUs) } }
+    override fun setVideoFades(inUs: Long, outUs: Long, gesture: Boolean) { updateSelectedClip(if (gesture) "vfade" else null) { it.copy(videoFadeInUs = inUs, videoFadeOutUs = outUs) } }
+    override fun setStillDuration(us: Long, gesture: Boolean) { updateSelectedClip(if (gesture) "still" else null) { it.copy(stillDurationUs = us.coerceIn(TimelineMath.MIN_CLIP_US, EditOps.MAX_STILL_US)) } }
 
     // ------------------------------------------------------------------ canvas & color
 
-    fun setAspect(aspect: AspectRatioSpec) = edit { it.copy(canvas = it.canvas.copy(aspectRatio = aspect)) }
-    fun setBackground(bg: CanvasBackground, gesture: Boolean = false) = edit(if (gesture) "bg" else null) { it.copy(canvas = it.canvas.copy(background = bg)) }
-    fun setFit(fit: ContentFit) = edit { it.copy(canvas = it.canvas.copy(fit = fit)) }
+    override fun setAspect(aspect: AspectRatioSpec) { edit { it.copy(canvas = it.canvas.copy(aspectRatio = aspect)) } }
+    override fun setBackground(bg: CanvasBackground, gesture: Boolean) { edit(if (gesture) "bg" else null) { it.copy(canvas = it.canvas.copy(background = bg)) } }
+    override fun setFit(fit: ContentFit) { edit { it.copy(canvas = it.canvas.copy(fit = fit)) } }
 
-    fun setFilter(filter: FilterPreset) = updateSelectedClip { it.copy(filter = filter) }
-    fun setFilterIntensity(v: Float, gesture: Boolean) = updateSelectedClip(if (gesture) "filterIntensity" else null) { it.copy(filterIntensity = v) }
-    fun applyFilterToAll() {
+    override fun setFilter(filter: FilterPreset) { updateSelectedClip { it.copy(filter = filter) } }
+    override fun setFilterIntensity(v: Float, gesture: Boolean) { updateSelectedClip(if (gesture) "filterIntensity" else null) { it.copy(filterIntensity = v) } }
+    override fun applyFilterToAll() {
         val c = selectedClip() ?: return
         edit { d -> d.copy(mainTrack = d.mainTrack.map { it.copy(filter = c.filter, filterIntensity = c.filterIntensity, adjustments = c.adjustments) }) }
     }
 
     /** [advanced] adjustments need EDITOR_ADVANCED_COLOR. */
-    fun setAdjustments(adjustments: ColorAdjustments, field: String, advanced: Boolean) {
+    override fun setAdjustments(adjustments: ColorAdjustments, field: String, advanced: Boolean) {
         if (advanced && !requirePro(ProFeature.EDITOR_ADVANCED_COLOR)) return
         updateSelectedClip("adjust:$field") { it.copy(adjustments = adjustments) }
     }
 
-    fun resetAdjustments() = updateSelectedClip { it.copy(adjustments = ColorAdjustments()) }
+    override fun resetAdjustments() { updateSelectedClip { it.copy(adjustments = ColorAdjustments()) } }
 
     // ------------------------------------------------------------------ overlays
 
@@ -576,26 +577,25 @@ class EditorViewModel @Inject constructor(
         editResult { EditOps.addOverlay(it, item) }
     }
 
-    fun addText(text: String, style: TextStyleSpec) {
+    override fun addText(text: String, style: TextStyleSpec) {
         if (text.isBlank()) return
         val (s, e) = defaultRange()
         addOverlay(OverlayItem.Text(startUs = s, endUs = e, text = text.trim(), style = style, transform = Transform2D(centerY = 0.4f)))
     }
 
-    fun addSticker(emoji: String) {
+    override fun addSticker(emoji: String) {
         val (s, e) = defaultRange()
         addOverlay(OverlayItem.Sticker(startUs = s, endUs = e, emoji = emoji, transform = Transform2D(centerX = 0.5f, centerY = 0.35f, scale = 1f)))
     }
 
-    fun updateOverlay(id: String, gestureKey: String? = null, transform: (OverlayItem) -> OverlayItem) =
-        edit(gestureKey?.let { "$it:$id" }) { EditOps.updateOverlay(it, id, transform) }
+    override fun updateOverlay(id: String, gestureKey: String?, transform: (OverlayItem) -> OverlayItem) { edit(gestureKey?.let { "$it:$id" }) { EditOps.updateOverlay(it, id, transform) } }
 
-    fun setOverlayAnimations(id: String, animIn: OverlayAnimation, animOut: OverlayAnimation) = updateOverlay(id) { it.withAnimations(animIn, animOut) }
+    override fun setOverlayAnimations(id: String, animIn: OverlayAnimation, animOut: OverlayAnimation) { updateOverlay(id) { it.withAnimations(animIn, animOut) } }
 
-    fun retimeOverlay(id: String, startUs: Long, endUs: Long) = edit("retime:$id") { EditOps.retimeOverlay(it, id, startUs, endUs) }
+    override fun retimeOverlay(id: String, startUs: Long, endUs: Long) { edit("retime:$id") { EditOps.retimeOverlay(it, id, startUs, endUs) } }
 
     /** Applies a preview pan/pinch/rotate gesture to the selected overlay or clip. */
-    fun transformSelection(dx: Float, dy: Float, zoom: Float, rotation: Float) {
+    override fun transformSelection(dx: Float, dy: Float, zoom: Float, rotation: Float) {
         when (val sel = state.value.selection) {
             is Selection.Overlay -> updateOverlay(sel.id, "xf") { item ->
                 val t = item.transform
@@ -629,7 +629,7 @@ class EditorViewModel @Inject constructor(
     }
 
     /** Photos become image overlays; videos become picture-in-picture (Pro). */
-    fun addMediaOverlay(uri: Uri) {
+    override fun addMediaOverlay(uri: Uri) {
         runBusy(R.string.editor_busy_importing, cancellable = false) {
             val stored = persistOrCopy(uri) ?: return@runBusy message(R.string.editor_msg_import_failed)
             val info = probe.probe(stored) ?: return@runBusy message(R.string.editor_msg_import_failed)
@@ -646,7 +646,7 @@ class EditorViewModel @Inject constructor(
     }
 
     /** A logo spanning the whole video in a corner; [asWatermark] marks it as the creator's watermark. */
-    fun addLogo(uri: Uri, asWatermark: Boolean) {
+    override fun addLogo(uri: Uri, asWatermark: Boolean) {
         runBusy(R.string.editor_busy_importing, cancellable = false) {
             val stored = persistOrCopy(uri) ?: return@runBusy message(R.string.editor_msg_import_failed)
             val total = history.current.durationUs.coerceAtLeast(1_000_000)
@@ -661,7 +661,7 @@ class EditorViewModel @Inject constructor(
 
     // ------------------------------------------------------------------ audio
 
-    fun importMusic(uri: Uri) {
+    override fun importMusic(uri: Uri) {
         runBusy(R.string.editor_busy_importing, cancellable = false) {
             val stored = persistOrCopy(uri) ?: return@runBusy message(R.string.editor_msg_import_failed)
             val info = probe.probe(stored)?.takeIf { it.hasAudio } ?: return@runBusy message(R.string.editor_msg_import_failed)
@@ -673,17 +673,16 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun updateAudioClip(id: String, gestureKey: String? = null, transform: (AudioClip) -> AudioClip) =
-        edit(gestureKey?.let { "$it:$id" }) { EditOps.updateAudioClip(it, id, transform) }
+    override fun updateAudioClip(id: String, gestureKey: String?, transform: (AudioClip) -> AudioClip) { edit(gestureKey?.let { "$it:$id" }) { EditOps.updateAudioClip(it, id, transform) } }
 
-    fun trimAudio(id: String, edge: Edge, deltaUs: Long) = edit("atrim:$id:$edge") { EditOps.trimAudioClip(it, id, edge, deltaUs) }
+    override fun trimAudio(id: String, edge: Edge, deltaUs: Long) { edit("atrim:$id:$edge") { EditOps.trimAudioClip(it, id, edge, deltaUs) } }
 
-    fun moveAudio(id: String, startUs: Long) = updateAudioClip(id, "amove") { it.copy(startUs = startUs.coerceAtLeast(0)) }
+    override fun moveAudio(id: String, startUs: Long) { updateAudioClip(id, "amove") { it.copy(startUs = startUs.coerceAtLeast(0)) } }
 
-    fun setTrackDucking(trackId: String, ducking: Boolean) = edit { EditOps.updateAudioTrack(it, trackId) { t -> t.copy(ducking = ducking) } }
-    fun setTrackMuted(trackId: String, muted: Boolean) = edit { EditOps.updateAudioTrack(it, trackId) { t -> t.copy(muted = muted) } }
+    override fun setTrackDucking(trackId: String, ducking: Boolean) { edit { EditOps.updateAudioTrack(it, trackId) { t -> t.copy(ducking = ducking) } } }
+    override fun setTrackMuted(trackId: String, muted: Boolean) { edit { EditOps.updateAudioTrack(it, trackId) { t -> t.copy(muted = muted) } } }
 
-    fun extractAudio() {
+    override fun extractAudio() {
         val c = selectedClip() ?: return
         if (c.source.kind != MediaKind.VIDEO || !c.source.hasAudio) return message(R.string.editor_msg_no_audio)
         runBusy(R.string.editor_busy_extract) { progress ->
@@ -693,21 +692,21 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun detachAudio() {
+    override fun detachAudio() {
         val c = selectedClip() ?: return
         val r = EditOps.detachAudio(history.current, c.id)
         if (r == null) message(R.string.editor_msg_no_audio) else editResult { r }
     }
 
-    fun setNoiseReduction(v: Float, gesture: Boolean) {
+    override fun setNoiseReduction(v: Float, gesture: Boolean) {
         if (v > 0f && !requirePro(ProFeature.AUDIO_NOISE_REDUCTION)) return
         updateSelectedClip(if (gesture) "nr" else null) { it.copy(noiseReduction = v) }
     }
 
-    fun setVoiceEnhance(on: Boolean) = updateSelectedClip { it.copy(voiceEnhance = on) }
+    override fun setVoiceEnhance(on: Boolean) { updateSelectedClip { it.copy(voiceEnhance = on) } }
 
     /** Offline AI cleanup (denoise + enhance + loudness) to a new file used as the clip's audio. */
-    fun aiAudioCleanup() {
+    override fun aiAudioCleanup() {
         if (!requirePro(ProFeature.AUDIO_NOISE_REDUCTION)) return
         val c = selectedClip() ?: return
         if (c.source.kind != MediaKind.VIDEO || !c.source.hasAudio) return message(R.string.editor_msg_no_audio)
@@ -722,7 +721,7 @@ class EditorViewModel @Inject constructor(
 
     // ------------------------------------------------------------------ voice-over
 
-    fun startVoiceOver() {
+    override fun startVoiceOver() {
         if (recording != null) return
         val file = File(files.audioDir(projectId), "voice_${System.currentTimeMillis()}.m4a")
         val start = playheadUs.value
@@ -746,7 +745,7 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun stopVoiceOver() {
+    override fun stopVoiceOver() {
         val handle = recording ?: return
         recording = null
         recordingJob?.cancel()
@@ -765,7 +764,7 @@ class EditorViewModel @Inject constructor(
 
     // ------------------------------------------------------------------ captions
 
-    fun autoCaption(language: String?) {
+    override fun autoCaption(language: String?) {
         if (!requirePro(ProFeature.AUTO_CAPTIONS)) return
         val status = state.value.services
         if (!status.speechConfigured) return message(kind = ErrorKind.NOT_CONFIGURED, detail = status.speechDetail)
@@ -791,39 +790,40 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun updateCue(id: String, gestureKey: String? = null, transform: (SubtitleCue) -> SubtitleCue) =
-        edit(gestureKey?.let { "$it:$id" }) { EditOps.updateCue(it, id, transform) }
+    override fun updateCue(id: String, gestureKey: String?, transform: (SubtitleCue) -> SubtitleCue) { edit(gestureKey?.let { "$it:$id" }) { EditOps.updateCue(it, id, transform) } }
 
     /** Moves (same length: word timings shift with it) or trims a cue from the timeline. */
-    fun retimeCue(id: String, startUs: Long, endUs: Long) = updateCue(id, "retime") { cue ->
-        val s = startUs.coerceAtLeast(0)
-        val e = endUs.coerceAtLeast(s + 100_000)
-        if (e - s == cue.endUs - cue.startUs) {
-            val shift = s - cue.startUs
-            cue.copy(startUs = s, endUs = e, words = cue.words.map { it.copy(startUs = it.startUs + shift, endUs = it.endUs + shift) })
-        } else {
-            cue.copy(startUs = s, endUs = e, words = cue.words.map { it.copy(startUs = it.startUs.coerceIn(s, e), endUs = it.endUs.coerceIn(s, e)) })
+    override fun retimeCue(id: String, startUs: Long, endUs: Long) {
+        updateCue(id, "retime") { cue ->
+            val s = startUs.coerceAtLeast(0)
+            val e = endUs.coerceAtLeast(s + 100_000)
+            if (e - s == cue.endUs - cue.startUs) {
+                val shift = s - cue.startUs
+                cue.copy(startUs = s, endUs = e, words = cue.words.map { it.copy(startUs = it.startUs + shift, endUs = it.endUs + shift) })
+            } else {
+                cue.copy(startUs = s, endUs = e, words = cue.words.map { it.copy(startUs = it.startUs.coerceIn(s, e), endUs = it.endUs.coerceIn(s, e)) })
+            }
         }
     }
 
-    fun addCueAtPlayhead(text: String) {
+    override fun addCueAtPlayhead(text: String) {
         val s = playheadUs.value
         editResult { EditOps.addCue(it, SubtitleCue(startUs = s, endUs = s + 2_000_000, text = text)) }
     }
 
-    fun splitCueAtPlayhead(id: String) {
+    override fun splitCueAtPlayhead(id: String) {
         val r = EditOps.splitCue(history.current, id, playheadUs.value)
         if (r == null) message(R.string.editor_msg_split_edge) else editResult { r }
     }
 
-    fun mergeCueWithNext(id: String) = editResult { EditOps.mergeCueWithNext(it, id) }
-    fun deleteCue(id: String) = edit { EditOps.deleteCue(it, id) }
-    fun clearCues() = edit { EditOps.setCues(it, emptyList()) }
-    fun setSubtitleStyle(style: SubtitleStyle, gesture: Boolean = false) = edit(if (gesture) "substyle" else null) { it.copy(subtitles = it.subtitles.copy(style = style)) }
-    fun setSubtitlesVisible(visible: Boolean) = edit { it.copy(subtitles = it.subtitles.copy(visible = visible)) }
-    fun setBurnIn(burn: Boolean) = edit { it.copy(subtitles = it.subtitles.copy(burnIn = burn)) }
+    override fun mergeCueWithNext(id: String) { editResult { EditOps.mergeCueWithNext(it, id) } }
+    override fun deleteCue(id: String) { edit { EditOps.deleteCue(it, id) } }
+    override fun clearCues() { edit { EditOps.setCues(it, emptyList()) } }
+    override fun setSubtitleStyle(style: SubtitleStyle, gesture: Boolean) { edit(if (gesture) "substyle" else null) { it.copy(subtitles = it.subtitles.copy(style = style)) } }
+    override fun setSubtitlesVisible(visible: Boolean) { edit { it.copy(subtitles = it.subtitles.copy(visible = visible)) } }
+    override fun setBurnIn(burn: Boolean) { edit { it.copy(subtitles = it.subtitles.copy(burnIn = burn)) } }
 
-    fun importSrt(uri: Uri) {
+    override fun importSrt(uri: Uri) {
         viewModelScope.launch {
             val text = withContext(io) { runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) } }.getOrNull() }
             val cues = text?.let { runCatching { subtitleBuilder.parseSrt(it) }.getOrNull() }
@@ -833,7 +833,7 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun exportSrt(uri: Uri) {
+    override fun exportSrt(uri: Uri) {
         val cues = history.current.subtitles.cues
         viewModelScope.launch {
             val ok = withContext(io) {
@@ -847,7 +847,7 @@ class EditorViewModel @Inject constructor(
 
     private fun requireAi(): Boolean = requirePro(ProFeature.AI_VIDEO_TOOLS)
 
-    fun detectSilences() {
+    override fun detectSilences() {
         if (!requireAi()) return
         val clips = history.current.mainTrack.filter { it.source.kind == MediaKind.VIDEO && it.source.hasAudio && !it.reversed }
         if (clips.isEmpty()) return message(R.string.editor_msg_no_speech_clips)
@@ -863,7 +863,7 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun applySilenceRemoval() {
+    override fun applySilenceRemoval() {
         val silences = state.value.ai.silences ?: return
         edit { start ->
             var d = start
@@ -875,7 +875,7 @@ class EditorViewModel @Inject constructor(
         _state.update { it.copy(ai = it.ai.copy(silences = null)) }
     }
 
-    fun dismissAi() = _state.update { it.copy(ai = AiResults()) }
+    override fun dismissAi() { _state.update { it.copy(ai = AiResults()) } }
 
     private fun longestVideoClip(): VideoClip? = history.current.mainTrack.filter { it.source.kind == MediaKind.VIDEO && !it.reversed }.maxByOrNull { it.outputDurationUs }
 
@@ -887,7 +887,7 @@ class EditorViewModel @Inject constructor(
         return t
     }
 
-    fun findHighlights() {
+    override fun findHighlights() {
         if (!requireAi()) return
         val clip = longestVideoClip() ?: return message(R.string.editor_msg_no_speech_clips)
         runBusy(R.string.editor_busy_analyzing) { progress ->
@@ -899,12 +899,12 @@ class EditorViewModel @Inject constructor(
     }
 
     /** Seeks to a highlight (its source range mapped onto the timeline). */
-    fun jumpToSource(clipId: String, sourceUs: Long) {
+    override fun jumpToSource(clipId: String, sourceUs: Long) {
         val p = TimelineMath.placementOf(history.current, clipId) ?: return
         TimelineMath.sourceToTimeline(p.clip, p.startUs, sourceUs.coerceIn(p.clip.trimStartUs, p.clip.trimEndUs))?.let { seekTo(it) }
     }
 
-    fun suggestShorts() {
+    override fun suggestShorts() {
         if (!requireAi()) return
         val clip = longestVideoClip() ?: return message(R.string.editor_msg_no_speech_clips)
         if (!state.value.services.speechConfigured) return message(kind = ErrorKind.NOT_CONFIGURED, detail = state.value.services.speechDetail)
@@ -916,7 +916,7 @@ class EditorViewModel @Inject constructor(
     }
 
     /** Creates a new 9:16 project for a short suggestion (clips for its ranges + captions). */
-    fun createShort(index: Int) {
+    override fun createShort(index: Int) {
         val ai = state.value.ai
         val suggestion: ShortSuggestion = ai.shorts?.getOrNull(index) ?: return
         val clip = history.current.mainTrack.firstOrNull { it.id == ai.shortsClipId } ?: return
@@ -943,7 +943,7 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun planAutoEdit() {
+    override fun planAutoEdit() {
         if (!requireAi()) return
         runBusy(R.string.editor_busy_analyzing) { progress ->
             val plan = intelligence.planAutoEdit(history.current, progress).valueOrReport() ?: return@runBusy
@@ -951,7 +951,7 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun applyAutoEdit() {
+    override fun applyAutoEdit() {
         val plan = state.value.ai.plan ?: return
         edit { start ->
             var d = if (plan.subtitles.isNotEmpty()) EditOps.setCues(start, plan.subtitles) else start
@@ -963,7 +963,7 @@ class EditorViewModel @Inject constructor(
         _state.update { it.copy(ai = it.ai.copy(plan = null)) }
     }
 
-    fun correctEyeContact() {
+    override fun correctEyeContact() {
         if (!requireAi()) return
         val c = selectedClip() ?: return
         if (state.value.services.eyeContact != CapabilityState.AVAILABLE) return
@@ -977,7 +977,7 @@ class EditorViewModel @Inject constructor(
 
     // ------------------------------------------------------------------ export
 
-    fun openExport() {
+    override fun openExport() {
         viewModelScope.launch {
             preview.pause()
             drafts.save(projectId, history.current)
@@ -985,7 +985,7 @@ class EditorViewModel @Inject constructor(
         }
     }
 
-    fun openSettings() {
+    override fun openSettings() {
         _events.trySend(EditorEvent.OpenSettings)
     }
 

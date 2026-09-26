@@ -52,7 +52,7 @@ import com.ravango.core.model.TextStyleSpec
 import com.ravango.engine.editor.ops.EditOps
 import com.ravango.engine.editor.ops.withTransform
 import com.ravango.feature.editor.EditorUiState
-import com.ravango.feature.editor.EditorViewModel
+import com.ravango.feature.editor.EditorActions
 import com.ravango.feature.editor.R
 import com.ravango.feature.editor.Selection
 import com.ravango.feature.editor.ui.PanelSection
@@ -109,7 +109,7 @@ internal fun FontPicker(selected: PrompterFont, onSelect: (PrompterFont) -> Unit
 }
 
 @Composable
-internal fun AnimationPickers(item: OverlayItem, vm: EditorViewModel) {
+internal fun AnimationPickers(item: OverlayItem, vm: EditorActions) {
     PanelSection(stringResource(R.string.editor_anim_in)) {
         RgChipRow(OverlayAnimation.entries.toList(), item.animationIn, { vm.setOverlayAnimations(item.id, it, item.animationOut) }, { stringResource(it.label()) }, glass = true, contentPadding = PaddingValues(0.dp))
     }
@@ -119,10 +119,10 @@ internal fun AnimationPickers(item: OverlayItem, vm: EditorViewModel) {
 }
 
 @Composable
-internal fun ItemActions(item: OverlayItem, vm: EditorViewModel) {
+internal fun ItemActions(item: OverlayItem, vm: EditorActions) {
     Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.lg), horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
         Text(
-            com.ravango.feature.editor.ui.timecode(item.startUs) + " – " + com.ravango.feature.editor.ui.timecode(item.endUs),
+            com.ravango.feature.editor.ui.timeRange(item.startUs, item.endUs),
             style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f), modifier = Modifier.weight(1f),
         )
         RgIconButton(Icons.Rounded.ContentCopy, stringResource(R.string.editor_duplicate), vm::duplicateSelection, size = 36.dp, iconSize = 18.dp, glass = true)
@@ -133,7 +133,7 @@ internal fun ItemActions(item: OverlayItem, vm: EditorViewModel) {
 }
 
 @Composable
-fun TextPanel(state: EditorUiState, vm: EditorViewModel) {
+fun TextPanel(state: EditorUiState, vm: EditorActions) {
     val selected = (state.selection as? Selection.Overlay)?.let { EditOps.findOverlay(state.document, it.id) } as? OverlayItem.Text
     if (selected == null) {
         var draft by rememberSaveable { mutableStateOf("") }
@@ -220,7 +220,7 @@ private val Emojis = listOf(
 )
 
 @Composable
-fun StickersPanel(state: EditorUiState, vm: EditorViewModel) {
+fun StickersPanel(state: EditorUiState, vm: EditorActions) {
     val selected = (state.selection as? Selection.Overlay)?.let { EditOps.findOverlay(state.document, it.id) } as? OverlayItem.Sticker
     if (selected != null) {
         ItemActions(selected, vm)

@@ -1,5 +1,9 @@
 package com.ravango.feature.ai
 
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -25,10 +29,20 @@ import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import com.ravango.core.designsystem.component.pressable
 import androidx.compose.material.icons.rounded.Subscriptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.ravango.core.designsystem.component.ShimmerBox
+import com.ravango.core.designsystem.theme.Radius
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,7 +68,6 @@ import com.ravango.core.designsystem.component.RgSwitch
 import com.ravango.core.designsystem.component.RgTag
 import com.ravango.core.designsystem.component.RgTextButton
 import com.ravango.core.designsystem.component.RgTextField
-import com.ravango.core.designsystem.component.ShimmerBox
 import com.ravango.core.designsystem.theme.RgTheme
 import com.ravango.core.designsystem.theme.Spacing
 import com.ravango.engine.ai.api.ContentPlatform
@@ -63,18 +76,32 @@ import com.ravango.engine.ai.prompts.PromptLibrary
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
+/** Everything an open AI tool can ask for (hoisted from [AiStudioViewModel] so the screen renders stateless). */
+@androidx.compose.runtime.Immutable
+class AiToolActions(
+    val onInput: (String) -> Unit,
+    val onOptions: ((ToolOptions) -> ToolOptions) -> Unit,
+    val onGenerate: () -> Unit,
+    val onStop: () -> Unit,
+    val onToggleVariant: (Int) -> Unit,
+    val onSave: (defaultTitle: String, openPrompter: Boolean) -> Unit,
+    val onReplace: () -> Unit,
+    val onCopy: (String) -> Unit,
+    val onShare: (String) -> Unit,
+)
+
 @Composable
 fun ToolContent(
     state: AiStudioUiState,
     padding: PaddingValues,
-    viewModel: AiStudioViewModel,
-    onCopy: (String) -> Unit,
-    onShare: (String) -> Unit,
+    actions: AiToolActions,
     onOpenSettings: () -> Unit,
     onSignIn: () -> Unit,
     onPaywall: () -> Unit,
 ) {
     val tool = state.tool ?: return
+    val onCopy = actions.onCopy
+    val onShare = actions.onShare
     val listState = rememberLazyListState()
     var optionsExpanded by rememberSaveable { mutableStateOf(true) }
     val defaultTitle = stringResource(R.string.ai_default_script_title)
@@ -97,18 +124,18 @@ fun ToolContent(
         ),
         verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        item(key = "input") { InputCard(state, tool, viewModel::setInput) }
+        item(key = "input") { InputCard(state, tool, actions.onInput) }
         item(key = "options") {
-            OptionsCard(state, tool, optionsExpanded, { optionsExpanded = !optionsExpanded }, viewModel::updateOptions)
+            OptionsCard(state, tool, optionsExpanded, { optionsExpanded = !optionsExpanded }, actions.onOptions)
         }
         item(key = "actions") {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 if (state.isStreaming) {
-                    RgSecondaryButton(stringResource(R.string.ai_stop), viewModel::stop, icon = Icons.Rounded.Stop, modifier = Modifier.weight(1f))
+                    RgSecondaryButton(stringResource(R.string.ai_stop), actions.onStop, icon = Icons.Rounded.Stop, modifier = Modifier.weight(1f))
                 } else {
                     RgPrimaryButton(
                         text = stringResource(if (state.output.isBlank()) R.string.ai_generate else R.string.ai_regenerate),
-                        onClick = viewModel::generate,
+                        onClick = actions.onGenerate,
                         icon = if (state.output.isBlank()) Icons.Rounded.AutoAwesome else Icons.Rounded.Refresh,
                         enabled = state.canGenerate,
                         modifier = Modifier.weight(1f),
@@ -116,7 +143,7 @@ fun ToolContent(
                 }
             }
         }
-        item(key = "result") { ResultSection(state, onCopy, onShare, viewModel, onOpenSettings, onSignIn, onPaywall) }
+        item(key = "result") { ResultSection(state, actions, onOpenSettings, onSignIn, onPaywall) }
         if (state.variants.isNotEmpty() && !state.isStreaming) {
             item(key = "variants_hint") {
                 Text(
@@ -127,12 +154,12 @@ fun ToolContent(
                 )
             }
             itemsIndexed(state.variants, key = { i, v -> "v_${i}_${v.hashCode()}" }) { i, v ->
-                VariantCard(v, i in state.selectedVariants, { viewModel.toggleVariant(i) })
+                VariantCard(v, i in state.selectedVariants, { actions.onToggleVariant(i) })
             }
         }
         if (state.hasResult) {
             item(key = "result_actions") {
-                ResultActions(state, onCopy, onShare, onSave = { open -> viewModel.saveAsNewScript(defaultTitle, open) }, onReplace = viewModel::replaceSourceScript)
+                ResultActions(state, onCopy, onShare, onSave = { open -> actions.onSave(defaultTitle, open) }, onReplace = actions.onReplace)
             }
         }
     }
@@ -182,9 +209,19 @@ private fun OptionsCard(
 ) {
     val o = state.options
     RgCard(Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = Spacing.md)) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.lg), verticalAlignment = Alignment.CenterVertically) {
+        // The whole header toggles; the chevron shows the state.
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = 48.dp).pressable(onClick = onToggle).padding(horizontal = Spacing.lg),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Rounded.Tune, null, tint = RgTheme.colors.accent, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(Spacing.sm))
             Text(stringResource(R.string.ai_options), style = MaterialTheme.typography.titleMedium, color = RgTheme.colors.textPrimary, modifier = Modifier.weight(1f))
-            RgTextButton(if (expanded) "−" else "+", onToggle)
+            Icon(
+                if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                stringResource(R.string.ai_options),
+                tint = RgTheme.colors.textSecondary,
+            )
         }
         AnimatedSection(expanded) {
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
@@ -285,9 +322,7 @@ private fun OptionLabel(res: Int) {
 @Composable
 private fun ResultSection(
     state: AiStudioUiState,
-    onCopy: (String) -> Unit,
-    onShare: (String) -> Unit,
-    viewModel: AiStudioViewModel,
+    actions: AiToolActions,
     onOpenSettings: () -> Unit,
     onSignIn: () -> Unit,
     onPaywall: () -> Unit,
@@ -307,17 +342,17 @@ private fun ResultSection(
                 Text(stringResource(R.string.ai_generating), style = MaterialTheme.typography.labelLarge, color = RgTheme.colors.accent)
                 Spacer(Modifier.height(Spacing.md))
                 repeat(3) { i ->
-                    ShimmerBox(Modifier.fillMaxWidth(if (i == 2) 0.6f else 1f).height(14.dp))
+                    ShimmerBox(Modifier.fillMaxWidth(if (i == 2) 0.6f else 1f).height(14.dp), RoundedCornerShape(Radius.pill))
                     Spacer(Modifier.height(Spacing.sm))
                 }
             }
             2 -> {
                 val f = state.generation as? GenerationState.Failed
-                if (f != null) FailureCard(f.kind, f.code, viewModel::generate, onPaywall, onOpenSettings, onSignIn)
+                if (f != null) FailureCard(f.kind, f.code, actions.onGenerate, onPaywall, onOpenSettings, onSignIn)
             }
             3 -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 val g = state.generation
-                if (g is GenerationState.Failed) FailureCard(g.kind, g.code, viewModel::generate, onPaywall, onOpenSettings, onSignIn)
+                if (g is GenerationState.Failed) FailureCard(g.kind, g.code, actions.onGenerate, onPaywall, onOpenSettings, onSignIn)
                 // List tasks show their items as cards once complete; the raw stream is shown while writing.
                 if (state.variants.isEmpty() || state.isStreaming) {
                     RgCard(Modifier.fillMaxWidth()) {
@@ -333,9 +368,9 @@ private fun ResultSection(
                                 modifier = Modifier.weight(1f),
                             )
                             if (!state.isStreaming) {
-                                RgIconButton(Icons.Rounded.ContentCopy, stringResource(com.ravango.core.ui.R.string.action_copy), { onCopy(state.output.trim()) }, size = 36.dp)
+                                RgIconButton(Icons.Rounded.ContentCopy, stringResource(com.ravango.core.ui.R.string.action_copy), { actions.onCopy(state.output.trim()) }, size = 36.dp)
                                 Spacer(Modifier.width(Spacing.xs))
-                                RgIconButton(Icons.Rounded.Share, stringResource(com.ravango.core.ui.R.string.action_share), { onShare(state.output.trim()) }, size = 36.dp)
+                                RgIconButton(Icons.Rounded.Share, stringResource(com.ravango.core.ui.R.string.action_share), { actions.onShare(state.output.trim()) }, size = 36.dp)
                             }
                         }
                         Spacer(Modifier.height(Spacing.sm))
@@ -401,3 +436,4 @@ private fun Tone.labelRes(): Int = when (this) {
     Tone.PERSUASIVE -> R.string.ai_tone_persuasive
     Tone.EDUCATIONAL -> R.string.ai_tone_educational
 }
+

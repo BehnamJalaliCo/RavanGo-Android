@@ -57,7 +57,7 @@ import com.ravango.core.model.ProFeature
 import com.ravango.core.model.VideoClip
 import com.ravango.engine.editor.effects.GradeParams
 import com.ravango.feature.editor.EditorUiState
-import com.ravango.feature.editor.EditorViewModel
+import com.ravango.feature.editor.EditorActions
 import com.ravango.feature.editor.R
 import com.ravango.feature.editor.ui.PanelSection
 import com.ravango.feature.editor.ui.SwatchColors
@@ -83,7 +83,7 @@ private val GradientPresets = listOf(
 private enum class BgMode { SOLID, GRADIENT, BLUR }
 
 @Composable
-fun CanvasPanel(state: EditorUiState, vm: EditorViewModel) {
+fun CanvasPanel(state: EditorUiState, vm: EditorActions) {
     val canvas = state.document.canvas
     PanelSection(stringResource(R.string.editor_canvas_ratio)) {}
     LazyRow(contentPadding = PaddingValues(horizontal = Spacing.lg), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
@@ -200,7 +200,7 @@ internal fun previewMatrix(p: GradeParams): ColorMatrix {
 }
 
 @Composable
-fun FiltersPanel(state: EditorUiState, vm: EditorViewModel) {
+fun FiltersPanel(state: EditorUiState, vm: EditorActions) {
     val clip = state.selectedClip() ?: return SelectClipHint(vm)
     val density = LocalDensity.current
     val heightPx = with(density) { 64.dp.roundToPx() }
@@ -264,7 +264,7 @@ private enum class AdjustParam(val label: Int, val bipolar: Boolean, val advance
 }
 
 @Composable
-fun AdjustPanel(state: EditorUiState, vm: EditorViewModel) {
+fun AdjustPanel(state: EditorUiState, vm: EditorActions) {
     val clip: VideoClip = state.selectedClip() ?: return SelectClipHint(vm)
     var param by rememberSaveable { mutableStateOf(AdjustParam.EXPOSURE) }
     val pro = state.has(ProFeature.EDITOR_ADVANCED_COLOR)

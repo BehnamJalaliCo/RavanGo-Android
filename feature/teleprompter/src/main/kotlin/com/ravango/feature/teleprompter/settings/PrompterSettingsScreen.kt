@@ -1,5 +1,9 @@
 package com.ravango.feature.teleprompter.settings
 
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -83,6 +87,20 @@ import com.ravango.core.ui.R as UiR
 @Composable
 internal fun PrompterSettingsRoute(onBack: () -> Unit, viewModel: PrompterSettingsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    PrompterSettingsContent(state, viewModel, onBack)
+}
+
+/**
+ * Stateless settings screen. [livePreview] scrolls the preview continuously (off in screenshot tests so the
+ * render is deterministic).
+ */
+@Composable
+internal fun PrompterSettingsContent(
+    state: PrompterSettingsUiState,
+    actions: PrompterSettingsActions,
+    onBack: () -> Unit,
+    livePreview: Boolean = true,
+) {
     RgScreen(
         title = stringResource(R.string.prompter_settings),
         subtitle = state.scriptTitle,
@@ -91,7 +109,7 @@ internal fun PrompterSettingsRoute(onBack: () -> Unit, viewModel: PrompterSettin
         if (state.loading) {
             LoadingState(Modifier.padding(padding))
         } else {
-            SettingsContent(state, viewModel, Modifier.padding(padding))
+            SettingsContent(state, actions, livePreview, Modifier.padding(padding))
         }
     }
 }
@@ -103,14 +121,14 @@ private val HighlightColors = listOf(0xFFFFD166, 0xFFFF93AF, 0xFFA394FB, 0xFF6FD
 private val BackgroundColors = listOf(0xFF000000, 0xFF15131F, 0xFF1E2C42, 0xFF1C3530, 0xFF3A2433, 0xFFFFFFFF, 0xFFF8F4E8).map { Color(it) }
 
 @Composable
-private fun SettingsContent(state: PrompterSettingsUiState, vm: PrompterSettingsViewModel, modifier: Modifier) {
+private fun SettingsContent(state: PrompterSettingsUiState, vm: PrompterSettingsActions, livePreview: Boolean, modifier: Modifier) {
     val s = state.settings
     var showSaveDialog by remember { mutableStateOf(false) }
     var presetToDelete by remember { mutableStateOf<TeleprompterPreset?>(null) }
     var showReset by remember { mutableStateOf(false) }
 
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = Spacing.huge)) {
-        item { Preview(state) }
+        item { Preview(state, livePreview) }
 
         if (state.scriptTitle != null) {
             item {
@@ -135,7 +153,8 @@ private fun SettingsContent(state: PrompterSettingsUiState, vm: PrompterSettings
 
         item {
             Column {
-                Row(Modifier.fillMaxWidth().padding(start = Spacing.gutter, end = Spacing.md, top = Spacing.lg), verticalAlignment = Alignment.CenterVertically) {
+                // Header aligned with the design-system group titles (gutter + 8dp).
+                Row(Modifier.fillMaxWidth().padding(start = Spacing.gutter + Spacing.sm, end = Spacing.sm, top = Spacing.md), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.prompter_presets), style = MaterialTheme.typography.labelLarge, color = RgTheme.colors.textSecondary, modifier = Modifier.weight(1f))
                     RgTextButton(stringResource(R.string.prompter_preset_save), { showSaveDialog = true })
                 }
@@ -185,9 +204,15 @@ private fun SettingsContent(state: PrompterSettingsUiState, vm: PrompterSettings
         // Text
         item {
             RgGroup(title = stringResource(R.string.prompter_group_text)) {
+                Text(
+                    stringResource(R.string.prompter_font),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = RgTheme.colors.textPrimary,
+                    modifier = Modifier.padding(start = Spacing.md, end = Spacing.md, top = Spacing.md, bottom = Spacing.sm),
+                )
+                // Scrolls edge to edge inside the card instead of being clipped by its padding.
+                FontPicker(s.font) { f -> vm.update { it.copy(font = f) } }
                 Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                    Text(stringResource(R.string.prompter_font), style = MaterialTheme.typography.titleSmall, color = RgTheme.colors.textPrimary)
-                    FontPicker(s.font) { f -> vm.update { it.copy(font = f) } }
                     RgLabeledSlider(
                         stringResource(R.string.prompter_font_size), s.fontSizeSp, { v -> vm.update { it.copy(fontSizeSp = v.roundToInt().toFloat()) } },
                         valueRange = TeleprompterSettings.MIN_FONT_SP..TeleprompterSettings.MAX_FONT_SP,
@@ -368,12 +393,12 @@ private val SpeedPresets = listOf(
 )
 
 @Composable
-private fun Preview(state: PrompterSettingsUiState) {
+private fun Preview(state: PrompterSettingsUiState, live: Boolean) {
     val sample = state.scriptBody?.takeIf { it.isNotBlank() }?.take(1_500) ?: stringResource(R.string.prompter_preview_sample)
     // The preview loops continuously with no countdown so every change is visible immediately.
     val previewSettings = state.settings.copy(countdownSeconds = 0, loop = true)
     val controller = rememberPrompterController(sample, previewSettings)
-    LaunchedEffect(controller) { controller.play() }
+    LaunchedEffect(controller, live) { if (live) controller.play() }
     Box(
         Modifier
             .fillMaxWidth()
@@ -406,7 +431,7 @@ private fun Preview(state: PrompterSettingsUiState) {
 
 @Composable
 private fun FontPicker(selected: PrompterFont, onSelect: (PrompterFont) -> Unit) {
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+    LazyRow(contentPadding = PaddingValues(horizontal = Spacing.md), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         items(PrompterFont.entries, key = { it.name }) { font ->
             val isSelected = font == selected
             val shape = RoundedCornerShape(Radius.md)
@@ -544,3 +569,4 @@ private fun decimal(value: Float, digits: Int): String = String.format(Locale.US
 private fun percent(fraction: Float): String = "${(fraction * 100).roundToInt()}٪".let {
     if (Locale.getDefault().language == "fa") it.localizeDigits() else it.replace("٪", "%")
 }
+

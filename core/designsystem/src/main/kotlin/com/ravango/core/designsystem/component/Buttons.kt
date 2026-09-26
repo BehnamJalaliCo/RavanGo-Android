@@ -1,6 +1,7 @@
 package com.ravango.core.designsystem.component
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -28,12 +29,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
+import com.ravango.core.designsystem.theme.ButtonText
+import com.ravango.core.designsystem.theme.Dimens
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.ravango.core.designsystem.theme.HapticEvent
@@ -42,9 +48,30 @@ import com.ravango.core.designsystem.theme.Radius
 import com.ravango.core.designsystem.theme.RgTheme
 import com.ravango.core.designsystem.theme.Spacing
 
-enum class RgButtonSize(val height: Dp, val hPadding: Dp) { SMALL(36.dp, 14.dp), MEDIUM(48.dp, 20.dp), LARGE(56.dp, 24.dp) }
+/**
+ * Button heights follow [com.ravango.core.designsystem.theme.Dimens]: SMALL 32 (pairs with chips), MEDIUM 40 (pairs with
+ * segmented controls and compact icon buttons), LARGE 48 (standard CTA), HERO 56 (one per screen: onboarding, paywall).
+ */
+enum class RgButtonSize(val height: Dp, val hPadding: Dp) {
+    SMALL(32.dp, 14.dp),
+    MEDIUM(40.dp, 18.dp),
+    LARGE(48.dp, 22.dp),
+    HERO(56.dp, 28.dp),
+    ;
 
-/** Primary call to action: brand gradient pill with glow. */
+    internal val iconSize: Dp get() = when (this) { SMALL -> 16.dp; MEDIUM -> 18.dp; LARGE, HERO -> 20.dp }
+    internal val iconGap: Dp get() = if (this == SMALL) 6.dp else Spacing.sm
+    internal val textStyle: TextStyle get() = when (this) {
+        SMALL -> ButtonText.small
+        MEDIUM -> ButtonText.medium
+        LARGE -> ButtonText.large
+        HERO -> ButtonText.hero
+    }
+}
+
+private val PillShape = RoundedCornerShape(Radius.pill)
+
+/** Primary call to action: brand gradient pill with a soft colored glow. Disabled: flat muted pill (no faded gradient). */
 @Composable
 fun RgPrimaryButton(
     text: String,
@@ -55,26 +82,32 @@ fun RgPrimaryButton(
     loading: Boolean = false,
     size: RgButtonSize = RgButtonSize.LARGE,
     brush: Brush? = null,
+    /** Label/icon color; defaults to white. Pass a dark ink for light brushes (e.g. the gold Pro gradient). */
+    contentColor: Color? = null,
 ) {
     val colors = RgTheme.colors
-    val alpha by animateFloatAsState(if (enabled) 1f else 0.45f, Motion.quick(), label = "alpha")
-    val shape = RoundedCornerShape(Radius.pill)
+    val content = if (enabled) contentColor ?: Color.White else colors.textTertiary
     Box(
         modifier
             .defaultMinSize(minHeight = size.height)
-            .alpha(alpha)
-            .shadow(if (enabled) 14.dp else 0.dp, shape, ambientColor = colors.accent.copy(alpha = 0.35f), spotColor = colors.accent.copy(alpha = 0.45f))
-            .clip(shape)
-            .background(brush ?: colors.brandGradient)
-            .pressable(enabled = enabled && !loading, haptic = HapticEvent.CONFIRM, onClick = onClick)
+            .softShadow(if (enabled && size >= RgButtonSize.LARGE) 12.dp else if (enabled) 6.dp else 0.dp, PillShape, colors.accent)
+            .clip(PillShape)
+            .then(if (enabled) Modifier.background(brush ?: colors.ctaGradient) else Modifier.background(colors.surfaceMuted))
+            .pressable(
+                shape = PillShape,
+                enabled = enabled && !loading,
+                haptic = HapticEvent.CONFIRM,
+                pressedOverlay = Color.Black.copy(alpha = 0.10f),
+                onClick = onClick,
+            )
             .padding(horizontal = size.hPadding),
         contentAlignment = Alignment.Center,
     ) {
         AnimatedContent(loading, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "loading") { isLoading ->
             if (isLoading) {
-                CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.5.dp)
+                CircularProgressIndicator(Modifier.size(size.iconSize + 2.dp), color = content, strokeWidth = 2.5.dp)
             } else {
-                ButtonContent(text, icon, Color.White)
+                ButtonContent(text, icon, content, size)
             }
         }
     }
@@ -90,19 +123,19 @@ fun RgSecondaryButton(
     enabled: Boolean = true,
     size: RgButtonSize = RgButtonSize.LARGE,
     containerColor: Color = RgTheme.colors.accentSoft,
-    contentColor: Color = RgTheme.colors.accent,
+    contentColor: Color = RgTheme.colors.onAccentSoft,
 ) {
     val alpha by animateFloatAsState(if (enabled) 1f else 0.45f, Motion.quick(), label = "alpha")
     Box(
         modifier
             .defaultMinSize(minHeight = size.height)
             .alpha(alpha)
-            .clip(RoundedCornerShape(Radius.pill))
+            .clip(PillShape)
             .background(containerColor)
-            .pressable(enabled = enabled, onClick = onClick)
+            .pressable(shape = PillShape, enabled = enabled, onClick = onClick)
             .padding(horizontal = size.hPadding),
         contentAlignment = Alignment.Center,
-    ) { ButtonContent(text, icon, contentColor) }
+    ) { ButtonContent(text, icon, contentColor, size) }
 }
 
 /** Outlined, low-emphasis action. */
@@ -116,45 +149,49 @@ fun RgOutlineButton(
     size: RgButtonSize = RgButtonSize.MEDIUM,
     contentColor: Color = RgTheme.colors.textPrimary,
 ) {
-    val shape = RoundedCornerShape(Radius.pill)
+    val colors = RgTheme.colors
     Box(
         modifier
             .defaultMinSize(minHeight = size.height)
             .alpha(if (enabled) 1f else 0.45f)
-            .clip(shape)
-            .border(1.dp, RgTheme.colors.outlineStrong, shape)
-            .pressable(enabled = enabled, onClick = onClick)
+            .clip(PillShape)
+            .background(colors.surface.copy(alpha = if (colors.isDark) 0.4f else 0.7f))
+            .border(1.dp, colors.outlineStrong, PillShape)
+            .pressable(shape = PillShape, enabled = enabled, onClick = onClick)
             .padding(horizontal = size.hPadding),
         contentAlignment = Alignment.Center,
-    ) { ButtonContent(text, icon, contentColor) }
+    ) { ButtonContent(text, icon, contentColor, size) }
 }
 
 @Composable
 fun RgTextButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, color: Color = RgTheme.colors.accent, enabled: Boolean = true) {
     Box(
         modifier
-            .defaultMinSize(minHeight = 40.dp)
-            .clip(RoundedCornerShape(Radius.pill))
-            .pressable(enabled = enabled, onClick = onClick)
+            .defaultMinSize(minHeight = Dimens.controlMedium)
+            .clip(PillShape)
+            .pressable(shape = PillShape, enabled = enabled, onClick = onClick)
             .padding(horizontal = 12.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text, style = MaterialTheme.typography.labelLarge, color = if (enabled) color else color.copy(alpha = 0.4f))
+        Text(text, style = ButtonText.medium, color = if (enabled) color else color.copy(alpha = 0.4f), maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
 @Composable
-private fun ButtonContent(text: String, icon: ImageVector?, color: Color) {
+private fun ButtonContent(text: String, icon: ImageVector?, color: Color, size: RgButtonSize) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
         if (icon != null) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(Spacing.sm))
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(size.iconSize))
+            Spacer(Modifier.width(size.iconGap))
         }
-        Text(text, style = MaterialTheme.typography.labelLarge, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text, style = size.textStyle, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
-/** Circular icon button with a soft container. Use [glass] over camera/video. */
+/**
+ * Circular icon button with a soft container. Use [glass] over camera/video. Visual sizes 40/44/48; anything smaller
+ * than 48dp still receives a 48dp touch area from Compose's minimum-touch-target handling.
+ */
 @Composable
 fun RgIconButton(
     icon: ImageVector,
@@ -170,16 +207,25 @@ fun RgIconButton(
     container: Color? = null,
 ) {
     val colors = RgTheme.colors
-    val bg = when {
-        container != null -> container
-        selected -> colors.accent
-        glass -> Color.Black.copy(alpha = 0.32f)
-        else -> colors.surfaceMuted
-    }
+    val bg by animateColorAsState(
+        when {
+            container != null -> container
+            selected -> colors.accent
+            glass -> Color.Black.copy(alpha = 0.34f)
+            else -> colors.surfaceMuted
+        },
+        Motion.quick(), label = "iconBg",
+    )
     val fg = tint ?: when {
         selected -> colors.onAccent
         glass -> Color.White
         else -> colors.textPrimary
+    }
+    val stroke = when {
+        glass -> Color.White.copy(alpha = 0.18f)
+        selected -> Color.Transparent
+        colors.isDark && container == null -> Color.White.copy(alpha = 0.06f)
+        else -> Color.Transparent
     }
     Box(
         modifier
@@ -187,35 +233,42 @@ fun RgIconButton(
             .alpha(if (enabled) 1f else 0.4f)
             .clip(CircleShape)
             .background(bg)
-            .then(if (glass) Modifier.border(1.dp, Color.White.copy(alpha = 0.18f), CircleShape) else Modifier)
-            .pressable(enabled = enabled, onClick = onClick),
+            .border(1.dp, stroke, CircleShape)
+            .pressable(shape = CircleShape, enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(icon, contentDescription = contentDescription, tint = fg, modifier = Modifier.size(iconSize))
     }
 }
 
-/** Small rounded label with a gradient, used to mark Pro features. */
+/** Small rounded label with a gradient, used to mark Pro features. Fixed 20dp height so it centers in any row. */
 @Composable
 fun ProBadge(modifier: Modifier = Modifier, text: String = "PRO") {
     Box(
         modifier
-            .clip(RoundedCornerShape(Radius.pill))
+            .height(20.dp)
+            .clip(PillShape)
             .background(RgTheme.colors.proGradient)
-            .padding(horizontal = 8.dp, vertical = 2.dp),
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(text, style = MaterialTheme.typography.labelSmall, color = Color.White)
+        Text(
+            text,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.06.em, lineHeight = 14.sp),
+            color = Color.White,
+            maxLines = 1,
+        )
     }
 }
 
-/** Pill tag for metadata. */
+/** Pill tag for metadata (24dp). */
 @Composable
-fun RgTag(text: String, modifier: Modifier = Modifier, color: Color = RgTheme.colors.accentSoft, contentColor: Color = RgTheme.colors.accent, icon: ImageVector? = null) {
+fun RgTag(text: String, modifier: Modifier = Modifier, color: Color = RgTheme.colors.accentSoft, contentColor: Color = RgTheme.colors.onAccentSoft, icon: ImageVector? = null) {
     Row(
         modifier
-            .clip(RoundedCornerShape(Radius.pill))
+            .height(24.dp)
+            .clip(PillShape)
             .background(SolidColor(color))
-            .height(26.dp)
             .padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -223,6 +276,6 @@ fun RgTag(text: String, modifier: Modifier = Modifier, color: Color = RgTheme.co
             Icon(icon, null, tint = contentColor, modifier = Modifier.size(14.dp))
             Spacer(Modifier.width(4.dp))
         }
-        Text(text, style = MaterialTheme.typography.labelMedium, color = contentColor, maxLines = 1)
+        Text(text, style = MaterialTheme.typography.labelMedium.copy(lineHeight = 16.sp), color = contentColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

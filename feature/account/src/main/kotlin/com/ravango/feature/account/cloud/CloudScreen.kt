@@ -85,10 +85,10 @@ class CloudViewModel @Inject constructor(private val controller: CloudSyncContro
     private val _events = Channel<CloudEvent>(Channel.BUFFERED)
     val events = _events.receiveAsFlow()
 
-    fun setSyncEnabled(enabled: Boolean) = viewModelScope.launch { handle(controller.setSyncEnabled(enabled)) }
-    fun setWifiOnly(enabled: Boolean) = viewModelScope.launch { controller.setWifiOnly(enabled) }
-    fun setBackupMedia(enabled: Boolean) = viewModelScope.launch { handle(controller.setBackupMedia(enabled)) }
-    fun syncNow() = controller.syncNow()
+    fun setSyncEnabled(enabled: Boolean) { viewModelScope.launch { handle(controller.setSyncEnabled(enabled)) } }
+    fun setWifiOnly(enabled: Boolean) { viewModelScope.launch { controller.setWifiOnly(enabled) } }
+    fun setBackupMedia(enabled: Boolean) { viewModelScope.launch { handle(controller.setBackupMedia(enabled)) } }
+    fun syncNow() { controller.syncNow() }
 
     private suspend fun handle(result: CloudToggleResult) {
         when (result) {
@@ -116,6 +116,30 @@ fun CloudScreen(
         }
     }
 
+    CloudContent(
+        s = s,
+        onBack = onBack,
+        onSignIn = onSignIn,
+        onRequirePro = onRequirePro,
+        onSyncEnabled = viewModel::setSyncEnabled,
+        onWifiOnly = viewModel::setWifiOnly,
+        onBackupMedia = viewModel::setBackupMedia,
+        onSyncNow = viewModel::syncNow,
+    )
+}
+
+/** Stateless cloud sync & backup screen. */
+@Composable
+internal fun CloudContent(
+    s: CloudStatus,
+    onBack: () -> Unit,
+    onSignIn: () -> Unit,
+    onRequirePro: (ProFeature) -> Unit,
+    onSyncEnabled: (Boolean) -> Unit,
+    onWifiOnly: (Boolean) -> Unit,
+    onBackupMedia: (Boolean) -> Unit,
+    onSyncNow: () -> Unit,
+) {
     RgScreen(title = stringResource(R.string.account_cloud), onBack = onBack) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = Spacing.xxl),
@@ -131,20 +155,20 @@ fun CloudScreen(
                 )
                 return@Column
             }
-            StatusCard(s, onSyncNow = viewModel::syncNow, onSignIn = onSignIn)
+            StatusCard(s, onSyncNow = onSyncNow, onSignIn = onSignIn)
 
             RgGroup(title = stringResource(R.string.account_cloud_sync_section)) {
                 SwitchRow(
                     stringResource(R.string.account_cloud_sync_toggle),
                     s.syncEnabled && s.signedIn,
-                    { viewModel.setSyncEnabled(it) },
+                    onSyncEnabled,
                     subtitle = stringResource(if (s.signedIn) R.string.account_cloud_sync_sub else R.string.account_cloud_sync_requires_sign_in),
                     icon = Icons.Rounded.CloudSync,
                 )
                 SwitchRow(
                     stringResource(R.string.account_cloud_wifi_only),
                     s.wifiOnly,
-                    { viewModel.setWifiOnly(it) },
+                    onWifiOnly,
                     subtitle = stringResource(R.string.account_cloud_wifi_only_sub),
                     icon = Icons.Rounded.Wifi,
                     enabled = s.syncEnabled,
@@ -162,7 +186,7 @@ fun CloudScreen(
                 SwitchRow(
                     stringResource(R.string.account_cloud_backup_media),
                     s.backupMedia && s.canBackupMedia,
-                    { viewModel.setBackupMedia(it) },
+                    onBackupMedia,
                     subtitle = stringResource(R.string.account_cloud_backup_media_sub),
                     icon = Icons.Rounded.PermMedia,
                     enabled = s.syncEnabled || !s.canBackupMedia,

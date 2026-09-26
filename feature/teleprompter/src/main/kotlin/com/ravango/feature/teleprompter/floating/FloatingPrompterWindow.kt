@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.absolutePadding
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
@@ -122,7 +125,7 @@ private fun FloatingContent(host: FloatingHost, scriptId: String, title: String,
                         host.moveBy(drag.x, drag.y)
                     }
                 }
-                .padding(horizontal = Spacing.xs, vertical = 2.dp),
+                .padding(horizontal = Spacing.xs, vertical = Spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(Icons.Rounded.DragIndicator, stringResource(R.string.prompter_floating_move), tint = Color.White.copy(alpha = 0.6f), modifier = Modifier.padding(4.dp).size(20.dp))
@@ -134,12 +137,12 @@ private fun FloatingContent(host: FloatingHost, scriptId: String, title: String,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            RgIconButton(Icons.Rounded.Opacity, stringResource(R.string.prompter_floating_opacity), { showOpacity = !showOpacity }, size = 34.dp, iconSize = 18.dp, glass = true, selected = showOpacity)
+            RgIconButton(Icons.Rounded.Opacity, stringResource(R.string.prompter_floating_opacity), { showOpacity = !showOpacity }, size = 40.dp, iconSize = 18.dp, glass = !showOpacity, selected = showOpacity)
             Spacer(Modifier.width(4.dp))
             RgIconButton(Icons.Rounded.Close, stringResource(UiR.string.action_close), {
                 host.saveReadingPosition(snapshot.readingCharOffset)
                 host.close()
-            }, size = 34.dp, iconSize = 18.dp, glass = true)
+            }, size = 40.dp, iconSize = 18.dp, glass = true)
         }
         AnimatedVisibility(showOpacity) {
             Row(Modifier.fillMaxWidth().background(Color(0xF0141220)).padding(horizontal = Spacing.md), verticalAlignment = Alignment.CenterVertically) {
@@ -157,35 +160,38 @@ private fun FloatingContent(host: FloatingHost, scriptId: String, title: String,
             interactive = true,
             onFontSizeChange = { fontSize = it },
         )
-        // Control strip
+        // Control strip: play + speed on the start side, text size on the end side. The resize grip always sits at the
+        // physical bottom-right corner, so that corner is kept free (absolute padding, not start/end).
         Box(Modifier.fillMaxWidth().background(Color(0xF0141220))) {
             Row(
-                Modifier.fillMaxWidth().padding(start = Spacing.xs, end = 28.dp, top = 2.dp, bottom = 2.dp),
+                Modifier.fillMaxWidth().absolutePadding(left = Spacing.xs, right = 30.dp).padding(vertical = Spacing.xs),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 RgIconButton(
                     if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                     stringResource(if (playing) R.string.prompter_pause else R.string.prompter_play),
                     controller::toggle,
-                    size = 38.dp,
+                    size = 40.dp,
                     container = RgTheme.colors.accent,
                     tint = RgTheme.colors.onAccent,
                 )
-                RgIconButton(Icons.Rounded.Remove, stringResource(R.string.prompter_speed_down), { controller.nudgeSpeed(-10) }, size = 34.dp, iconSize = 18.dp, glass = true)
+                Spacer(Modifier.width(Spacing.xs))
+                RgIconButton(Icons.Rounded.Remove, stringResource(R.string.prompter_speed_down), { controller.nudgeSpeed(-10) }, size = 40.dp, iconSize = 18.dp, container = Color.Transparent, tint = Color.White)
                 Text(
-                    stringResource(R.string.prompter_wpm_value, snapshot.wordsPerMinute.toString().localizeDigits()),
+                    snapshot.wordsPerMinute.toString().localizeDigits(),
                     color = Color.White,
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.widthIn(min = 32.dp),
                 )
-                RgIconButton(Icons.Rounded.Add, stringResource(R.string.prompter_speed_up), { controller.nudgeSpeed(10) }, size = 34.dp, iconSize = 18.dp, glass = true)
+                RgIconButton(Icons.Rounded.Add, stringResource(R.string.prompter_speed_up), { controller.nudgeSpeed(10) }, size = 40.dp, iconSize = 18.dp, container = Color.Transparent, tint = Color.White)
                 Spacer(Modifier.weight(1f))
                 RgIconButton(Icons.Rounded.TextDecrease, stringResource(R.string.prompter_font_smaller), {
                     fontSize = (fontSize - 2f).coerceAtLeast(TeleprompterSettings.MIN_FONT_SP)
-                }, size = 34.dp, iconSize = 18.dp, glass = true)
+                }, size = 40.dp, iconSize = 18.dp, container = Color.Transparent, tint = Color.White)
                 RgIconButton(Icons.Rounded.TextIncrease, stringResource(R.string.prompter_font_larger), {
                     fontSize = (fontSize + 2f).coerceAtMost(TeleprompterSettings.MAX_FONT_SP)
-                }, size = 34.dp, iconSize = 18.dp, glass = true)
+                }, size = 40.dp, iconSize = 18.dp, container = Color.Transparent, tint = Color.White)
             }
             // Resize grip: always at the physical bottom-right corner (window coordinates are absolute).
             Box(

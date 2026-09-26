@@ -23,7 +23,9 @@
     <string name="scripts_sort_created">جدیدترین</string>
     <string name="scripts_sort_title">عنوان (الفبایی)</string>
     <string name="scripts_sort_opened">آخرین بازشده</string>
-    <string name="scripts_card_meta">%1$s کلمه · %2$s با %3$s کلمه در دقیقه · %4$s</string>
+    <string name="scripts_card_words">%1$s کلمه</string>
+    <string name="scripts_card_duration_cd">زمان خواندن با سرعت %1$s کلمه در دقیقه</string>
+    <string name="scripts_card_empty">هنوز متنی ننوشته‌اید</string>
     <string name="scripts_favorite">افزودن به محبوب‌ها</string>
     <string name="scripts_unfavorite">حذف از محبوب‌ها</string>
     <string name="scripts_deleted">متن حذف شد</string>
@@ -62,7 +64,8 @@
     <string name="scripts_editor_new_title">متن تازه</string>
     <string name="scripts_editor_title_hint">عنوان</string>
     <string name="scripts_editor_body_hint">متن‌تان را این‌جا بنویسید…\n\nنکته: «## » یک بخش تازه شروع می‌کند، ==متن== برجسته می‌شود، **متن** تأکید می‌گیرد، [مکث] یک مکث می‌گذارد و [[یادداشت]] فقط برای خودتان دیده می‌شود.</string>
-    <string name="scripts_editor_stats">%1$s کلمه · حدود %2$s با %3$s کلمه در دقیقه</string>
+    <string name="scripts_editor_words">%1$s کلمه</string>
+    <string name="scripts_editor_direction">جهت متن</string>
     <string name="scripts_editor_saving">در حال ذخیره…</string>
     <string name="scripts_editor_saved">ذخیره شد</string>
     <string name="scripts_editor_save_failed">ذخیره نشد؛ متن‌تان همین‌جا محفوظ است و دوباره تلاش می‌کنیم</string>
@@ -76,6 +79,7 @@
     <string name="scripts_editor_direction_rtl">راست‌چین</string>
     <string name="scripts_editor_direction_ltr">چپ‌چین</string>
     <string name="scripts_editor_ai">دستیار هوشمند</string>
+    <string name="scripts_editor_ai_short">هوشمند</string>
     <string name="scripts_editor_tool_section">بخش</string>
     <string name="scripts_editor_tool_highlight">برجسته</string>
     <string name="scripts_editor_tool_emphasis">تأکید</string>
@@ -101,7 +105,7 @@
     <string name="scripts_ai_lengthen">بلندتر</string>
     <string name="scripts_ai_change_tone">تغییر لحن</string>
     <string name="scripts_ai_fix_grammar">اصلاح نگارش</string>
-    <string name="scripts_ai_translate">ترجمهٔ فارسی ↔ English</string>
+    <string name="scripts_ai_translate">ترجمه</string>
     <string name="scripts_ai_conversational">محاوره‌ای‌تر</string>
     <string name="scripts_ai_bullets_to_script">نکته‌ها ← متن</string>
     <string name="scripts_ai_hooks">قلاب شروع</string>

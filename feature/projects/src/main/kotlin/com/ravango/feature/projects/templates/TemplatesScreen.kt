@@ -77,7 +77,7 @@ fun TemplatesRoute(
             }
         }
     }
-    TemplatesScreen(state, snackbar, onBack, onSelect = viewModel::select)
+    TemplatesContent(state, snackbar, onBack, onSelect = viewModel::select)
     state.selected?.let { template ->
         TemplateSheet(
             template = template,
@@ -90,7 +90,7 @@ fun TemplatesRoute(
 }
 
 @Composable
-private fun TemplatesScreen(
+internal fun TemplatesContent(
     state: TemplatesUiState,
     snackbar: SnackbarHostState,
     onBack: () -> Unit,
@@ -104,7 +104,7 @@ private fun TemplatesScreen(
         snackbarHostState = snackbar,
     ) { padding ->
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 160.dp),
+            columns = GridCells.Adaptive(minSize = 148.dp),
             modifier = Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(start = Spacing.gutter, end = Spacing.gutter, top = Spacing.sm, bottom = Spacing.huge),
             horizontalArrangement = Arrangement.spacedBy(Spacing.md),
@@ -146,10 +146,10 @@ private fun TemplateCard(template: ProjectTemplate, onClick: () -> Unit, modifie
             }
             if (template.autoCaptions) {
                 Box(
-                    Modifier.align(Alignment.TopEnd).padding(Spacing.sm).size(28.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.35f)),
+                    Modifier.align(Alignment.TopEnd).padding(Spacing.sm).size(22.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.34f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Rounded.ClosedCaption, stringResource(R.string.projects_template_auto_captions), tint = Color.White, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Rounded.ClosedCaption, stringResource(R.string.projects_template_auto_captions), tint = Color.White, modifier = Modifier.size(14.dp))
                 }
             }
         }
@@ -179,10 +179,12 @@ private fun TemplateCard(template: ProjectTemplate, onClick: () -> Unit, modifie
 private fun GlassPill(text: String) {
     Box(
         Modifier
+            .height(22.dp)
             .clip(RoundedCornerShape(Radius.pill))
-            .background(Color.Black.copy(alpha = 0.32f))
-            .padding(horizontal = 8.dp, vertical = 3.dp),
+            .background(Color.Black.copy(alpha = 0.34f))
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(text, style = MaterialTheme.typography.labelSmall, color = Color.White)
+        Text(text, style = MaterialTheme.typography.labelSmall, color = Color.White, maxLines = 1)
     }
 }

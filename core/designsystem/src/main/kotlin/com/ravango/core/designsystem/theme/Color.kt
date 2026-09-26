@@ -86,9 +86,22 @@ data class RgColors(
     val pastelSky: Color,
     val pastelButter: Color,
     val blobs: List<Color>,
+    /** Readable text/icon color on [accentSoft] (WCAG AA). */
+    val onAccentSoft: Color = accent,
+    /** A surface that sits above [surfaceMuted] (selected segment, raised thumb). Lighter than [surface] in dark mode. */
+    val surfaceRaised: Color = surface,
+    /** Hairline separators inside cards and groups. */
+    val divider: Color = outline,
+    /** Tint for soft, colored drop shadows. */
+    val shadowTint: Color = Color.Black,
 ) {
     /** Signature brand gradient used for primary actions. */
     val brandGradient: Brush get() = Brush.linearGradient(listOf(Palette.Lavender500, Palette.Rose400, Palette.Peach400))
+    /**
+     * Gradient for primary calls to action: the brand hues deepened so white labels stay legible (≥3.5:1 across the
+     * label area) while keeping the lavender → rose identity.
+     */
+    val ctaGradient: Brush get() = Brush.linearGradient(listOf(Color(0xFF6F5CEB), Color(0xFF9E5BE0), Color(0xFFD95E97)))
     val brandGradientSoft: Brush get() = Brush.linearGradient(listOf(pastelLavender, pastelRose, pastelPeach))
     val coolGradient: Brush get() = Brush.linearGradient(listOf(Palette.Sky400, Palette.Mint400))
     val proGradient: Brush get() = Brush.linearGradient(listOf(Color(0xFFFFC857), Color(0xFFFF8FAB), Color(0xFFA394FB)))
@@ -103,7 +116,7 @@ val LightRgColors = RgColors(
     surfaceMuted = Color(0xFFF0EDF9),
     textPrimary = Color(0xFF1B1830),
     textSecondary = Color(0xFF5F5A7A),
-    textTertiary = Color(0xFF9A96B3),
+    textTertiary = Color(0xFF77728F),
     outline = Color(0xFFE6E2F4),
     outlineStrong = Color(0xFFCFC9E6),
     accent = Palette.Lavender600,
@@ -124,6 +137,10 @@ val LightRgColors = RgColors(
     pastelSky = Color(0xFFE5F1FF),
     pastelButter = Color(0xFFFFF5D6),
     blobs = listOf(Palette.Lavender200, Palette.Rose200, Palette.Peach200, Palette.Mint200),
+    onAccentSoft = Palette.Lavender700,
+    surfaceRaised = Color.White,
+    divider = Color(0xFFEEEBF7),
+    shadowTint = Color(0xFF4A3AB8),
 )
 
 val DarkRgColors = RgColors(
@@ -134,15 +151,15 @@ val DarkRgColors = RgColors(
     surfaceMuted = Palette.Ink800,
     textPrimary = Color(0xFFF4F2FF),
     textSecondary = Color(0xFFB4B0CE),
-    textTertiary = Color(0xFF7F7A9C),
+    textTertiary = Color(0xFF8C87A8),
     outline = Color(0xFF2A2640),
     outlineStrong = Color(0xFF3D3858),
     accent = Palette.Lavender400,
     onAccent = Color(0xFF14102A),
     accentSoft = Color(0xFF2B2550),
-    glassFill = Color(0x8C1B1928),
-    glassStroke = Color(0x33FFFFFF),
-    glassHighlight = Color(0x14FFFFFF),
+    glassFill = Color(0xA61B1928),
+    glassStroke = Color(0x29FFFFFF),
+    glassHighlight = Color(0x12FFFFFF),
     scrim = Color(0x99000000),
     record = Palette.Record,
     success = Color(0xFF45D6A4),
@@ -155,6 +172,10 @@ val DarkRgColors = RgColors(
     pastelSky = Color(0xFF1E2C42),
     pastelButter = Color(0xFF3A3322),
     blobs = listOf(Color(0xFF3B2F7A), Color(0xFF5A2A4A), Color(0xFF5A3A2A), Color(0xFF1E4A42)),
+    onAccentSoft = Color(0xFFC9C0FF),
+    surfaceRaised = Color(0xFF3A3556),
+    divider = Color(0xFF28243B),
+    shadowTint = Color.Black,
 )
 
 val LocalRgColors = staticCompositionLocalOf { LightRgColors }

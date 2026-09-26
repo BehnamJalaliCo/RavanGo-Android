@@ -25,14 +25,21 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.rounded.AspectRatio
+import com.ravango.core.designsystem.theme.Radius
+import com.ravango.feature.editor.ui.timecode
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.Redo
-import androidx.compose.material.icons.automirrored.rounded.Undo
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.State
+import androidx.media3.ui.compose.PlayerSurface
+import androidx.media3.ui.compose.SURFACE_TYPE_SURFACE_VIEW
+import com.ravango.engine.editor.media.ThumbnailProvider
+import com.ravango.engine.editor.media.WaveformProvider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -127,75 +134,19 @@ fun EditorScreen(
     val launchPicker = { pickMedia.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) }
 
     StudioTheme {
-        Box(Modifier.fillMaxSize().background(Color(0xFF0E0C16))) {
-            Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
-                EditorTopBar(state, onBack = { vm.onStop(); onBack() }, vm = vm)
-                when {
-                    state.loading -> LoadingState(Modifier.weight(1f))
-                    state.notFound -> EmptyState(
-                        icon = Icons.Rounded.VideoLibrary,
-                        title = stringResource(R.string.editor_not_found_title),
-                        message = stringResource(R.string.editor_not_found_message),
-                        modifier = Modifier.weight(1f),
-                        actionText = stringResource(R.string.editor_back),
-                        onAction = onBack,
-                    )
-                    state.isEmpty -> EmptyState(
-                        icon = Icons.Rounded.PhotoLibrary,
-                        title = stringResource(R.string.editor_empty_title),
-                        message = stringResource(R.string.editor_empty_message),
-                        modifier = Modifier.weight(1f),
-                        actionText = stringResource(R.string.editor_import_media),
-                        onAction = launchPicker,
-                    )
-                    else -> {
-                        PreviewPane(
-                            player = vm.preview.player,
-                            document = state.document,
-                            selection = state.selection,
-                            overlaySizes = state.overlaySizes,
-                            isPlaying = isPlaying,
-                            building = state.previewBuilding,
-                            error = state.previewError,
-                            onTogglePlay = vm::togglePlay,
-                            onTransform = vm::transformSelection,
-                            onGestureEnd = vm::endGesture,
-                            modifier = Modifier.weight(1f).fillMaxWidth(),
-                        )
-                        Transport(playhead, state.document.durationUs, isPlaying, vm::togglePlay, vm::stepFrame, vm::split, launchPicker)
-                        val actions = remember(vm) {
-                            TimelineActions(
-                                onSeek = vm::seekTo,
-                                onSelect = vm::select,
-                                onTrimClip = vm::trimClip,
-                                onMoveClip = vm::moveClip,
-                                onTransition = { transitionFor = it },
-                                onRetimeOverlay = vm::retimeOverlay,
-                                onTrimAudio = vm::trimAudio,
-                                onMoveAudio = vm::moveAudio,
-                                onRetimeCue = vm::retimeCue,
-                                onGestureEnd = vm::endGesture,
-                            )
-                        }
-                        EditorTimeline(
-                            document = state.document,
-                            selection = state.selection,
-                            playhead = playhead,
-                            reversing = state.reversing,
-                            thumbnails = vm.thumbnails,
-                            waveforms = vm.waveforms,
-                            actions = actions,
-                        )
-                        ToolPanelHost(state, vm)
-                        ToolRail(state, vm::openTool)
-                    }
-                }
-            }
-            SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 96.dp))
-            AnimatedVisibility(state.busy != null, enter = fadeIn(), exit = fadeOut()) {
-                BusyOverlay(state, vm::cancelBusy)
-            }
-        }
+        EditorContent(
+            state = state,
+            actions = vm,
+            playhead = playhead,
+            isPlaying = isPlaying,
+            thumbnails = vm.thumbnails,
+            waveforms = vm.waveforms,
+            snackbarHostState = snackbar,
+            onBack = { vm.onStop(); onBack() },
+            onAddMedia = launchPicker,
+            onTransition = { transitionFor = it },
+            surface = { PlayerSurface(player = vm.preview.player, modifier = Modifier.fillMaxSize(), surfaceType = SURFACE_TYPE_SURFACE_VIEW) },
+        )
         transitionFor?.let { clipId ->
             val clip = state.document.mainTrack.firstOrNull { it.id == clipId }
             if (clip == null) transitionFor = null
@@ -204,23 +155,149 @@ fun EditorScreen(
     }
 }
 
+/** Stateless editor body (top bar, preview, transport, timeline, tool panel and rail, busy overlay). */
 @Composable
-private fun EditorTopBar(state: EditorUiState, onBack: () -> Unit, vm: EditorViewModel) {
+internal fun EditorContent(
+    state: EditorUiState,
+    actions: EditorActions,
+    playhead: State<Long>,
+    isPlaying: State<Boolean>,
+    thumbnails: ThumbnailProvider,
+    waveforms: WaveformProvider,
+    onBack: () -> Unit,
+    onAddMedia: () -> Unit,
+    onTransition: (clipId: String) -> Unit,
+    surface: @Composable () -> Unit,
+    snackbarHostState: SnackbarHostState? = null,
+) {
+    val vm = actions
+    Box(Modifier.fillMaxSize().background(Color(0xFF0E0C16))) {
+        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+            EditorTopBar(state, onBack = onBack, vm = vm)
+            when {
+                state.loading -> LoadingState(Modifier.weight(1f))
+                state.notFound -> EmptyState(
+                    icon = Icons.Rounded.VideoLibrary,
+                    title = stringResource(R.string.editor_not_found_title),
+                    message = stringResource(R.string.editor_not_found_message),
+                    modifier = Modifier.weight(1f),
+                    actionText = stringResource(R.string.editor_back),
+                    onAction = onBack,
+                )
+                state.isEmpty -> EmptyState(
+                    icon = Icons.Rounded.PhotoLibrary,
+                    title = stringResource(R.string.editor_empty_title),
+                    message = stringResource(R.string.editor_empty_message),
+                    modifier = Modifier.weight(1f),
+                    actionText = stringResource(R.string.editor_import_media),
+                    onAction = onAddMedia,
+                )
+                else -> {
+                    Box(Modifier.weight(1f).fillMaxWidth()) {
+                    PreviewPane(
+                        surface = surface,
+                        document = state.document,
+                        selection = state.selection,
+                        overlaySizes = state.overlaySizes,
+                        isPlaying = isPlaying,
+                        building = state.previewBuilding,
+                        error = state.previewError,
+                        onTogglePlay = vm::togglePlay,
+                        onTransform = vm::transformSelection,
+                        onGestureEnd = vm::endGesture,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                        TimePill(playhead, state.document.durationUs, Modifier.align(Alignment.BottomCenter).padding(Spacing.md))
+                    }
+                    Transport(
+                        isPlaying = isPlaying,
+                        canUndo = state.canUndo,
+                        canRedo = state.canRedo,
+                        onUndo = vm::undo,
+                        onRedo = vm::redo,
+                        onToggle = vm::togglePlay,
+                        onStep = vm::stepFrame,
+                        onSplit = vm::split,
+                        onAddMedia = onAddMedia,
+                    )
+                    val timelineActions = remember(vm) {
+                        TimelineActions(
+                            onSeek = vm::seekTo,
+                            onSelect = vm::select,
+                            onTrimClip = vm::trimClip,
+                            onMoveClip = vm::moveClip,
+                            onTransition = onTransition,
+                            onRetimeOverlay = vm::retimeOverlay,
+                            onTrimAudio = vm::trimAudio,
+                            onMoveAudio = vm::moveAudio,
+                            onRetimeCue = vm::retimeCue,
+                            onGestureEnd = vm::endGesture,
+                        )
+                    }
+                    EditorTimeline(
+                        document = state.document,
+                        selection = state.selection,
+                        playhead = playhead,
+                        reversing = state.reversing,
+                        thumbnails = thumbnails,
+                        waveforms = waveforms,
+                        actions = timelineActions,
+                    )
+                    ToolPanelHost(state, vm)
+                    ToolRail(state, vm::openTool)
+                }
+            }
+        }
+        snackbarHostState?.let { SnackbarHost(it, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 96.dp)) }
+        AnimatedVisibility(state.busy != null, enter = fadeIn(), exit = fadeOut()) {
+            BusyOverlay(state, vm::cancelBusy)
+        }
+    }
+}
+
+@Composable
+private fun EditorTopBar(state: EditorUiState, onBack: () -> Unit, vm: EditorActions) {
+    // One 40dp control height across the bar; undo/redo live in the transport row so the title has room.
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = Spacing.sm, vertical = Spacing.xs),
+        Modifier.fillMaxWidth().height(56.dp).padding(horizontal = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RgIconButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(R.string.editor_back), onBack, glass = true, size = 40.dp)
-        Spacer(Modifier.width(Spacing.sm))
+        Spacer(Modifier.width(Spacing.md))
         Text(state.projectTitle, style = MaterialTheme.typography.titleSmall, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-        RgIconButton(Icons.AutoMirrored.Rounded.Undo, stringResource(R.string.editor_undo), vm::undo, glass = true, size = 40.dp, enabled = state.canUndo)
-        Spacer(Modifier.width(Spacing.xs))
-        RgIconButton(Icons.AutoMirrored.Rounded.Redo, stringResource(R.string.editor_redo), vm::redo, glass = true, size = 40.dp, enabled = state.canRedo)
-        Spacer(Modifier.width(Spacing.xs))
-        RgChip(localized(state.document.canvas.aspectRatio.label), selected = state.tool == EditorTool.CANVAS, onClick = { vm.openTool(EditorTool.CANVAS) }, glass = true)
-        Spacer(Modifier.width(Spacing.xs))
-        RgPrimaryButton(stringResource(R.string.editor_export), vm::openExport, size = RgButtonSize.SMALL, enabled = !state.loading && state.document.mainTrack.isNotEmpty() && state.busy == null)
+        Spacer(Modifier.width(Spacing.sm))
+        if (!state.loading && !state.notFound) {
+            RgChip(
+                localized(state.document.canvas.aspectRatio.label),
+                selected = state.tool == EditorTool.CANVAS,
+                onClick = { vm.openTool(EditorTool.CANVAS) },
+                glass = true,
+                icon = Icons.Rounded.AspectRatio,
+                modifier = Modifier.height(40.dp),
+            )
+            Spacer(Modifier.width(Spacing.sm))
+        }
+        RgPrimaryButton(
+            stringResource(R.string.editor_export),
+            vm::openExport,
+            size = RgButtonSize.MEDIUM,
+            enabled = !state.loading && state.document.mainTrack.isNotEmpty() && state.busy == null,
+        )
     }
+}
+
+/** Current time / duration, always left-to-right like the timeline. */
+@Composable
+private fun TimePill(playhead: State<Long>, durationUs: Long, modifier: Modifier = Modifier) {
+    Text(
+        "\u2066" + timecode(playhead.value) + " / " + timecode(durationUs, tenths = false) + "\u2069",
+        style = MaterialTheme.typography.labelMedium,
+        color = Color.White,
+        maxLines = 1,
+        modifier = modifier
+            .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(Radius.pill))
+            .padding(horizontal = Spacing.md, vertical = Spacing.xs),
+    )
 }
 
 @Composable

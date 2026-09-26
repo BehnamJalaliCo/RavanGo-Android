@@ -110,7 +110,9 @@ import com.ravango.core.designsystem.component.ShimmerBox
 import com.ravango.core.designsystem.component.rememberSnackbarHostState
 import com.ravango.core.designsystem.theme.HapticEvent
 import com.ravango.core.designsystem.theme.Motion
+import com.ravango.core.designsystem.theme.Palette
 import com.ravango.core.designsystem.theme.Radius
+import com.ravango.core.designsystem.theme.TabularNumbers
 import com.ravango.core.designsystem.theme.RgTheme
 import com.ravango.core.designsystem.theme.Spacing
 import com.ravango.core.designsystem.theme.rememberHaptics
@@ -186,7 +188,7 @@ fun ProjectsRoute(
     }
 
     Box(Modifier.fillMaxSize()) {
-    ProjectsScreen(
+    ProjectsContent(
         state = state,
         snackbar = snackbar,
         onBack = onBack,
@@ -216,7 +218,7 @@ private fun Context.shareableUri(raw: String): Uri? {
 }
 
 @Composable
-private fun ProjectsScreen(
+internal fun ProjectsContent(
     state: ProjectsUiState,
     snackbar: SnackbarHostState,
     onBack: () -> Unit,
@@ -271,7 +273,8 @@ private fun ProjectsScreen(
             }
         },
         floatingActionButton = {
-            AnimatedVisibility(!state.selectionMode, enter = scaleIn() + fadeIn(), exit = scaleOut() + fadeOut()) {
+            val libraryEmpty = !state.loading && state.totalProjects == 0
+            AnimatedVisibility(!state.selectionMode && !libraryEmpty, enter = scaleIn() + fadeIn(), exit = scaleOut() + fadeOut()) {
                 RgPrimaryButton(
                     text = stringResource(R.string.projects_import),
                     onClick = onImport,
@@ -283,7 +286,8 @@ private fun ProjectsScreen(
         },
     ) { padding ->
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 158.dp),
+            // 148dp keeps two columns on 360dp phones (2 × 148 + 12 gap ≤ 360 − 2 × 20 gutter).
+            columns = GridCells.Adaptive(minSize = 148.dp),
             modifier = Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(start = Spacing.gutter, end = Spacing.gutter, top = Spacing.xs, bottom = 120.dp),
             horizontalArrangement = Arrangement.spacedBy(Spacing.md),
@@ -308,7 +312,7 @@ private fun ProjectsScreen(
                         label = { tabLabel(it) },
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (state.loading || state.totalProjects > 0) Row(verticalAlignment = Alignment.CenterVertically) {
                         RgTag(
                             text = stringResource(R.string.projects_storage_used, formatBytes(state.storageBytes, locale)),
                             icon = Icons.Rounded.SdStorage,
@@ -317,7 +321,7 @@ private fun ProjectsScreen(
                         )
                         Spacer(Modifier.weight(1f))
                         RgChip(stringResource(R.string.projects_sort_recent), state.sort == ProjectSort.RECENT, { onSort(ProjectSort.RECENT) })
-                        Spacer(Modifier.width(Spacing.xs))
+                        Spacer(Modifier.width(Spacing.sm))
                         RgChip(stringResource(R.string.projects_sort_name), state.sort == ProjectSort.NAME, { onSort(ProjectSort.NAME) })
                     }
                 }
@@ -473,8 +477,8 @@ private fun ProjectCard(
                 .then(if (selected) Modifier.border(3.dp, colors.accent, shape) else Modifier.border(1.dp, colors.outline, shape)),
         ) {
             ProjectThumbnail(item.thumbnail, accentSeed = project.id, audioOnly = item.audioOnly, modifier = Modifier.fillMaxSize())
-            // Aspect badge.
-            OverlayPill(aspectLabel(project.aspectRatio, locale), Modifier.align(Alignment.TopStart).padding(Spacing.sm))
+            OverlayPill(statusLabel(project.status), Modifier.align(Alignment.TopStart).padding(Spacing.sm), dot = statusColor(project.status))
+            OverlayPill(aspectLabel(project.aspectRatio, locale), Modifier.align(Alignment.BottomStart).padding(Spacing.sm))
             if (project.durationUs > 0) {
                 OverlayPill(formatDuration(project.durationUs, locale), Modifier.align(Alignment.BottomEnd).padding(Spacing.sm))
             }
@@ -485,20 +489,16 @@ private fun ProjectCard(
             Column(Modifier.weight(1f).padding(start = Spacing.xs)) {
                 Text(project.title, style = MaterialTheme.typography.titleSmall, color = colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(2.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    StatusDot(project.status)
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        "${statusLabel(project.status)} · ${formatRelativeTime(project.updatedAt)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colors.textSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                Text(
+                    formatRelativeTime(project.updatedAt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
             if (!selectionMode) {
-                RgIconButton(Icons.Rounded.MoreVert, stringResource(UiR.string.action_more), onMore, size = 34.dp, iconSize = 18.dp, container = Color.Transparent, tint = colors.textSecondary)
+                RgIconButton(Icons.Rounded.MoreVert, stringResource(UiR.string.action_more), onMore, size = 40.dp, iconSize = 20.dp, container = Color.Transparent, tint = colors.textSecondary)
             }
         }
     }
@@ -521,26 +521,29 @@ private fun SelectionCheck(visible: Boolean, selected: Boolean, modifier: Modifi
     }
 }
 
-@Composable
-private fun StatusDot(status: ProjectStatus) {
-    val colors = RgTheme.colors
-    val c = when (status) {
-        ProjectStatus.RECORDED -> colors.warning
-        ProjectStatus.EDITING -> colors.accent
-        ProjectStatus.EXPORTED -> colors.success
-    }
-    Box(Modifier.size(7.dp).clip(CircleShape).background(c))
+/** Status dot colors tuned to read on the dark frosted overlay pill. */
+private fun statusColor(status: ProjectStatus): Color = when (status) {
+    ProjectStatus.RECORDED -> Palette.Butter400
+    ProjectStatus.EDITING -> Palette.Lavender300
+    ProjectStatus.EXPORTED -> Palette.Mint400
 }
 
+/** Frosted metadata pill over thumbnails; fixed 22dp so pills in all four corners share one size. */
 @Composable
-private fun OverlayPill(text: String, modifier: Modifier = Modifier) {
-    Box(
+private fun OverlayPill(text: String, modifier: Modifier = Modifier, dot: Color? = null) {
+    Row(
         modifier
+            .height(22.dp)
             .clip(RoundedCornerShape(Radius.pill))
-            .background(Color.Black.copy(alpha = 0.42f))
-            .padding(horizontal = 8.dp, vertical = 3.dp),
+            .background(Color.Black.copy(alpha = 0.45f))
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text, style = MaterialTheme.typography.labelSmall, color = Color.White)
+        if (dot != null) {
+            Box(Modifier.size(6.dp).clip(CircleShape).background(dot))
+            Spacer(Modifier.width(5.dp))
+        }
+        Text(text, style = MaterialTheme.typography.labelSmall.merge(TabularNumbers), color = Color.White, maxLines = 1)
     }
 }
 

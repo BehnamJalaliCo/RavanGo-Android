@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.ravango.feature.scripts.library
 
 import android.content.ClipboardManager
@@ -23,6 +25,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.text.style.TextAlign
+import com.ravango.core.designsystem.theme.Palette
+import com.ravango.core.designsystem.theme.Dimens
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.automirrored.rounded.Notes
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextDirection
+import com.ravango.core.designsystem.component.ShimmerBox
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -53,6 +72,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
@@ -166,106 +186,26 @@ internal fun ScriptsRoute(
     val untitled = stringResource(R.string.scripts_untitled)
     val copySuffix = stringResource(R.string.scripts_copy_suffix)
 
-    RgScreen(
-        title = stringResource(if (state.pickMode) R.string.scripts_pick_title else R.string.scripts_title),
-        subtitle = if (state.items.isNotEmpty() && !state.loading) {
-            stringResource(R.string.scripts_count, state.items.size.toString().localizeDigits())
-        } else {
-            null
-        },
-        onBack = onBack,
+    ScriptsContent(
+        state = state,
         snackbarHostState = snackbar,
-        actions = { SortMenu(state.sort, viewModel::setSort) },
-        floatingActionButton = {
+        onBack = onBack,
+        onSort = viewModel::setSort,
+        onQueryChange = viewModel::setQuery,
+        onFilter = viewModel::setFilter,
+        onNewFolder = { folderDialog = FolderDialogMode.Create },
+        onFolderLongPress = { folderMenu = it },
+        onCreate = { showCreate = true },
+        onOpen = { script -> if (state.pickMode) onPicked(script.id) else onOpenEditor(script.id) },
+        onLongPress = { script ->
             if (!state.pickMode) {
-                RgPrimaryButton(
-                    text = stringResource(R.string.scripts_new),
-                    onClick = { showCreate = true },
-                    icon = Icons.Rounded.Add,
-                    size = RgButtonSize.LARGE,
-                    loading = state.importing,
-                    modifier = Modifier.navigationBarsPadding(),
-                )
+                haptics.perform(HapticEvent.LONG_PRESS)
+                actionsFor = script
             }
         },
-    ) { padding ->
-        LazyColumn(
-            Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-        ) {
-            item {
-                RgTextField(
-                    value = state.query,
-                    onValueChange = viewModel::setQuery,
-                    placeholder = stringResource(R.string.scripts_search_hint),
-                    leadingIcon = Icons.Rounded.Search,
-                    trailing = if (state.query.isNotEmpty()) {
-                        { RgIconButton(Icons.Rounded.Close, stringResource(UiR.string.action_close), { viewModel.setQuery("") }, size = 32.dp, iconSize = 18.dp) }
-                    } else {
-                        null
-                    },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.gutter),
-                )
-            }
-            item {
-                FilterRow(
-                    state = state,
-                    onSelect = viewModel::setFilter,
-                    onNewFolder = { folderDialog = FolderDialogMode.Create },
-                    onFolderLongPress = { folderMenu = it },
-                )
-            }
-            when {
-                state.loading -> item { LoadingState(Modifier.height(240.dp)) }
-                state.items.isEmpty() -> item {
-                    if (state.query.isNotBlank()) {
-                        EmptyState(
-                            icon = Icons.Rounded.SearchOff,
-                            title = stringResource(R.string.scripts_search_empty_title),
-                            message = stringResource(R.string.scripts_search_empty_message, state.query),
-                        )
-                    } else if (state.filter != LibraryFilter.All) {
-                        EmptyState(
-                            icon = if (state.filter == LibraryFilter.Favorites) Icons.Rounded.StarBorder else Icons.Rounded.Folder,
-                            title = stringResource(if (state.filter == LibraryFilter.Favorites) R.string.scripts_empty_favorites_title else R.string.scripts_empty_folder_title),
-                            message = stringResource(if (state.filter == LibraryFilter.Favorites) R.string.scripts_empty_favorites_message else R.string.scripts_empty_folder_message),
-                        )
-                    } else {
-                        EmptyState(
-                            icon = Icons.Rounded.Description,
-                            title = stringResource(R.string.scripts_empty_title),
-                            message = stringResource(R.string.scripts_empty_message),
-                            actionText = if (state.pickMode) null else stringResource(R.string.scripts_new),
-                            onAction = if (state.pickMode) null else ({ showCreate = true }),
-                        )
-                    }
-                }
-                else -> items(state.items, key = { it.script.id }) { item ->
-                    val folder = state.folders.firstOrNull { it.id == item.script.folderId }
-                    SwipeableScriptCard(
-                        item = item,
-                        folder = folder,
-                        enabled = !state.pickMode,
-                        wordsPerMinute = item.script.prompterSettings?.wordsPerMinute ?: state.wordsPerMinute,
-                        untitled = untitled,
-                        onClick = {
-                            if (state.pickMode) onPicked(item.script.id) else onOpenEditor(item.script.id)
-                        },
-                        onLongClick = {
-                            if (!state.pickMode) {
-                                haptics.perform(HapticEvent.LONG_PRESS)
-                                actionsFor = item.script
-                            }
-                        },
-                        onFavorite = { viewModel.toggleFavorite(item.script) },
-                        onDelete = { viewModel.delete(item.script) },
-                        modifier = Modifier.animateItem(),
-                    )
-                }
-            }
-        }
-    }
+        onFavorite = viewModel::toggleFavorite,
+        onDelete = viewModel::delete,
+    )
 
     actionsFor?.let { script ->
         ScriptActionsSheet(
@@ -314,17 +254,11 @@ internal fun ScriptsRoute(
         )
     }
     folderMenu?.let { folder ->
-        RgBottomSheetCompat(title = folder.name, onDismiss = { folderMenu = null }) {
-            RgListItem(stringResource(UiR.string.action_rename), icon = Icons.Rounded.Edit, onClick = {
-                folderMenu = null
-                folderDialog = FolderDialogMode.Rename(folder)
-            })
-            RgListItem(
-                stringResource(R.string.scripts_folder_delete),
-                subtitle = stringResource(R.string.scripts_folder_delete_hint),
-                icon = Icons.Rounded.Delete,
-                iconTint = RgTheme.colors.danger,
-                onClick = { folderMenu = null; deleteFolder = folder },
+        RgBottomSheet(onDismiss = { folderMenu = null }) {
+            FolderMenuContent(
+                folder = folder,
+                onRename = { folderMenu = null; folderDialog = FolderDialogMode.Rename(folder) },
+                onDelete = { folderMenu = null; deleteFolder = folder },
             )
         }
     }
@@ -346,6 +280,153 @@ private fun readClipboard(context: Context): String? {
     val clip = clipboard.primaryClip ?: return null
     if (clip.itemCount == 0) return null
     return clip.getItemAt(0).coerceToText(context)?.toString()
+}
+
+/** Stateless library screen (rendered by screenshot tests with sample data). */
+@Composable
+internal fun ScriptsContent(
+    state: ScriptsUiState,
+    onBack: () -> Unit,
+    onSort: (ScriptSortOrder) -> Unit,
+    onQueryChange: (String) -> Unit,
+    onFilter: (LibraryFilter) -> Unit,
+    onNewFolder: () -> Unit,
+    onFolderLongPress: (ScriptFolder) -> Unit,
+    onCreate: () -> Unit,
+    onOpen: (Script) -> Unit,
+    onLongPress: (Script) -> Unit,
+    onFavorite: (Script) -> Unit,
+    onDelete: (Script) -> Unit,
+    snackbarHostState: SnackbarHostState? = null,
+) {
+    val untitled = stringResource(R.string.scripts_untitled)
+    val libraryEmpty = !state.loading && state.items.isEmpty() && state.query.isBlank() && state.filter == LibraryFilter.All
+    RgScreen(
+        title = stringResource(if (state.pickMode) R.string.scripts_pick_title else R.string.scripts_title),
+        subtitle = if (state.items.isNotEmpty() && !state.loading) {
+            stringResource(R.string.scripts_count, state.items.size.toString().localizeDigits())
+        } else {
+            null
+        },
+        onBack = onBack,
+        snackbarHostState = snackbarHostState,
+        actions = { if (!libraryEmpty) SortMenu(state.sort, onSort) },
+        floatingActionButton = {
+            if (!state.pickMode && !libraryEmpty) {
+                RgPrimaryButton(
+                    text = stringResource(R.string.scripts_new),
+                    onClick = onCreate,
+                    icon = Icons.Rounded.Add,
+                    size = RgButtonSize.LARGE,
+                    loading = state.importing,
+                    modifier = Modifier.navigationBarsPadding(),
+                )
+            }
+        },
+    ) { padding ->
+        LazyColumn(
+            Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
+        ) {
+            item {
+                SearchBar(
+                    query = state.query,
+                    onQueryChange = onQueryChange,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.gutter).padding(top = Spacing.xs),
+                )
+            }
+            item {
+                FilterRow(
+                    state = state,
+                    onSelect = onFilter,
+                    onNewFolder = onNewFolder,
+                    onFolderLongPress = onFolderLongPress,
+                )
+            }
+            when {
+                state.loading -> items(3) { ScriptCardSkeleton(Modifier.padding(horizontal = Spacing.gutter)) }
+                state.items.isEmpty() -> item {
+                    if (state.query.isNotBlank()) {
+                        EmptyState(
+                            icon = Icons.Rounded.SearchOff,
+                            title = stringResource(R.string.scripts_search_empty_title),
+                            message = stringResource(R.string.scripts_search_empty_message, state.query),
+                        )
+                    } else if (state.filter != LibraryFilter.All) {
+                        EmptyState(
+                            icon = if (state.filter == LibraryFilter.Favorites) Icons.Rounded.StarBorder else Icons.Rounded.Folder,
+                            title = stringResource(if (state.filter == LibraryFilter.Favorites) R.string.scripts_empty_favorites_title else R.string.scripts_empty_folder_title),
+                            message = stringResource(if (state.filter == LibraryFilter.Favorites) R.string.scripts_empty_favorites_message else R.string.scripts_empty_folder_message),
+                        )
+                    } else {
+                        EmptyState(
+                            icon = Icons.Rounded.Description,
+                            title = stringResource(R.string.scripts_empty_title),
+                            message = stringResource(R.string.scripts_empty_message),
+                            actionText = if (state.pickMode) null else stringResource(R.string.scripts_new),
+                            onAction = if (state.pickMode) null else onCreate,
+                        )
+                    }
+                }
+                else -> items(state.items, key = { it.script.id }) { item ->
+                    val folder = state.folders.firstOrNull { it.id == item.script.folderId }
+                    SwipeableScriptCard(
+                        item = item,
+                        folder = folder,
+                        enabled = !state.pickMode,
+                        wordsPerMinute = item.script.prompterSettings?.wordsPerMinute ?: state.wordsPerMinute,
+                        untitled = untitled,
+                        onClick = { onOpen(item.script) },
+                        onLongClick = { onLongPress(item.script) },
+                        onFavorite = { onFavorite(item.script) },
+                        onDelete = { onDelete(item.script) },
+                        modifier = Modifier.animateItem(),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Pill search field (48dp) with a clear button that keeps a 48dp touch target. */
+@Composable
+private fun SearchBar(query: String, onQueryChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    val colors = RgTheme.colors
+    val shape = RoundedCornerShape(Radius.pill)
+    Row(
+        modifier
+            .height(48.dp)
+            .clip(shape)
+            .background(colors.surface)
+            .border(1.dp, colors.outline, shape)
+            .padding(start = Spacing.lg),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Rounded.Search, null, tint = colors.textTertiary, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(Spacing.md))
+        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+            if (query.isEmpty()) {
+                Text(stringResource(R.string.scripts_search_hint), style = MaterialTheme.typography.bodyLarge, color = colors.textTertiary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            BasicTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.textPrimary, textDirection = TextDirection.Content),
+                cursorBrush = SolidColor(colors.accent),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (query.isNotEmpty()) {
+            Box(Modifier.size(48.dp).clip(CircleShape).pressable { onQueryChange("") }, contentAlignment = Alignment.Center) {
+                Icon(Icons.Rounded.Close, stringResource(UiR.string.action_close), tint = colors.textSecondary, modifier = Modifier.size(20.dp))
+            }
+        } else {
+            Spacer(Modifier.width(Spacing.lg))
+        }
+    }
 }
 
 @Composable
@@ -387,7 +468,11 @@ private fun FilterRow(
     onNewFolder: () -> Unit,
     onFolderLongPress: (ScriptFolder) -> Unit,
 ) {
-    LazyRow(contentPadding = PaddingValues(horizontal = Spacing.gutter), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = Spacing.gutter),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         item { FilterChip(stringResource(R.string.scripts_filter_all), state.filter == LibraryFilter.All, null, { onSelect(LibraryFilter.All) }) }
         item {
             FilterChip(
@@ -415,25 +500,32 @@ private fun FilterChip(
 ) {
     val colors = RgTheme.colors
     val shape = RoundedCornerShape(Radius.pill)
-    Row(
+    // 36dp pill inside a 48dp-tall touch area.
+    Box(
         Modifier
-            .height(36.dp)
-            .clip(shape)
-            .background(if (selected) colors.accent else colors.surface)
-            .then(if (!selected) Modifier.border(1.dp, colors.outline, shape) else Modifier)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(horizontal = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .height(48.dp)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick, indication = null, interactionSource = null),
+        contentAlignment = Alignment.Center,
     ) {
-        if (dot != null) {
-            Box(Modifier.size(10.dp).clip(CircleShape).background(dot))
-            Spacer(Modifier.width(Spacing.sm))
+        Row(
+            Modifier
+                .height(Dimens.controlSmall)
+                .clip(shape)
+                .background(if (selected) colors.accent else colors.surface)
+                .then(if (!selected) Modifier.border(1.dp, colors.outline, shape) else Modifier)
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (dot != null) {
+                Box(Modifier.size(8.dp).clip(CircleShape).background(if (selected) colors.onAccent else dot))
+                Spacer(Modifier.width(Spacing.sm))
+            }
+            if (icon != null) {
+                Icon(icon, null, tint = if (selected) colors.onAccent else colors.textSecondary, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+            }
+            Text(text, style = MaterialTheme.typography.labelLarge, color = if (selected) colors.onAccent else colors.textPrimary, maxLines = 1)
         }
-        if (icon != null) {
-            Icon(icon, null, tint = if (selected) colors.onAccent else colors.accent, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.width(6.dp))
-        }
-        Text(text, style = MaterialTheme.typography.labelLarge, color = if (selected) colors.onAccent else colors.textPrimary, maxLines = 1)
     }
 }
 
@@ -508,7 +600,7 @@ private fun ScriptCard(
     val colors = RgTheme.colors
     val shape = RoundedCornerShape(Radius.lg)
     val script = item.script
-    val matchBg = colors.pastelButter
+    val matchBg = colors.warning.copy(alpha = if (colors.isDark) 0.32f else 0.28f)
     val uiDirection = LocalLayoutDirection.current
     Column(
         Modifier
@@ -517,56 +609,120 @@ private fun ScriptCard(
             .background(colors.surface)
             .border(1.dp, colors.outline, shape)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(Spacing.lg)
+            .padding(start = Spacing.lg, end = Spacing.xs, top = Spacing.xs, bottom = Spacing.md)
             .animateContentSize(),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
+        // Header: overline (folder · date) and title; the favorite toggle keeps a full 48dp touch target.
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (folder != null) {
-                Box(Modifier.size(10.dp).clip(CircleShape).background(Color(folder.colorArgb)))
-                Spacer(Modifier.width(Spacing.sm))
-            }
-            Text(
-                highlight(script.title.ifBlank { untitled }, item.titleMatches, matchBg),
-                style = MaterialTheme.typography.titleMedium,
-                color = colors.textPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            Icon(
-                if (script.isFavorite) Icons.Rounded.Star else Icons.Rounded.StarBorder,
-                stringResource(if (script.isFavorite) R.string.scripts_unfavorite else R.string.scripts_favorite),
-                tint = if (script.isFavorite) colors.warning else colors.textTertiary,
-                modifier = Modifier.size(36.dp).clip(CircleShape).pressable(haptic = HapticEvent.TOGGLE_ON, onClick = onFavorite).padding(6.dp),
-            )
-        }
-        if (item.preview.isNotBlank()) {
-            val direction = script.direction.resolve(item.preview, uiDirection)
-            CompositionLocalProvider(LocalLayoutDirection provides direction) {
+            Column(Modifier.weight(1f).padding(top = Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.xxs)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (folder != null) {
+                        Box(Modifier.size(8.dp).clip(CircleShape).background(Color(folder.colorArgb)))
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            folder.name,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = colors.textSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        Text("  ·  ", style = MaterialTheme.typography.labelMedium, color = colors.textTertiary)
+                    }
+                    Text(formatShortDate(script.updatedAt), style = MaterialTheme.typography.labelMedium, color = colors.textTertiary, maxLines = 1)
+                }
                 Text(
-                    highlight(item.preview, item.previewMatches, matchBg),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = colors.textSecondary,
-                    maxLines = 3,
+                    highlight(script.title.ifBlank { untitled }, item.titleMatches, matchBg),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (script.title.isBlank()) colors.textTertiary else colors.textPrimary,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            Box(
+                Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .pressable(haptic = HapticEvent.TOGGLE_ON, onClick = onFavorite),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    if (script.isFavorite) Icons.Rounded.Star else Icons.Rounded.StarBorder,
+                    stringResource(if (script.isFavorite) R.string.scripts_unfavorite else R.string.scripts_favorite),
+                    tint = if (script.isFavorite) colors.warning else colors.textTertiary,
+                    modifier = Modifier.size(22.dp),
                 )
             }
         }
-        Text(
-            stringResource(
-                R.string.scripts_card_meta,
-                item.words.toString().localizeDigits(),
-                formatDurationMs(item.durationMs),
-                wordsPerMinute.toString().localizeDigits(),
-                formatShortDate(script.updatedAt),
-            ),
-            style = MaterialTheme.typography.labelSmall,
-            color = colors.textTertiary,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Column(Modifier.padding(end = Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            if (item.preview.isNotBlank()) {
+                val direction = script.direction.resolve(item.preview, uiDirection)
+                CompositionLocalProvider(LocalLayoutDirection provides direction) {
+                    Text(
+                        highlight(item.preview, item.previewMatches, matchBg),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.textSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            } else {
+                Text(
+                    stringResource(R.string.scripts_card_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colors.textTertiary,
+                )
+            }
+            if (item.words > 0) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    MetaPill(Icons.Rounded.Schedule, formatDurationMs(item.durationMs), stringResource(R.string.scripts_card_duration_cd, wordsPerMinute.toString().localizeDigits()))
+                    MetaPill(Icons.AutoMirrored.Rounded.Notes, stringResource(R.string.scripts_card_words, item.words.toString().localizeDigits()), null)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MetaPill(icon: ImageVector, text: String, contentDescription: String?) {
+    val colors = RgTheme.colors
+    Row(
+        Modifier
+            .height(24.dp)
+            .clip(RoundedCornerShape(Radius.pill))
+            .background(colors.surfaceMuted)
+            .padding(horizontal = Spacing.sm)
+            .then(if (contentDescription != null) Modifier.semantics { this.contentDescription = contentDescription } else Modifier),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, null, tint = colors.textSecondary, modifier = Modifier.size(14.dp))
+        Spacer(Modifier.width(Spacing.xs))
+        Text(text, style = MaterialTheme.typography.labelSmall, color = colors.textSecondary, maxLines = 1)
+    }
+}
+
+/** Loading placeholder shaped like a script card. */
+@Composable
+private fun ScriptCardSkeleton(modifier: Modifier = Modifier) {
+    val colors = RgTheme.colors
+    val shape = RoundedCornerShape(Radius.lg)
+    Column(
+        modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(colors.surface)
+            .border(1.dp, colors.outline, shape)
+            .padding(Spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+    ) {
+        ShimmerBox(Modifier.fillMaxWidth(0.55f).height(18.dp), RoundedCornerShape(Radius.xs))
+        ShimmerBox(Modifier.fillMaxWidth().height(12.dp), RoundedCornerShape(Radius.xs))
+        ShimmerBox(Modifier.fillMaxWidth(0.8f).height(12.dp), RoundedCornerShape(Radius.xs))
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            ShimmerBox(Modifier.size(width = 64.dp, height = 24.dp), RoundedCornerShape(Radius.pill))
+            ShimmerBox(Modifier.size(width = 72.dp, height = 24.dp), RoundedCornerShape(Radius.pill))
+        }
     }
 }
 
@@ -582,24 +738,65 @@ private fun ScriptActionsSheet(
     onFavorite: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    RgBottomSheetCompat(title = script.title, onDismiss = onDismiss) {
-        RgListItem(stringResource(R.string.scripts_action_prompter), icon = Icons.Rounded.Slideshow, onClick = onOpenPrompter)
-        RgListItem(stringResource(R.string.scripts_action_record), icon = Icons.Rounded.Videocam, onClick = onRecord)
-        RgListItem(stringResource(UiR.string.action_edit), icon = Icons.Rounded.Edit, onClick = onEdit)
-        RgListItem(stringResource(UiR.string.action_duplicate), icon = Icons.Rounded.ContentCopy, onClick = onDuplicate)
+    RgBottomSheet(onDismiss = onDismiss) {
+        ScriptActionsContent(script, onOpenPrompter, onRecord, onEdit, onDuplicate, onMove, onFavorite, onDelete)
+    }
+}
+
+/** Body of the long-press sheet: the two primary actions as tiles, then secondary actions as a list. */
+@Composable
+internal fun ScriptActionsContent(
+    script: Script,
+    onOpenPrompter: () -> Unit,
+    onRecord: () -> Unit,
+    onEdit: () -> Unit,
+    onDuplicate: () -> Unit,
+    onMove: () -> Unit,
+    onFavorite: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val colors = RgTheme.colors
+    SheetContent(title = script.title.ifBlank { stringResource(R.string.scripts_untitled) }) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.md, vertical = Spacing.sm), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            ActionTile(Icons.Rounded.Slideshow, stringResource(R.string.scripts_action_prompter), colors.pastelLavender, colors.accent, onOpenPrompter, Modifier.weight(1f))
+            ActionTile(Icons.Rounded.Videocam, stringResource(R.string.scripts_action_record), colors.pastelRose, colors.record, onRecord, Modifier.weight(1f))
+        }
+        RgListItem(stringResource(UiR.string.action_edit), icon = Icons.Rounded.Edit, onClick = onEdit, trailing = null)
+        RgListItem(stringResource(UiR.string.action_duplicate), icon = Icons.Rounded.ContentCopy, onClick = onDuplicate, trailing = null)
         RgListItem(stringResource(R.string.scripts_action_move), icon = Icons.AutoMirrored.Rounded.DriveFileMove, onClick = onMove)
         RgListItem(
             stringResource(if (script.isFavorite) R.string.scripts_unfavorite else R.string.scripts_favorite),
             icon = if (script.isFavorite) Icons.Rounded.StarBorder else Icons.Rounded.Star,
+            iconTint = colors.warning,
+            iconBackground = colors.pastelButter,
             onClick = onFavorite,
+            trailing = null,
         )
+        HorizontalDivider(color = colors.outline, modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.xs))
         RgListItem(
             stringResource(UiR.string.action_delete),
             icon = Icons.Rounded.Delete,
-            iconTint = RgTheme.colors.danger,
-            iconBackground = RgTheme.colors.danger.copy(alpha = 0.12f),
+            iconTint = colors.danger,
+            iconBackground = colors.danger.copy(alpha = 0.12f),
             onClick = onDelete,
+            trailing = null,
         )
+    }
+}
+
+@Composable
+private fun ActionTile(icon: ImageVector, label: String, container: Color, tint: Color, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier
+            .clip(RoundedCornerShape(Radius.lg))
+            .background(container)
+            .pressable(onClick = onClick)
+            .padding(horizontal = Spacing.md, vertical = Spacing.lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+    ) {
+        Icon(icon, null, tint = tint, modifier = Modifier.size(28.dp))
+        Text(label, style = MaterialTheme.typography.labelLarge, color = RgTheme.colors.textPrimary, textAlign = TextAlign.Center, maxLines = 2)
     }
 }
 
@@ -611,12 +808,26 @@ private fun MoveToFolderSheet(
     onNewFolder: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    RgBottomSheetCompat(title = stringResource(R.string.scripts_action_move), onDismiss = onDismiss) {
+    RgBottomSheet(onDismiss = onDismiss) { MoveToFolderContent(folders, current, onSelect, onNewFolder) }
+}
+
+@Composable
+internal fun MoveToFolderContent(
+    folders: List<ScriptFolder>,
+    current: String?,
+    onSelect: (String?) -> Unit,
+    onNewFolder: () -> Unit,
+) {
+    val colors = RgTheme.colors
+    val check: @Composable () -> Unit = { Icon(Icons.Rounded.Check, null, tint = colors.accent, modifier = Modifier.size(22.dp)) }
+    SheetContent(title = stringResource(R.string.scripts_action_move)) {
         RgListItem(
             stringResource(R.string.scripts_no_folder),
             icon = Icons.Rounded.FolderOff,
+            iconTint = colors.textSecondary,
+            iconBackground = colors.surfaceMuted,
             onClick = { onSelect(null) },
-            trailing = if (current == null) ({ Icon(Icons.Rounded.Star, null, tint = RgTheme.colors.accent, modifier = Modifier.size(16.dp)) }) else null,
+            trailing = if (current == null) check else null,
         )
         folders.forEach { folder ->
             RgListItem(
@@ -625,27 +836,65 @@ private fun MoveToFolderSheet(
                 iconTint = Color(folder.colorArgb),
                 iconBackground = Color(folder.colorArgb).copy(alpha = 0.16f),
                 onClick = { onSelect(folder.id) },
-                trailing = if (current == folder.id) ({ Icon(Icons.Rounded.Star, null, tint = RgTheme.colors.accent, modifier = Modifier.size(16.dp)) }) else null,
+                trailing = if (current == folder.id) check else null,
             )
         }
-        RgListItem(stringResource(R.string.scripts_folder_new), icon = Icons.Rounded.CreateNewFolder, onClick = onNewFolder)
+        RgListItem(stringResource(R.string.scripts_folder_new), icon = Icons.Rounded.CreateNewFolder, onClick = onNewFolder, trailing = null)
     }
 }
 
 @Composable
 private fun CreateSheet(onDismiss: () -> Unit, onNew: () -> Unit, onImport: () -> Unit, onPaste: () -> Unit) {
-    RgBottomSheetCompat(title = stringResource(R.string.scripts_new), onDismiss = onDismiss) {
+    RgBottomSheet(onDismiss = onDismiss) { CreateContent(onNew, onImport, onPaste) }
+}
+
+@Composable
+internal fun CreateContent(onNew: () -> Unit, onImport: () -> Unit, onPaste: () -> Unit) {
+    val colors = RgTheme.colors
+    SheetContent(title = stringResource(R.string.scripts_new)) {
         RgListItem(stringResource(R.string.scripts_create_blank), subtitle = stringResource(R.string.scripts_create_blank_hint), icon = Icons.Rounded.Edit, onClick = onNew)
-        RgListItem(stringResource(R.string.scripts_create_import), subtitle = stringResource(R.string.scripts_create_import_hint), icon = Icons.Rounded.FileOpen, onClick = onImport)
-        RgListItem(stringResource(R.string.scripts_create_paste), subtitle = stringResource(R.string.scripts_create_paste_hint), icon = Icons.Rounded.ContentPaste, onClick = onPaste)
+        RgListItem(
+            stringResource(R.string.scripts_create_import), subtitle = stringResource(R.string.scripts_create_import_hint), icon = Icons.Rounded.FileOpen,
+            iconTint = Palette.Mint500, iconBackground = colors.pastelMint, onClick = onImport,
+        )
+        RgListItem(
+            stringResource(R.string.scripts_create_paste), subtitle = stringResource(R.string.scripts_create_paste_hint), icon = Icons.Rounded.ContentPaste,
+            iconTint = Palette.Peach400, iconBackground = colors.pastelPeach, onClick = onPaste,
+        )
     }
 }
 
-/** Bottom sheet wrapper with the list padding used across this screen. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Folder long-press menu body. */
 @Composable
-internal fun RgBottomSheetCompat(title: String?, onDismiss: () -> Unit, content: @Composable () -> Unit) {
-    RgBottomSheet(onDismiss = onDismiss, title = title) {
-        Column(Modifier.padding(horizontal = Spacing.md)) { content() }
+internal fun FolderMenuContent(folder: ScriptFolder, onRename: () -> Unit, onDelete: () -> Unit) {
+    SheetContent(title = folder.name) {
+        RgListItem(stringResource(UiR.string.action_rename), icon = Icons.Rounded.Edit, onClick = onRename, trailing = null)
+        RgListItem(
+            stringResource(R.string.scripts_folder_delete),
+            subtitle = stringResource(R.string.scripts_folder_delete_hint),
+            icon = Icons.Rounded.Delete,
+            iconTint = RgTheme.colors.danger,
+            iconBackground = RgTheme.colors.danger.copy(alpha = 0.12f),
+            onClick = onDelete,
+            trailing = null,
+        )
+    }
+}
+
+/** Sheet body: title on the screen gutter, list rows inset so their 12dp padding lines text up with the title. */
+@Composable
+internal fun SheetContent(title: String?, content: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxWidth()) {
+        if (title != null) {
+            Text(
+                title,
+                style = MaterialTheme.typography.titleLarge,
+                color = RgTheme.colors.textPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = Spacing.gutter).padding(top = Spacing.xs, bottom = Spacing.sm),
+            )
+        }
+        Column(Modifier.padding(horizontal = Spacing.sm), content = content)
     }
 }

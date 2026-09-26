@@ -42,7 +42,7 @@ import com.ravango.core.designsystem.theme.Spacing
 import com.ravango.core.model.ProFeature
 import com.ravango.engine.ai.api.CapabilityState
 import com.ravango.feature.editor.EditorUiState
-import com.ravango.feature.editor.EditorViewModel
+import com.ravango.feature.editor.EditorActions
 import com.ravango.feature.editor.R
 import com.ravango.feature.editor.ui.InfoCard
 import com.ravango.feature.editor.ui.localized
@@ -69,7 +69,7 @@ private fun AiCard(icon: ImageVector, title: String, body: String, pro: Boolean,
 }
 
 @Composable
-fun AiPanel(state: EditorUiState, vm: EditorViewModel) {
+fun AiPanel(state: EditorUiState, vm: EditorActions) {
     val ai = state.ai
     val pro = !state.has(ProFeature.AI_VIDEO_TOOLS)
     val busy = state.busy != null

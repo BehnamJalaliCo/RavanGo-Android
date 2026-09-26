@@ -26,6 +26,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.VolumeOff
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.CircularProgressIndicator
@@ -158,7 +160,7 @@ private fun ClipItem(
             .offset { IntOffset(geometry.x(p.startUs).roundToInt(), 0) }
             .width(pxToDp(widthPx))
             .height(MainLaneHeight)
-            .zIndex(if (dragging > 0f) 3f else if (selected) 1f else 0f)
+            .zIndex(if (dragging > 0f) 4f else if (selected) 3f else 0f)
             .graphicsLayer {
                 translationX = dragX
                 val s = if (dragging > 0f) 1.04f else 1f
@@ -190,7 +192,7 @@ private fun ClipItem(
     ) {
         ThumbnailStrip(p, geometry, thumbnails, visible, widthPx)
         // Badges.
-        Row(Modifier.align(Alignment.TopStart).padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.align(Alignment.TopStart).padding(start = HandleWidth + 2.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             if (p.clip.speed != 1f) Badge(localized(trimFloat(p.clip.speed)) + "×")
             if (p.clip.reversed) {
                 Spacer(Modifier.width(3.dp))
@@ -210,7 +212,7 @@ private fun ClipItem(
             Text(
                 com.ravango.feature.editor.ui.timecode(p.durationUs, tenths = true),
                 color = Color.White, fontSize = 9.sp,
-                modifier = Modifier.align(Alignment.BottomStart).padding(4.dp).background(Color.Black.copy(alpha = 0.45f), RoundedCornerShape(4.dp)).padding(horizontal = 3.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = HandleWidth + 2.dp, bottom = 4.dp).background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(4.dp)).padding(horizontal = 4.dp),
             )
         }
         if (selected) {
@@ -465,6 +467,12 @@ internal fun AudioLane(track: AudioTrack, selection: Selection, geometry: Timeli
                             drawWaveform(WaveformProvider.slice(data, clip.source.durationUs, clip.trimStartUs, clip.trimEndUs, count), Color.White.copy(alpha = 0.75f))
                         }
                     }
+                    Icon(
+                        if (track.kind == AudioTrackKind.VOICEOVER) Icons.Rounded.Mic else Icons.Rounded.MusicNote,
+                        null,
+                        tint = Color.White,
+                        modifier = Modifier.align(Alignment.TopStart).padding(start = 14.dp, top = 3.dp).size(12.dp),
+                    )
                     if (clip.loop) Text("∞", color = Color.White, fontSize = 11.sp, modifier = Modifier.align(Alignment.TopEnd).padding(end = 14.dp))
                 }
             }

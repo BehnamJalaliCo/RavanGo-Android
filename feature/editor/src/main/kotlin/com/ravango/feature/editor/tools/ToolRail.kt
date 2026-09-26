@@ -8,6 +8,21 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import com.ravango.core.designsystem.component.pressable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -40,11 +55,9 @@ import com.ravango.core.designsystem.theme.RgTheme
 import com.ravango.core.designsystem.theme.Spacing
 import com.ravango.feature.editor.EditorTool
 import com.ravango.feature.editor.EditorUiState
-import com.ravango.feature.editor.EditorViewModel
+import com.ravango.feature.editor.EditorActions
 import com.ravango.feature.editor.R
 import com.ravango.feature.editor.Selection
-import com.ravango.feature.editor.ui.ActionRow
-import com.ravango.feature.editor.ui.ToolAction
 
 fun EditorTool.icon(): ImageVector = when (this) {
     EditorTool.EDIT -> Icons.Rounded.ContentCut
@@ -94,16 +107,20 @@ private fun orderedTools(selection: Selection): List<EditorTool> {
 /** Bottom tool rail (horizontally scrolling). */
 @Composable
 fun ToolRail(state: EditorUiState, onTool: (EditorTool) -> Unit, modifier: Modifier = Modifier) {
-    ActionRow(modifier.padding(vertical = Spacing.xs)) {
+    // Rail items are plain icons + labels (a pill marks the open tool), so they read as navigation and the circular
+    // buttons inside panels read as actions.
+    Row(
+        modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Spacing.xs, vertical = Spacing.xs),
+    ) {
         orderedTools(state.selection).forEach { tool ->
-            ToolAction(tool.icon(), stringResource(tool.label()), { onTool(tool) }, selected = state.tool == tool)
+            RailItem(tool.icon(), stringResource(tool.label()), selected = state.tool == tool) { onTool(tool) }
         }
     }
 }
 
 /** The panel for the active tool, animated in above the rail. */
 @Composable
-fun ToolPanelHost(state: EditorUiState, vm: EditorViewModel, modifier: Modifier = Modifier) {
+fun ToolPanelHost(state: EditorUiState, vm: EditorActions, modifier: Modifier = Modifier) {
     AnimatedContent(
         targetState = state.tool,
         transitionSpec = { (fadeIn(tween(160)) + expandVertically()) togetherWith (fadeOut(tween(120)) + shrinkVertically()) },
@@ -142,3 +159,35 @@ fun ToolPanelHost(state: EditorUiState, vm: EditorViewModel, modifier: Modifier 
 
 @Composable
 internal fun accent() = RgTheme.colors.accent
+
+@Composable
+private fun RailItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
+    val colors = RgTheme.colors
+    Column(
+        Modifier
+            .width(68.dp)
+            .clip(RoundedCornerShape(Radius.md))
+            .pressable(onClick = onClick)
+            .padding(vertical = Spacing.xs),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            Modifier
+                .size(width = 52.dp, height = 32.dp)
+                .clip(RoundedCornerShape(Radius.pill))
+                .background(if (selected) colors.accent else Color.Transparent),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(icon, null, tint = if (selected) colors.onAccent else Color.White.copy(alpha = 0.9f), modifier = Modifier.size(22.dp))
+        }
+        Spacer(Modifier.height(Spacing.xs))
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (selected) Color.White else Color.White.copy(alpha = 0.7f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+        )
+    }
+}

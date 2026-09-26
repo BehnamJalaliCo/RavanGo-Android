@@ -29,7 +29,9 @@ import androidx.compose.material.icons.rounded.Vibration
 import androidx.compose.material.icons.rounded.VideoSettings
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -70,6 +72,47 @@ import com.ravango.feature.account.R
 import com.ravango.feature.account.common.InfoBanner
 import com.ravango.feature.account.common.SwitchRow
 
+/** Everything the settings screen can change; implemented by [SettingsViewModel] via [asActions]. */
+internal interface SettingsActions {
+    fun setLanguage(language: AppLanguage)
+    fun setTheme(mode: ThemeMode)
+    fun setHaptics(enabled: Boolean)
+    fun setReduceMotion(enabled: Boolean)
+    fun setSaveToGallery(enabled: Boolean)
+    fun setKeepScreenOn(enabled: Boolean)
+    fun setExportQuality(quality: ExportQuality)
+    fun setHevc(enabled: Boolean)
+    fun clearCache()
+    fun setTextProvider(provider: AiProviderId)
+    fun setSpeechProvider(provider: SpeechProviderId)
+    fun setConsent(enabled: Boolean)
+    fun setCustomEndpoint(baseUrl: String, model: String)
+    fun saveKey(provider: AiProviderId, key: String)
+    fun removeKey(provider: AiProviderId)
+    fun saveSpeechKey(key: String)
+    fun removeSpeechKey()
+}
+
+private fun SettingsViewModel.asActions(): SettingsActions = object : SettingsActions {
+    override fun setLanguage(language: AppLanguage) { this@asActions.setLanguage(language) }
+    override fun setTheme(mode: ThemeMode) { this@asActions.setTheme(mode) }
+    override fun setHaptics(enabled: Boolean) { this@asActions.setHaptics(enabled) }
+    override fun setReduceMotion(enabled: Boolean) { this@asActions.setReduceMotion(enabled) }
+    override fun setSaveToGallery(enabled: Boolean) { this@asActions.setSaveToGallery(enabled) }
+    override fun setKeepScreenOn(enabled: Boolean) { this@asActions.setKeepScreenOn(enabled) }
+    override fun setExportQuality(quality: ExportQuality) { this@asActions.setExportQuality(quality) }
+    override fun setHevc(enabled: Boolean) { this@asActions.setHevc(enabled) }
+    override fun clearCache() { this@asActions.clearCache() }
+    override fun setTextProvider(provider: AiProviderId) { this@asActions.setTextProvider(provider) }
+    override fun setSpeechProvider(provider: SpeechProviderId) { this@asActions.setSpeechProvider(provider) }
+    override fun setConsent(enabled: Boolean) { this@asActions.setConsent(enabled) }
+    override fun setCustomEndpoint(baseUrl: String, model: String) { this@asActions.setCustomEndpoint(baseUrl, model) }
+    override fun saveKey(provider: AiProviderId, key: String) { this@asActions.saveKey(provider, key) }
+    override fun removeKey(provider: AiProviderId) { this@asActions.removeKey(provider) }
+    override fun saveSpeechKey(key: String) { this@asActions.saveSpeechKey(key) }
+    override fun removeSpeechKey() { this@asActions.removeSpeechKey() }
+}
+
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -91,6 +134,14 @@ fun SettingsScreen(
             }
         }
     }
+    val actions = remember(viewModel) { viewModel.asActions() }
+    SettingsContent(state, snackbar, onBack, actions)
+}
+
+/** Stateless settings screen. */
+@Composable
+internal fun SettingsContent(state: SettingsUiState, snackbar: SnackbarHostState?, onBack: () -> Unit, actions: SettingsActions) {
+    val viewModel = actions
     val prefs = state.prefs
 
     RgScreen(title = stringResource(R.string.account_settings), onBack = onBack, snackbarHostState = snackbar) { padding ->
@@ -239,7 +290,7 @@ private fun LabeledControl(icon: androidx.compose.ui.graphics.vector.ImageVector
 }
 
 @Composable
-private fun AiSection(state: SettingsUiState, vm: SettingsViewModel) {
+private fun AiSection(state: SettingsUiState, vm: SettingsActions) {
     val ai = state.prefs.ai
     RgGroup(title = stringResource(R.string.account_settings_ai)) {
         LabeledControl(Icons.Rounded.AutoAwesome, stringResource(R.string.account_ai_provider)) {

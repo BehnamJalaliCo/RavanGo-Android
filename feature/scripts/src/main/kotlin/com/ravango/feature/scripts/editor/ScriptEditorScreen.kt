@@ -15,6 +15,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.rounded.Notes
+import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.FormatTextdirectionRToL
+import androidx.compose.material.icons.rounded.Schedule
+import com.ravango.core.designsystem.component.RgButtonSize
+import com.ravango.core.designsystem.component.RgPrimaryButton
+import com.ravango.core.designsystem.component.RgSecondaryButton
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -35,9 +45,9 @@ import androidx.compose.material.icons.rounded.Highlight
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PauseCircle
 import androidx.compose.material.icons.rounded.PictureInPictureAlt
-import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.automirrored.rounded.StickyNote2
 import androidx.compose.material.icons.rounded.Title
+import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material.icons.rounded.Visibility
@@ -46,7 +56,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -81,7 +93,6 @@ import com.ravango.core.designsystem.component.ProBadge
 import com.ravango.core.designsystem.component.RgConfirmDialog
 import com.ravango.core.designsystem.component.RgIconButton
 import com.ravango.core.designsystem.component.RgScreen
-import com.ravango.core.designsystem.component.RgSegmentedControl
 import com.ravango.core.designsystem.component.rememberSnackbarHostState
 import com.ravango.core.designsystem.component.pressable
 import com.ravango.core.designsystem.theme.HapticEvent
@@ -151,45 +162,21 @@ internal fun ScriptEditorRoute(
         }
     }
 
-    RgScreen(
-        title = stringResource(if (state.scriptId == null && !state.loading) R.string.scripts_editor_new_title else R.string.scripts_editor_title),
-        subtitle = saveStatusText(state.saveStatus),
-        onBack = { viewModel.flush(); onBack() },
+    ScriptEditorContent(
+        state = state,
+        stats = stats,
         snackbarHostState = snackbar,
-        actions = {
-            if (!state.loading && !state.notFound) {
-                RgIconButton(Icons.AutoMirrored.Rounded.Undo, stringResource(UiR.string.action_undo), viewModel::undo, enabled = state.canUndo, size = 40.dp)
-                RgIconButton(Icons.AutoMirrored.Rounded.Redo, stringResource(UiR.string.action_redo), viewModel::redo, enabled = state.canRedo, size = 40.dp)
-                RgIconButton(
-                    if (state.preview) Icons.Rounded.Edit else Icons.Rounded.Visibility,
-                    stringResource(if (state.preview) R.string.scripts_editor_edit_mode else R.string.scripts_editor_preview_mode),
-                    { viewModel.setPreview(!state.preview) },
-                    selected = state.preview,
-                    size = 40.dp,
-                )
-                MoreMenu(state.floatingIsPro, viewModel::navigate)
-            }
-        },
-    ) { padding ->
-        when {
-            state.loading -> LoadingState(Modifier.padding(padding))
-            state.notFound -> EmptyState(
-                icon = Icons.Rounded.Description,
-                title = stringResource(R.string.scripts_editor_not_found_title),
-                message = stringResource(R.string.scripts_editor_not_found_message),
-                actionText = stringResource(UiR.string.action_back),
-                onAction = onBack,
-                modifier = Modifier.padding(padding),
-            )
-            else -> EditorBody(
-                state = state,
-                stats = stats,
-                viewModel = viewModel,
-                onAi = { showAi = true },
-                modifier = Modifier.padding(padding),
-            )
-        }
-    }
+        onBack = { viewModel.flush(); onBack() },
+        onUndo = viewModel::undo,
+        onRedo = viewModel::redo,
+        onPreview = viewModel::setPreview,
+        onNavigate = viewModel::navigate,
+        onTitleChange = viewModel::onTitleChange,
+        onBodyChange = viewModel::onBodyChange,
+        onDirection = viewModel::setDirection,
+        onEdit = viewModel::applyEdit,
+        onAi = { showAi = true },
+    )
 
     if (showAi) {
         AiAssistSheet(
@@ -221,6 +208,67 @@ internal fun ScriptEditorRoute(
     }
 }
 
+/** Stateless script editor (rendered by screenshot tests with sample data). */
+@Composable
+internal fun ScriptEditorContent(
+    state: EditorUiState,
+    stats: EditorStats,
+    onBack: () -> Unit,
+    onUndo: () -> Unit,
+    onRedo: () -> Unit,
+    onPreview: (Boolean) -> Unit,
+    onNavigate: (EditorNavAction) -> Unit,
+    onTitleChange: (String) -> Unit,
+    onBodyChange: (TextFieldValue) -> Unit,
+    onDirection: (ContentDirection) -> Unit,
+    onEdit: ((TextFieldValue) -> TextFieldValue) -> Unit,
+    onAi: () -> Unit,
+    snackbarHostState: SnackbarHostState? = null,
+) {
+    RgScreen(
+        title = stringResource(if (state.scriptId == null && !state.loading) R.string.scripts_editor_new_title else R.string.scripts_editor_title),
+        subtitle = saveStatusText(state.saveStatus),
+        onBack = onBack,
+        snackbarHostState = snackbarHostState,
+        actions = {
+            if (!state.loading && !state.notFound) {
+                RgIconButton(
+                    if (state.preview) Icons.Rounded.Edit else Icons.Rounded.Visibility,
+                    stringResource(if (state.preview) R.string.scripts_editor_edit_mode else R.string.scripts_editor_preview_mode),
+                    { onPreview(!state.preview) },
+                    selected = state.preview,
+                )
+                MoreMenu(state.floatingIsPro, onNavigate)
+            }
+        },
+    ) { padding ->
+        when {
+            state.loading -> LoadingState(Modifier.padding(padding))
+            state.notFound -> EmptyState(
+                icon = Icons.Rounded.Description,
+                title = stringResource(R.string.scripts_editor_not_found_title),
+                message = stringResource(R.string.scripts_editor_not_found_message),
+                actionText = stringResource(UiR.string.action_back),
+                onAction = onBack,
+                modifier = Modifier.padding(padding),
+            )
+            else -> EditorBody(
+                state = state,
+                stats = stats,
+                onUndo = onUndo,
+                onRedo = onRedo,
+                onTitleChange = onTitleChange,
+                onBodyChange = onBodyChange,
+                onDirection = onDirection,
+                onEdit = onEdit,
+                onNavigate = onNavigate,
+                onAi = onAi,
+                modifier = Modifier.padding(padding),
+            )
+        }
+    }
+}
+
 @Composable
 private fun saveStatusText(status: SaveStatus): String? = when (status) {
     SaveStatus.IDLE -> null
@@ -233,7 +281,7 @@ private fun saveStatusText(status: SaveStatus): String? = when (status) {
 private fun MoreMenu(floatingIsPro: Boolean, onAction: (EditorNavAction) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
-        RgIconButton(Icons.Rounded.MoreVert, stringResource(UiR.string.action_more), { open = true }, size = 40.dp)
+        RgIconButton(Icons.Rounded.MoreVert, stringResource(UiR.string.action_more), { open = true })
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             MenuItem(Icons.Rounded.Tune, stringResource(R.string.scripts_editor_prompter_settings)) { open = false; onAction(EditorNavAction.PROMPTER_SETTINGS) }
             MenuItem(Icons.Rounded.PictureInPictureAlt, stringResource(R.string.scripts_editor_floating), trailing = if (floatingIsPro) null else ({ ProBadge() })) {
@@ -258,7 +306,13 @@ private fun MenuItem(icon: ImageVector, text: String, trailing: (@Composable () 
 private fun EditorBody(
     state: EditorUiState,
     stats: EditorStats,
-    viewModel: ScriptEditorViewModel,
+    onUndo: () -> Unit,
+    onRedo: () -> Unit,
+    onTitleChange: (String) -> Unit,
+    onBodyChange: (TextFieldValue) -> Unit,
+    onDirection: (ContentDirection) -> Unit,
+    onEdit: ((TextFieldValue) -> TextFieldValue) -> Unit,
+    onNavigate: (EditorNavAction) -> Unit,
     onAi: () -> Unit,
     modifier: Modifier,
 ) {
@@ -290,7 +344,7 @@ private fun EditorBody(
                 }
                 BasicTextField(
                     value = state.title,
-                    onValueChange = viewModel::onTitleChange,
+                    onValueChange = onTitleChange,
                     singleLine = true,
                     textStyle = MaterialTheme.typography.headlineSmall.copy(color = colors.textPrimary, textDirection = TextDirection.Content),
                     cursorBrush = SolidColor(colors.accent),
@@ -300,28 +354,16 @@ private fun EditorBody(
         }
         // Stats + direction
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = Spacing.gutter, vertical = Spacing.xs),
+            Modifier.fillMaxWidth().padding(start = Spacing.gutter, end = Spacing.md, top = Spacing.xs, bottom = Spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            Text(
-                stringResource(
-                    R.string.scripts_editor_stats,
-                    stats.words.toString().localizeDigits(),
-                    formatDurationMs(stats.durationMs),
-                    stats.wordsPerMinute.toString().localizeDigits(),
-                ),
-                style = MaterialTheme.typography.labelMedium,
-                color = colors.textSecondary,
-                modifier = Modifier.weight(1f),
-            )
-            RgSegmentedControl(
-                options = ContentDirection.entries,
-                selected = state.direction,
-                onSelect = viewModel::setDirection,
-                label = { directionShortLabel(it) },
-            )
+            StatPill(Icons.Rounded.Schedule, formatDurationMs(stats.durationMs))
+            StatPill(Icons.AutoMirrored.Rounded.Notes, stringResource(R.string.scripts_editor_words, stats.words.toString().localizeDigits()))
+            Spacer(Modifier.weight(1f))
+            DirectionMenu(state.direction, onDirection)
         }
-        HorizontalDivider(color = colors.outline, modifier = Modifier.padding(top = Spacing.xs))
+        HorizontalDivider(color = colors.outline)
 
         AnimatedContent(
             targetState = state.preview,
@@ -344,7 +386,7 @@ private fun EditorBody(
                         }
                         BasicTextField(
                             value = state.body,
-                            onValueChange = viewModel::onBodyChange,
+                            onValueChange = onBodyChange,
                             textStyle = bodyStyle,
                             cursorBrush = SolidColor(colors.accent),
                             modifier = Modifier.fillMaxWidth(),
@@ -357,10 +399,14 @@ private fun EditorBody(
         MarkupToolbar(
             enabled = !state.preview,
             direction = contentDirection,
-            onEdit = viewModel::applyEdit,
+            canUndo = state.canUndo,
+            canRedo = state.canRedo,
+            onUndo = onUndo,
+            onRedo = onRedo,
+            onEdit = onEdit,
             onAi = onAi,
-            onPrompter = { viewModel.navigate(EditorNavAction.PROMPTER) },
-            onRecord = { viewModel.navigate(EditorNavAction.RECORD) },
+            onPrompter = { onNavigate(EditorNavAction.PROMPTER) },
+            onRecord = { onNavigate(EditorNavAction.RECORD) },
         )
     }
 }
@@ -398,6 +444,10 @@ private fun MarkupPreview(text: String, style: TextStyle) {
 private fun MarkupToolbar(
     enabled: Boolean,
     direction: LayoutDirection,
+    canUndo: Boolean,
+    canRedo: Boolean,
+    onUndo: () -> Unit,
+    onRedo: () -> Unit,
     onEdit: ((androidx.compose.ui.text.input.TextFieldValue) -> androidx.compose.ui.text.input.TextFieldValue) -> Unit,
     onAi: () -> Unit,
     onPrompter: () -> Unit,
@@ -416,12 +466,15 @@ private fun MarkupToolbar(
             .navigationBarsPadding(),
     ) {
         HorizontalDivider(color = colors.outline)
+        // Formatting: history first, then markup tools. Each control keeps a 48dp touch height.
         Row(
-            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Spacing.md, vertical = Spacing.sm),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ToolButton(Icons.Rounded.AutoAwesome, stringResource(R.string.scripts_editor_ai), highlighted = true, enabled = true) { onAi() }
+            HistoryButton(Icons.AutoMirrored.Rounded.Undo, stringResource(UiR.string.action_undo), canUndo, onUndo)
+            HistoryButton(Icons.AutoMirrored.Rounded.Redo, stringResource(UiR.string.action_redo), canRedo, onRedo)
+            Box(Modifier.padding(horizontal = Spacing.xs).size(width = 1.dp, height = 24.dp).background(colors.outline))
             ToolButton(Icons.Rounded.Title, stringResource(R.string.scripts_editor_tool_section), enabled = enabled) {
                 haptics.perform(HapticEvent.TICK); onEdit { MarkupEdits.toggleSection(it, sectionPlaceholder) }
             }
@@ -437,27 +490,92 @@ private fun MarkupToolbar(
             ToolButton(Icons.AutoMirrored.Rounded.StickyNote2, stringResource(R.string.scripts_editor_tool_note), enabled = enabled) {
                 haptics.perform(HapticEvent.TICK); onEdit { MarkupEdits.wrap(it, "[[", "]]", notePlaceholder) }
             }
-            Spacer(Modifier.width(Spacing.sm))
-            ToolButton(Icons.Rounded.Slideshow, stringResource(R.string.scripts_editor_open_prompter), enabled = true, highlighted = true) { onPrompter() }
-            ToolButton(Icons.Rounded.Videocam, stringResource(R.string.scripts_editor_record), enabled = true) { onRecord() }
+        }
+        // Actions: AI on the start side, record + teleprompter (primary) on the end side.
+        Row(
+            Modifier.fillMaxWidth().padding(start = Spacing.lg, end = Spacing.lg, top = Spacing.xs, bottom = Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            // Compact AI button, record, then the primary teleprompter action taking the remaining width (48dp row).
+            RgSecondaryButton(stringResource(R.string.scripts_editor_ai_short), onAi, icon = Icons.Rounded.AutoAwesome, size = RgButtonSize.LARGE)
+            RgIconButton(Icons.Rounded.Videocam, stringResource(R.string.scripts_editor_record), onRecord, size = 48.dp, tint = colors.record, container = colors.pastelRose)
+            RgPrimaryButton(stringResource(R.string.scripts_editor_open_prompter), onPrompter, icon = Icons.Rounded.Slideshow, size = RgButtonSize.LARGE, modifier = Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-private fun ToolButton(icon: ImageVector, label: String, enabled: Boolean, highlighted: Boolean = false, onClick: () -> Unit) {
+private fun HistoryButton(icon: ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {
+    val colors = RgTheme.colors
+    Box(
+        Modifier.size(48.dp).clip(CircleShape).pressable(enabled = enabled, haptic = HapticEvent.TICK, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, label, tint = if (enabled) colors.textPrimary else colors.textTertiary.copy(alpha = 0.6f), modifier = Modifier.size(22.dp))
+    }
+}
+
+@Composable
+private fun StatPill(icon: ImageVector, text: String) {
     val colors = RgTheme.colors
     Row(
-        Modifier
-            .clip(RoundedCornerShape(Radius.pill))
-            .background(if (highlighted) colors.accentSoft else colors.surfaceMuted)
-            .pressable(enabled = enabled, haptic = null, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+        Modifier.height(28.dp).clip(RoundedCornerShape(Radius.pill)).background(colors.surfaceMuted).padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val tint = if (!enabled) colors.textTertiary else if (highlighted) colors.accent else colors.textPrimary
-        Icon(icon, null, tint = tint, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge, color = tint)
+        Icon(icon, null, tint = colors.textSecondary, modifier = Modifier.size(14.dp))
+        Spacer(Modifier.width(Spacing.xs))
+        Text(text, style = MaterialTheme.typography.labelMedium, color = colors.textSecondary, maxLines = 1)
+    }
+}
+
+/** Compact text-direction picker: a chip showing the current mode, with a menu of the three options. */
+@Composable
+private fun DirectionMenu(selected: ContentDirection, onSelect: (ContentDirection) -> Unit) {
+    val colors = RgTheme.colors
+    var open by remember { mutableStateOf(false) }
+    Box {
+        Row(
+            Modifier
+                .height(48.dp)
+                .clip(RoundedCornerShape(Radius.pill))
+                .pressable { open = true }
+                .padding(horizontal = Spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Rounded.FormatTextdirectionRToL, null, tint = colors.accent, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(Spacing.xs))
+            Text(directionShortLabel(selected), style = MaterialTheme.typography.labelLarge, color = colors.accent, maxLines = 1)
+            Icon(Icons.Rounded.ArrowDropDown, stringResource(R.string.scripts_editor_direction), tint = colors.accent, modifier = Modifier.size(20.dp))
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            ContentDirection.entries.forEach { d ->
+                DropdownMenuItem(
+                    text = { Text(directionShortLabel(d), style = MaterialTheme.typography.bodyMedium, color = if (d == selected) colors.accent else colors.textPrimary) },
+                    trailingIcon = if (d == selected) ({ Icon(Icons.Rounded.Check, null, tint = colors.accent) }) else null,
+                    onClick = { onSelect(d); open = false },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ToolButton(icon: ImageVector, label: String, enabled: Boolean, onClick: () -> Unit) {
+    val colors = RgTheme.colors
+    Box(Modifier.height(48.dp).pressable(enabled = enabled, haptic = null, onClick = onClick), contentAlignment = Alignment.Center) {
+        Row(
+            Modifier
+                .height(36.dp)
+                .clip(RoundedCornerShape(Radius.pill))
+                .background(colors.surfaceMuted)
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val tint = if (enabled) colors.textPrimary else colors.textTertiary
+            Icon(icon, null, tint = tint, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(label, style = MaterialTheme.typography.labelLarge, color = tint, maxLines = 1)
+        }
     }
 }
