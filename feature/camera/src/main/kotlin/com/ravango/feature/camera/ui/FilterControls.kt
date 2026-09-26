@@ -112,7 +112,8 @@ internal class FilterSwipeController(
 
     fun onDrag(deltaFraction: Float) {
         if (job?.isActive == true) {
-            // Grabbing the split while it settles continues from where it is.
+            // Grabbing the split while it settles continues from where it is (the settle job must not reset).
+            settleGeneration++
             job?.cancel()
             dragProgress = progress.value
         }
@@ -127,19 +128,26 @@ internal class FilterSwipeController(
         val t = target ?: run { reset(); return }
         val p = dragProgress
         job?.cancel()
+        val mine = ++settleGeneration
         job = scope.launch {
-            progress.snapTo(p)
-            if (FilterSwipeMath.shouldCommit(p, velocityFraction)) {
-                val end = if (p < 0f) -1f else 1f
-                progress.animateTo(end, tween(170)) { preview(FilterSwipe(t, value, rotation())) }
-                commit(t)
-                showBanner(t)
-            } else {
-                progress.animateTo(0f, tween(160)) { preview(FilterSwipe(t, value, rotation())) }
+            try {
+                progress.snapTo(p)
+                if (FilterSwipeMath.shouldCommit(p, velocityFraction)) {
+                    val end = if (p < 0f) -1f else 1f
+                    progress.animateTo(end, tween(170)) { preview(FilterSwipe(t, value, rotation())) }
+                    commit(t)
+                    showBanner(t)
+                } else {
+                    progress.animateTo(0f, tween(160)) { preview(FilterSwipe(t, value, rotation())) }
+                }
+            } finally {
+                // Also when the screen's scope is cancelled mid-animation: never leave the split in the engine.
+                if (settleGeneration == mine) reset()
             }
-            reset()
         }
     }
+
+    private var settleGeneration = 0
 
     fun showBanner(filter: LiveFilter) {
         banner = filter

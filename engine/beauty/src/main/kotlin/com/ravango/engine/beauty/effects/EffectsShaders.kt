@@ -30,13 +30,14 @@ internal object EffectsShaders {
         uniform float uSplitSide;
 
         vec3 sampleLut(sampler2D t, vec3 c) {
-            vec3 k = clamp(c, 0.0, 1.0);
-            float b = k.b * 63.0;
-            float b0 = floor(b);
-            float b1 = min(b0 + 1.0, 63.0);
-            vec2 rg = k.rg * (63.0 / 512.0) + (0.5 / 512.0);
-            vec2 q0 = vec2(mod(b0, 8.0), floor(b0 / 8.0)) * 0.125 + rg;
-            vec2 q1 = vec2(mod(b1, 8.0), floor(b1 / 8.0)) * 0.125 + rg;
+            // Addresses are computed in TC (highp when available): 1/512 steps near 1.0 are below fp16 resolution.
+            TC vec3 k = clamp(c, 0.0, 1.0);
+            TC float b = k.b * 63.0;
+            TC float b0 = floor(b);
+            TC float b1 = min(b0 + 1.0, 63.0);
+            TC vec2 rg = k.rg * (63.0 / 512.0) + (0.5 / 512.0);
+            TC vec2 q0 = vec2(mod(b0, 8.0), floor(b0 / 8.0)) * 0.125 + rg;
+            TC vec2 q1 = vec2(mod(b1, 8.0), floor(b1 / 8.0)) * 0.125 + rg;
             return mix(texture2D(t, q0).rgb, texture2D(t, q1).rgb, b - b0);
         }
 
@@ -117,6 +118,10 @@ internal object EffectsShaders {
      * Guided (joint-bilateral) upsampling of the low-resolution segmentation mask: 3×3 mask taps weighted by how
      * similar the low-resolution guide colour at each tap is to this pixel's colour, so the mask edge snaps to the
      * image edge (hair, shoulders) instead of the blocky mask grid; then a gentle contrast curve.
+     *
+     * The mask comes from the top-down readback MediaPipe analysed (row 0 = top of the picture) and is uploaded row
+     * 0 first, i.e. at t = 0 — while frame texture coordinates have t = 0 at the *bottom*. So the mask is sampled at
+     * (s, 1 − t); sampling it at (s, t) put the "person" upside down (background effects on the wrong region).
      */
     const val MASK_REFINE = TC_PRECISION + """
         precision mediump float;
@@ -128,12 +133,13 @@ internal object EffectsShaders {
         uniform float uRange;
         void main() {
             vec3 center = texture2D(uFrame, vTexCoord).rgb;
+            TC vec2 maskTc = vec2(vTexCoord.x, 1.0 - vTexCoord.y);
             float sum = 0.0;
             float wsum = 0.0;
             for (int j = -1; j <= 1; j++) {
                 for (int i = -1; i <= 1; i++) {
                     TC vec2 o = vec2(float(i), float(j)) * uMaskTexel;
-                    float m = texture2D(uMask, vTexCoord + o).r;
+                    float m = texture2D(uMask, maskTc + vec2(o.x, -o.y)).r;
                     vec3 d = texture2D(uGuide, vTexCoord + o).rgb - center;
                     float w = exp(-dot(d, d) * uRange) * (i == 0 && j == 0 ? 1.0 : 0.6);
                     sum += m * w;
@@ -170,23 +176,30 @@ internal object EffectsShaders {
     """
 
     /**
-     * Disc ("bokeh") blur over a golden-angle spiral of TAPS offsets (precomputed on the CPU, see [bokehTaps]);
-     * keeps the premultiplied background weights.
+     * Disc ("bokeh") blur over a golden-angle spiral of [taps] offsets (see [bokehTaps]); keeps the premultiplied
+     * background weights. The offsets are baked into the source as constants (unrolled): no uniform array, so it
+     * fits GLES 2's minimum of 16 fragment uniform vectors and needs no dynamic indexing.
      */
-    fun bokeh(taps: Int): String = """
-        #define TAPS $taps
-        #define TAPS_F ${taps}.0
+    fun bokeh(taps: Int): String {
+        val offsets = bokehTaps(taps)
+        val lines = (0 until taps).joinToString("\n") { i ->
+            "            sum += texture2D(uTexture, vTexCoord + vec2(${glsl(offsets[i * 2])}, ${glsl(offsets[i * 2 + 1])}) * uRadius);"
+        }
+        return """
         precision mediump float;
         varying vec2 vTexCoord;
         uniform sampler2D uTexture;
         uniform vec2 uRadius;
-        uniform vec2 uTaps[TAPS];
         void main() {
             vec4 sum = vec4(0.0);
-            for (int i = 0; i < TAPS; i++) sum += texture2D(uTexture, vTexCoord + uTaps[i] * uRadius);
-            gl_FragColor = sum / TAPS_F;
+$lines
+            gl_FragColor = sum * ${glsl(1f / taps)};
         }
     """
+    }
+
+    /** A GLSL float literal, independent of the default locale (Persian digits would not compile). */
+    fun glsl(v: Float): String = String.format(java.util.Locale.US, "%.6f", v)
 
     /** Unit-disc golden-angle spiral offsets (x, y pairs) for [bokeh]. */
     fun bokehTaps(taps: Int): FloatArray {

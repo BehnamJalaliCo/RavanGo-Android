@@ -15,12 +15,14 @@ import com.ravango.core.common.device.ThermalLevel
 import com.ravango.core.common.device.ThermalMonitor
 import com.ravango.core.common.di.ApplicationScope
 import com.ravango.core.common.di.IoDispatcher
+import com.ravango.core.common.diagnostics.Diagnostics
 import com.ravango.core.common.log.RgLog
 import com.ravango.core.datastore.PreferencesDataSource
 import com.ravango.core.model.BeautyState
 import com.ravango.engine.beauty.effects.BackgroundEffect
 import com.ravango.engine.beauty.effects.CameraEffects
 import com.ravango.engine.beauty.effects.EffectsAssets
+import com.ravango.engine.beauty.effects.EffectsDefaults
 import com.ravango.engine.beauty.effects.EffectsState
 import com.ravango.engine.beauty.effects.EffectsStatus
 import com.ravango.engine.beauty.effects.FilterSwipe
@@ -106,13 +108,15 @@ class DefaultBeautyEngine @Inject constructor(
         val next = transform(_effects.value)
         controls.effects = next
         _effects.value = next
+        Diagnostics.setEnv("camera.effects", "lens=${next.lens?.id ?: "-"} filter=${next.filter.id}@${next.filterIntensity} bg=${next.background::class.simpleName}")
     }
 
     override fun setLens(lens: Lens?) = updateEffects { it.copy(lens = lens) }
 
     override fun setFilter(filter: LiveFilter) {
         EffectsAssets.request(filter)
-        updateEffects { it.copy(filter = filter) }
+        // Picking a filter while the strength slider sits at 0 would show nothing: restore full strength.
+        updateEffects { EffectsDefaults.withFilter(it, filter) }
     }
 
     override fun setFilterIntensity(intensity: Int) = updateEffects { it.copy(filterIntensity = intensity.coerceIn(0, 100)) }
@@ -144,6 +148,10 @@ class DefaultBeautyEngine @Inject constructor(
             throw e
         } catch (e: Exception) {
             RgLog.w(TAG, "Could not load background photo", e)
+            null
+        } catch (e: OutOfMemoryError) {
+            // A huge or unusual image: never crash, report it like any unreadable photo.
+            Diagnostics.record(TAG, "Out of memory decoding the background photo", e)
             null
         } ?: return false
         controls.backgroundBitmap = bitmap
