@@ -4,6 +4,11 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+android {
+    // JVM tests exercise engine logic that logs through android.util.Log (RgLog): stubs return defaults.
+    testOptions.unitTests.isReturnDefaultValues = true
+}
+
 dependencies {
     api(project(":core:model"))
     api(project(":engine:render"))

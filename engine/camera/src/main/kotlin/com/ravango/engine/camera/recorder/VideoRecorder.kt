@@ -11,6 +11,7 @@ import com.ravango.engine.camera.encoder.AudioEncoder
 import com.ravango.engine.camera.encoder.VideoEncoder
 import com.ravango.engine.camera.encoder.VideoEncoderConfig
 import com.ravango.engine.camera.muxer.ManifestCodec
+import com.ravango.engine.camera.muxer.MuxSummary
 import com.ravango.engine.camera.muxer.RecordingManifest
 import com.ravango.engine.camera.muxer.SegmentEntry
 import com.ravango.engine.camera.muxer.SegmentedMuxer
@@ -63,8 +64,25 @@ internal class VideoRecorder(
     val bytesWritten: Long get() = muxer.bytesWritten.get()
     val hasAudio: Boolean get() = muxer.hasAudioTrack
 
+    @Volatile private var progressRefNs = System.nanoTime()
+
+    @Volatile private var finalSummary: MuxSummary? = null
+
+    /** What the muxer received/wrote so far (after [stop]: the final result). */
+    val summary: MuxSummary get() = finalSummary ?: muxer.summary()
+
+    /**
+     * Milliseconds since the video encoder last produced a sample (or since start/resume, whichever is later).
+     * A recording whose video stalls this long is stopped and saved rather than silently producing nothing.
+     */
+    fun videoStalledMs(nowNs: Long = System.nanoTime()): Long {
+        val last = maxOf(muxer.lastVideoSampleNs, progressRefNs)
+        return (nowNs - last).coerceAtLeast(0) / 1_000_000
+    }
+
     /** Writes the manifest, starts the encoders and returns the surface the GL pipeline must render into. */
     fun start(): Surface {
+        progressRefNs = System.nanoTime()
         ManifestCodec.write(dir, manifest)
         val encoder = VideoEncoder.create(videoConfig, this)
         video = encoder
@@ -83,24 +101,34 @@ internal class VideoRecorder(
     }
 
     fun pause() = clock.pause(System.nanoTime())
-    fun resume() = clock.resume(System.nanoTime())
 
-    /** Drains and closes everything. Blocking; call after the renderer stopped feeding the encoder surface. */
-    fun stop() {
+    fun resume() {
+        progressRefNs = System.nanoTime()
+        clock.resume(progressRefNs)
+    }
+
+    /**
+     * Drains and closes everything; never throws. Blocking; call after the renderer stopped feeding the encoder
+     * surface. Returns what was muxed (zero finished segments = nothing playable).
+     */
+    fun stop(): MuxSummary {
         runCatching { sinkHandle?.detach() }.onFailure { RgLog.w(TAG, "sink detach failed", it) }
         sinkHandle = null
         runCatching { audio?.finish() }.onFailure { RgLog.w(TAG, "audio finish failed", it) }
         runCatching { video?.finish() }.onFailure { RgLog.w(TAG, "video finish failed", it) }
-        runCatching { muxer.finish() }.onFailure { RgLog.e(TAG, "muxer finish failed", it) }
+        val result = runCatching { muxer.finish() }.onFailure { RgLog.e(TAG, "muxer finish failed", it) }.getOrElse { muxer.summary() }
         runCatching { video?.release() }
         video = null
         audio = null
+        finalSummary = result
+        return result
     }
 
     // --- SegmentedMuxer.Listener ---------------------------------------------------------------------------
     override fun onSegmentFinished(entry: SegmentEntry) {
         synchronized(manifestLock) {
-            manifest = manifest.copy(segments = manifest.segments + entry, hasAudio = manifest.hasAudio && muxer.hasAudioTrack)
+            val segments = manifest.segments + entry
+            manifest = manifest.copy(segments = segments, hasAudio = manifest.hasAudio && segments.any { it.firstAudioLocalUs >= 0 })
             runCatching { ManifestCodec.write(dir, manifest) }.onFailure { RgLog.e(TAG, "manifest write failed", it) }
         }
         RgLog.d(TAG, "segment ${entry.index} finished (${entry.durationUs / 1000}ms)")
