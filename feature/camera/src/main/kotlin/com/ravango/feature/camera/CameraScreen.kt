@@ -127,6 +127,7 @@ import com.ravango.engine.camera.CameraWarning
 import com.ravango.engine.camera.FocusMode
 import com.ravango.engine.camera.RecordingPhase
 import com.ravango.engine.camera.RecordingStatus
+import com.ravango.engine.camera.StopReason
 import com.ravango.engine.camera.capability.LensOption
 import com.ravango.engine.camera.capability.VideoModeSelector
 import com.ravango.engine.teleprompter.PrompterController
@@ -900,6 +901,9 @@ private fun messageText(context: Context, message: StudioMessage): String = when
     is StudioMessage.Error -> context.getString(message.kind.messageRes())
     StudioMessage.MicUnavailableVideoOnly -> context.getString(R.string.camera_msg_video_only)
     StudioMessage.NothingRecorded -> context.getString(R.string.camera_msg_nothing_recorded)
+    is StudioMessage.TakeLost -> context.getString(
+        if (message.reason == StopReason.CAMERA_ERROR) R.string.camera_msg_take_lost_camera else R.string.camera_msg_take_lost_encoder,
+    )
     StudioMessage.BackgroundPhotoFailed -> context.getString(R.string.camera_bg_photo_failed)
     is StudioMessage.Recovered -> context.resources.getQuantityString(R.plurals.camera_msg_recovered, message.count, message.count.toString().localizeDigits())
     is StudioMessage.Warning -> context.getString(
@@ -931,7 +935,12 @@ private fun CameraErrorCard(error: CameraState.Error, onRetry: () -> Unit, modif
         CameraErrorKind.DISABLED -> R.string.camera_error_disabled_title to R.string.camera_error_disabled_message
         CameraErrorKind.PERMISSION -> R.string.camera_error_permission_title to R.string.camera_permission_camera_message
         CameraErrorKind.NO_CAMERA -> R.string.camera_no_camera_title to R.string.camera_no_camera_message
-        CameraErrorKind.CONFIGURATION -> R.string.camera_error_config_title to R.string.camera_error_config_message
+        // While the engine still retries (lighter request/stream) a rejected session is not yet "unsupported".
+        CameraErrorKind.CONFIGURATION -> if (error.retrying) {
+            R.string.camera_error_generic_title to R.string.camera_error_generic_message
+        } else {
+            R.string.camera_error_config_title to R.string.camera_error_config_message
+        }
         else -> R.string.camera_error_generic_title to R.string.camera_error_generic_message
     }
     GlassSurface(modifier.fillMaxWidth(), tint = Color(0xE6141220)) {
