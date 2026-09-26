@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="editor_engine_notif_channel">Video export</string>
+    <string name="editor_engine_notif_channel_desc">Progress of videos being exported from the editor</string>
+    <string name="editor_engine_notif_exporting">Exporting video…</string>
+    <string name="editor_engine_notif_preparing">Preparing export…</string>
+    <string name="editor_engine_notif_preparing_reverse">Rendering reversed clips…</string>
+    <string name="editor_engine_notif_percent">%1$d%%</string>
+    <string name="editor_engine_notif_cancel">Cancel</string>
+    <string name="editor_engine_notif_done">Your video is ready</string>
+    <string name="editor_engine_notif_failed">Export failed</string>
+</resources>
