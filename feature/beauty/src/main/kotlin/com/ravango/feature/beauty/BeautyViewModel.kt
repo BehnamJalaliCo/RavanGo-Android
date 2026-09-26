@@ -20,6 +20,8 @@ import com.ravango.feature.beauty.looks.LookResult
 import com.ravango.feature.beauty.looks.LooksState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -111,6 +113,11 @@ class BeautyViewModel @Inject constructor(
     private val entitlementProvider: EntitlementProvider,
     private val looks: LookController,
 ) : ViewModel() {
+
+    private val failureHandler = CoroutineExceptionHandler { _, t -> RgLog.e(TAG, "Beauty task failed", t) }
+
+    /** Launches in [viewModelScope]; an unexpected failure is logged instead of crashing the app. */
+    private fun launchSafely(block: suspend CoroutineScope.() -> Unit): Job = viewModelScope.launch(failureHandler, block = block)
 
     private val local = MutableStateFlow(LocalUi())
     private val events = Channel<BeautyEvent>(Channel.BUFFERED)
@@ -250,7 +257,7 @@ class BeautyViewModel @Inject constructor(
     fun customiseLook() = local.update { it.copy(tab = BeautyTab.MAKEUP) }
 
     fun saveLook(name: String) {
-        viewModelScope.launch {
+        launchSafely {
             if (looks.saveCurrent(name) != null) events.send(BeautyEvent.LookSaved) else events.send(BeautyEvent.SaveFailed)
         }
     }
@@ -304,7 +311,7 @@ class BeautyViewModel @Inject constructor(
     fun renamePreset(preset: BeautyPreset, name: String) {
         val clean = name.trim()
         if (preset.builtIn || clean.isEmpty()) return
-        viewModelScope.launch {
+        launchSafely {
             try {
                 presetRepository.saveBeautyPreset(clean, preset.state, id = preset.id)
                 events.send(BeautyEvent.PresetRenamed)
@@ -319,7 +326,7 @@ class BeautyViewModel @Inject constructor(
 
     fun deletePreset(preset: BeautyPreset) {
         if (preset.builtIn) return
-        viewModelScope.launch {
+        launchSafely {
             try {
                 presetRepository.deleteBeautyPreset(preset.id)
                 if (local.value.activePresetId == preset.id) local.update { it.copy(activePresetId = null) }
@@ -336,7 +343,7 @@ class BeautyViewModel @Inject constructor(
     private fun createPreset(name: String, state: BeautyState) {
         val clean = name.trim()
         if (clean.isEmpty()) return
-        viewModelScope.launch {
+        launchSafely {
             try {
                 val entitlements = entitlementProvider.entitlements.value
                 if (!entitlements.has(ProFeature.UNLIMITED_PRESETS) &&
@@ -364,7 +371,7 @@ class BeautyViewModel @Inject constructor(
     private fun animateTo(target: BeautyState) {
         cancelTransition()
         val from = engine.state.value
-        transition = viewModelScope.launch {
+        transition = launchSafely {
             val steps = TRANSITION_STEPS
             for (i in 1..steps) {
                 val t = i / steps.toFloat()

@@ -531,7 +531,7 @@ private fun CategoryTabs(categories: List<TrayCategory>, selected: TrayCategory,
     LazyRow(
         state = state,
         contentPadding = PaddingValues(horizontal = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally),
         modifier = Modifier.fillMaxWidth().semantics { contentDescription = description },
     ) {
         itemsIndexed(categories, key = { _, c -> c.name }) { _, c ->

@@ -14,6 +14,7 @@ import com.ravango.engine.beauty.effects.CameraEffects
 import com.ravango.engine.beauty.effects.LiveFilter
 import com.ravango.engine.beauty.makeup.MakeupStyle
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -71,6 +72,11 @@ class LookController @Inject constructor(
     private val store: LookStore,
     @param:ApplicationScope private val scope: CoroutineScope,
 ) {
+    private val failureHandler = CoroutineExceptionHandler { _, t -> RgLog.e(TAG, "Looks task failed", t) }
+
+    /** Launches in the application scope; an unexpected failure is logged instead of crashing the app. */
+    private fun launchSafely(block: suspend CoroutineScope.() -> Unit): Job = scope.launch(failureHandler, block = block)
+
     private val _state = MutableStateFlow(LooksState())
     val state: StateFlow<LooksState> = _state.asStateFlow()
 
@@ -82,9 +88,9 @@ class LookController @Inject constructor(
     private var persistJob: Job? = null
 
     init {
-        scope.launch { restore() }
-        scope.launch { watchEngine() }
-        scope.launch { watchDowngrade() }
+        launchSafely { restore() }
+        launchSafely { watchEngine() }
+        launchSafely { watchDowngrade() }
     }
 
     fun find(id: String): LookDef? = _state.value.find(id)
@@ -131,7 +137,7 @@ class LookController @Inject constructor(
         val favs = _state.value.favourites
         val next = if (key in favs) favs - key else listOf(key) + favs
         _state.update { it.copy(favourites = next) }
-        scope.launch { safely { store.update { it.copy(favourites = next) } } }
+        launchSafely { safely { store.update { it.copy(favourites = next) } } }
     }
 
     /** Records a carousel item as recently used (newest first, de-duplicated). */
@@ -139,7 +145,7 @@ class LookController @Inject constructor(
         val next = (listOf(key) + _state.value.recents.filter { it != key }).take(LookPrefs.MAX_RECENTS)
         if (next == _state.value.recents) return
         _state.update { it.copy(recents = next) }
-        scope.launch { safely { store.update { it.copy(recents = next) } } }
+        launchSafely { safely { store.update { it.copy(recents = next) } } }
     }
 
     /** Saves the current settings (look + the user's fine-tuning) as a new look named [name]. */
@@ -180,7 +186,7 @@ class LookController @Inject constructor(
     fun deleteCustom(id: String) {
         if (_state.value.activeId == id) clear()
         _state.update { s -> s.copy(looks = s.looks.filterNot { it.id == id }, favourites = s.favourites - LookDef.keyOf(id), recents = s.recents - LookDef.keyOf(id)) }
-        scope.launch {
+        launchSafely {
             safely {
                 store.update { p ->
                     p.copy(custom = p.custom.filterNot { it.id == id }, favourites = p.favourites - LookDef.keyOf(id), recents = p.recents - LookDef.keyOf(id))
@@ -301,13 +307,13 @@ class LookController @Inject constructor(
 
     private fun persist() {
         persistJob?.cancel()
-        persistJob = scope.launch { writePrefs() }
+        persistJob = launchSafely { writePrefs() }
     }
 
     /** Debounced persist for slider drags. */
     private fun persistSoon() {
         persistJob?.cancel()
-        persistJob = scope.launch {
+        persistJob = launchSafely {
             delay(PERSIST_DEBOUNCE_MS)
             writePrefs()
         }
