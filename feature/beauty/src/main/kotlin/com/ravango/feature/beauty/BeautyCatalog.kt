@@ -66,11 +66,11 @@ sealed interface BeautyItem {
 }
 
 enum class BeautyTab(@StringRes val label: Int) {
+    LOOKS(R.string.beauty_tab_looks),
     SKIN(R.string.beauty_tab_skin),
     FACE(R.string.beauty_tab_face),
     EYES(R.string.beauty_tab_eyes),
     MOUTH(R.string.beauty_tab_mouth),
-    LOOKS(R.string.beauty_tab_looks),
     MAKEUP(R.string.beauty_tab_makeup),
     PRESETS(R.string.beauty_tab_presets),
 }

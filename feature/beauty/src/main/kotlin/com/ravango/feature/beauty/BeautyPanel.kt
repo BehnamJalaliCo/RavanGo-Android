@@ -36,8 +36,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.AutoAwesome
-import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Face
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.Compare
@@ -66,7 +64,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
@@ -104,6 +101,7 @@ import com.ravango.core.model.ProFeature
 import com.ravango.engine.beauty.BeautyQuality
 import com.ravango.engine.beauty.BeautyStatus
 import com.ravango.engine.beauty.BeautySuspendReason
+import com.ravango.feature.beauty.looks.LookDef
 import kotlinx.coroutines.delay
 import java.util.Locale
 import kotlin.math.abs
@@ -143,8 +141,14 @@ internal class BeautyPanelActions(
     val onMakeupColor: (MakeupFeature, Long) -> Unit = { _, _ -> },
     val onEyeColor: (Long) -> Unit = {},
     val onUnlock: (BeautyItem) -> Unit = {},
-    val onApplyLook: (MakeupLook) -> Unit = {},
+    val onApplyLook: (LookDef) -> Unit = {},
     val onClearMakeup: () -> Unit = {},
+    val onLookIntensity: (Int) -> Unit = {},
+    val onToggleFavourite: (LookDef) -> Unit = {},
+    val onLookFilter: (LookFilter) -> Unit = {},
+    val onCustomiseLook: () -> Unit = {},
+    val onSaveLook: () -> Unit = {},
+    val onDeleteLook: (LookDef) -> Unit = {},
     val onApplyPreset: (BeautyPreset) -> Unit = {},
     val onSavePreset: () -> Unit = {},
 )
@@ -157,10 +161,12 @@ internal fun BeautyPanelImpl(modifier: Modifier, onOpenPresets: () -> Unit, onRe
     val openPresets by rememberUpdatedState(onOpenPresets)
     var toast by remember { mutableStateOf<String?>(null) }
     var showSaveDialog by rememberSaveable { mutableStateOf(false) }
+    var showSaveLookDialog by rememberSaveable { mutableStateOf(false) }
 
     val savedText = stringResource(R.string.beauty_preset_saved)
     val failedText = stringResource(R.string.beauty_error_save)
     val appliedFormat = stringResource(R.string.beauty_preset_applied)
+    val lookSavedText = stringResource(R.string.beauty_look_saved)
     val presetNames = rememberPresetNamer()
     val lookNames = rememberLookNamer()
     LaunchedEffect(viewModel) {
@@ -171,6 +177,7 @@ internal fun BeautyPanelImpl(modifier: Modifier, onOpenPresets: () -> Unit, onRe
                 is BeautyEvent.PresetApplied -> toast = appliedFormat.format(presetNames(event.preset))
                 BeautyEvent.SaveFailed -> toast = failedText
                 is BeautyEvent.LookApplied -> toast = appliedFormat.format(lookNames(event.look))
+                BeautyEvent.LookSaved -> toast = lookSavedText
                 BeautyEvent.PresetDeleted, BeautyEvent.PresetRenamed -> Unit
             }
         }
@@ -198,12 +205,29 @@ internal fun BeautyPanelImpl(modifier: Modifier, onOpenPresets: () -> Unit, onRe
             onUnlock = viewModel::requirePro,
             onApplyLook = viewModel::applyLook,
             onClearMakeup = viewModel::clearMakeup,
+            onLookIntensity = viewModel::setLookIntensity,
+            onToggleFavourite = viewModel::toggleFavourite,
+            onLookFilter = viewModel::setLookFilter,
+            onCustomiseLook = viewModel::customiseLook,
+            onSaveLook = { showSaveLookDialog = true },
+            onDeleteLook = viewModel::deleteLook,
             onApplyPreset = viewModel::applyPreset,
             onSavePreset = { if (canSaveMore) showSaveDialog = true else requirePro(ProFeature.UNLIMITED_PRESETS) },
         )
     }
     BeautyPanelContent(ui = ui, toast = toast, actions = actions, modifier = modifier)
 
+    if (showSaveLookDialog) {
+        PresetNameDialog(
+            title = stringResource(R.string.beauty_look_save_title),
+            initial = ui.activeLook?.let { lookNames(it) }.orEmpty(),
+            onConfirm = { name ->
+                showSaveLookDialog = false
+                viewModel.saveLook(name)
+            },
+            onDismiss = { showSaveLookDialog = false },
+        )
+    }
     if (showSaveDialog) {
         PresetNameDialog(
             title = stringResource(R.string.beauty_save_preset),
@@ -261,7 +285,7 @@ internal fun BeautyPanelContent(ui: BeautyUiState, toast: String?, actions: Beau
                 modifier = Modifier.alpha(dim),
             ) { tab ->
                 when (tab) {
-                    BeautyTab.LOOKS -> LooksTab(ui = ui, onApply = actions.onApplyLook, onClear = actions.onClearMakeup)
+                    BeautyTab.LOOKS -> LooksTab(ui = ui, actions = actions)
                     BeautyTab.PRESETS -> PresetsTab(
                         ui = ui,
                         nameOf = presetNames,
@@ -730,100 +754,6 @@ private fun ShadeRow(shades: List<Long>, selected: Long, onSelect: (Long) -> Uni
     )
 }
 
-/** One-tap curated makeup looks, as round preview chips painted with each look's signature colours. */
-@Composable
-private fun LooksTab(ui: BeautyUiState, onApply: (MakeupLook) -> Unit, onClear: () -> Unit) {
-    val active = ui.activeLook
-    val locked = !ui.entitlements.has(ProFeature.MAKEUP)
-    val names = rememberLookNamer()
-    val faceMissing = ui.status.tracking && !ui.status.faceDetected
-    Column(Modifier.fillMaxWidth()) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.lg),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-        ) {
-            LookChip(
-                label = stringResource(R.string.beauty_look_none),
-                swatches = emptyList(),
-                selected = !ui.hasMakeup,
-                locked = false,
-                onClick = onClear,
-            )
-            MakeupLook.entries.forEach { look ->
-                key(look.name) {
-                    LookChip(
-                        label = names(look),
-                        swatches = look.swatches,
-                        selected = look == active,
-                        locked = locked,
-                        onClick = { onApply(look) },
-                    )
-                }
-            }
-        }
-        Spacer(Modifier.height(Spacing.sm))
-        Text(
-            when {
-                faceMissing -> stringResource(R.string.beauty_face_not_detected)
-                active != null -> stringResource(R.string.beauty_look_hint_edit)
-                else -> stringResource(R.string.beauty_look_hint)
-            },
-            style = MaterialTheme.typography.labelSmall,
-            color = if (faceMissing) RgTheme.colors.warning else OnGlassMuted,
-            modifier = Modifier.padding(horizontal = Spacing.lg),
-        )
-    }
-}
-
-@Composable
-private fun LookChip(label: String, swatches: List<Long>, selected: Boolean, locked: Boolean, onClick: () -> Unit) {
-    val ring by animateColorAsState(if (selected) Color.White else Color.White.copy(alpha = 0.16f), Motion.quick(), label = "lookRing")
-    val scale by animateFloatAsState(if (selected) 1.08f else 1f, Motion.quick(), label = "lookScale")
-    val brush = remember(swatches) {
-        if (swatches.isEmpty()) null else Brush.sweepGradient((swatches + swatches.first()).map { Color(it) })
-    }
-    Column(
-        Modifier
-            .widthIn(min = 68.dp)
-            .clip(RoundedCornerShape(Radius.md))
-            .pressable(haptic = HapticEvent.SNAP, onClick = onClick)
-            .padding(vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box {
-            Box(
-                Modifier
-                    .size(58.dp)
-                    .graphicsLayer { scaleX = scale; scaleY = scale }
-                    .border(2.5.dp, ring, CircleShape)
-                    .padding(5.dp)
-                    .clip(CircleShape)
-                    .then(if (brush != null) Modifier.background(brush) else Modifier.background(ChipIdle)),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (brush == null) {
-                    Icon(Icons.Rounded.Block, null, tint = OnGlass, modifier = Modifier.size(22.dp))
-                } else {
-                    Icon(Icons.Rounded.AutoAwesome, null, tint = Color.White.copy(alpha = 0.9f), modifier = Modifier.size(18.dp))
-                }
-            }
-            if (locked) ProBadge(Modifier.align(Alignment.BottomCenter).offset(y = 8.dp), text = stringResource(R.string.beauty_pro))
-        }
-        Spacer(Modifier.height(if (locked) 10.dp else 6.dp))
-        Text(
-            label,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (selected) OnGlass else OnGlassMuted,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.widthIn(max = 84.dp),
-        )
-    }
-}
-
 @Composable
 private fun PresetsTab(
     ui: BeautyUiState,
@@ -946,9 +876,10 @@ internal fun rememberPresetNamer(): (BeautyPreset) -> String {
     return remember(names) { { preset: BeautyPreset -> if (preset.builtIn) names[preset.name] ?: preset.name else preset.name } }
 }
 
-/** Localized names of the curated makeup looks. */
+/** Localized names of looks: built-ins use their string resource, saved looks their own name. */
 @Composable
-internal fun rememberLookNamer(): (MakeupLook) -> String {
-    val names = MakeupLook.entries.associateWith { stringResource(it.label) }
-    return remember(names) { { look: MakeupLook -> names.getValue(look) } }
+internal fun rememberLookNamer(): (LookDef) -> String {
+    val resources = androidx.compose.ui.platform.LocalContext.current.resources
+    val config = LocalConfiguration.current
+    return remember(resources, config) { { look: LookDef -> look.customName ?: resources.getString(look.nameRes) } }
 }
