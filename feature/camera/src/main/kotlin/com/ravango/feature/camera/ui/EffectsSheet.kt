@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -171,7 +172,10 @@ private fun FiltersTab(
     onRequirePro: () -> Unit,
 ) {
     Column(Modifier.fillMaxWidth()) {
+        // Open with the active filter in view.
+        val listState = rememberLazyListState(initialFirstVisibleItemIndex = (effects.filter.ordinal - 1).coerceAtLeast(0))
         LazyRow(
+            state = listState,
             contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -309,7 +313,8 @@ private fun OptionChip(label: String, selected: Boolean, locked: Boolean, onClic
             ) { art() }
             if (locked) ProBadge(Modifier.align(Alignment.BottomCenter).offset(y = 6.dp), text = stringResource(R.string.camera_pro_badge))
         }
-        Spacer(Modifier.height(if (locked) 12.dp else 8.dp))
+        // Same gap with or without the PRO badge so every label sits on one baseline.
+        Spacer(Modifier.height(12.dp))
         Text(
             label,
             style = MaterialTheme.typography.labelMedium,

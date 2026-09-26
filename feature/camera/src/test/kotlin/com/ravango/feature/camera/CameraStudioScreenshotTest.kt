@@ -1,6 +1,7 @@
 package com.ravango.feature.camera
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalConfiguration
 import com.ravango.core.designsystem.theme.Palette
 import com.ravango.core.model.AspectRatioSpec
 import com.ravango.core.model.AudioLevel
@@ -67,17 +69,17 @@ class CameraStudioScreenshotTest {
     private val atlas by lazy { SpriteAtlas.draw().asImageBitmap() }
 
     @Test
-    fun studioIdle() = captureAllVariants("camera-studio") {
+    fun studioIdle() = captureAllVariants(name = "camera-studio") {
         Studio(sampleState().copy(effects = EffectsState(filter = LiveFilter.WARM, filterIntensity = 80)))
     }
 
     @Test
-    fun studioLensCarousel() = captureAllVariants("camera-studio-lenses") {
+    fun studioLensCarousel() = captureAllVariants(name = "camera-studio-lenses") {
         Studio(sampleState().copy(lensTrayOpen = true, effects = EffectsState(lens = Lens.SUNGLASSES)))
     }
 
     @Test
-    fun studioRecording() = captureAllVariants("camera-studio-recording") {
+    fun studioRecording() = captureAllVariants(name = "camera-studio-recording") {
         Studio(
             sampleState().copy(recording = RecordingStatus(phase = RecordingPhase.RECORDING, durationUs = 83_000_000, bytesWritten = 96_000_000, remainingSeconds = 5_400)),
             clock = RecordingStatus(phase = RecordingPhase.RECORDING, durationUs = 83_000_000, bytesWritten = 96_000_000, remainingSeconds = 5_400),
@@ -85,7 +87,7 @@ class CameraStudioScreenshotTest {
     }
 
     @Test
-    fun effectsSheetFilters() = captureAllVariants("camera-effects-filters") {
+    fun effectsSheetFilters() = captureAllVariants(name = "camera-effects-filters") {
         SheetPanel {
             EffectsSheetContent(
                 tab = EffectsTab.FILTERS,
@@ -99,7 +101,7 @@ class CameraStudioScreenshotTest {
     }
 
     @Test
-    fun effectsSheetBackground() = captureAllVariants("camera-effects-background") {
+    fun effectsSheetBackground() = captureAllVariants(name = "camera-effects-background") {
         SheetPanel {
             EffectsSheetContent(
                 tab = EffectsTab.BACKGROUND,
@@ -113,7 +115,7 @@ class CameraStudioScreenshotTest {
     }
 
     @Composable
-    private fun Studio(state: CameraUiState, clock: RecordingStatus = RecordingStatus()) {
+    private fun Studio(state: CameraUiState, clock: RecordingStatus = RecordingStatus()) = WithDeviceLocale {
         StudioFrame {
             CameraStudioContent(
                 state = state,
@@ -130,7 +132,7 @@ class CameraStudioScreenshotTest {
     }
 
     @Composable
-    private fun SheetPanel(content: @Composable () -> Unit) {
+    private fun SheetPanel(content: @Composable () -> Unit) = WithDeviceLocale {
         StudioFrame {
             Box(Modifier.fillMaxSize()) {
                 PreviewPlaceholder()
@@ -139,13 +141,9 @@ class CameraStudioScreenshotTest {
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                        .padding(top = 0.dp),
-                ) {
-                    Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)).padding(top = 24.dp)) {
-                        Canvas(Modifier.matchParentSize()) { drawRect(Palette.Ink900.copy(alpha = 0.97f)) }
-                        Box(Modifier.padding(top = 8.dp)) { content() }
-                    }
-                }
+                        .background(Palette.Ink900.copy(alpha = 0.97f))
+                        .padding(top = 24.dp),
+                ) { content() }
             }
         }
     }
@@ -176,8 +174,8 @@ class CameraStudioScreenshotTest {
             cameraState = CameraState.Streaming(config),
             capabilities = caps,
             lenses = listOf(
-                LensOption("w", "1", LensFacing.FRONT, LensKind.WIDE, 1f, 1f),
                 LensOption("u", "1", LensFacing.FRONT, LensKind.ULTRA_WIDE, 0.6f, 0.6f),
+                LensOption("w", "1", LensFacing.FRONT, LensKind.WIDE, 1f, 1f),
             ),
             facings = listOf(LensFacing.FRONT, LensFacing.BACK),
             previewFrame = PreviewFrame(1080, 1920, 0),
@@ -243,4 +241,11 @@ internal fun PreviewPlaceholder() {
         }
         drawOval(Color(0xFFC0666A), Offset(cx - headW * 0.14f, headTop + headH * 0.74f), Size(headW * 0.28f, headH * 0.06f))
     }
+}
+
+/** The harness switches resource qualifiers but not Locale.getDefault(), which the digit formatters read. */
+@Composable
+private fun WithDeviceLocale(content: @Composable () -> Unit) {
+    java.util.Locale.setDefault(LocalConfiguration.current.locales[0])
+    content()
 }

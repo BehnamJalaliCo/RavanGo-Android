@@ -463,7 +463,7 @@ internal fun LensChips(lenses: List<LensOption>, zoom: Float, currentCameraId: S
     ) {
         lenses.forEach { lens ->
             val selected = lens == active
-            val text = if (selected && abs(zoom - lens.zoomRatio) > 0.05f) zoomLabel(zoom * lens.factor / lens.zoomRatio) else lens.label.localizeDigits()
+            val text = if (selected && abs(zoom - lens.zoomRatio) > 0.05f) zoomLabel(zoom * lens.factor / lens.zoomRatio) else ltr(lens.label.localizeDigits())
             val size by animateDpAsState(if (selected) 40.dp else 36.dp, Motion.snappy(), label = "zoomChip")
             Box(
                 Modifier

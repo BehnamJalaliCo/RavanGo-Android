@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import com.ravango.core.designsystem.theme.StudioTheme
 import com.ravango.core.model.BeautyFeature
 import com.ravango.core.model.BeautyPreset
@@ -58,18 +59,21 @@ class BeautyScreenshotTest {
     )
 
     @Test
-    fun panelSkin() = captureAllVariants("beauty-panel-skin") { Panel(ui(BeautyTab.SKIN)) }
+    fun panelSkin() = captureAllVariants(name = "beauty-panel-skin") { Panel(ui(BeautyTab.SKIN)) }
 
     @Test
-    fun panelMakeup() = captureAllVariants("beauty-panel-makeup") {
+    fun panelMakeup() = captureAllVariants(name = "beauty-panel-makeup") {
         Panel(ui(BeautyTab.MAKEUP, entitled = true).copy(selected = BeautyItem.Makeup(MakeupFeature.LIPSTICK)))
     }
 
     @Test
-    fun panelLooksLocked() = captureAllVariants("beauty-panel-looks") { Panel(ui(BeautyTab.LOOKS)) }
+    fun panelLooksLocked() = captureAllVariants(name = "beauty-panel-looks") { Panel(ui(BeautyTab.LOOKS)) }
 
     @Test
-    fun presetsScreen() = captureAllVariants("beauty-presets") {
+    fun presetsScreen() = captureAllVariants(name = "beauty-presets") { WithDeviceLocale { Presets() } }
+
+    @Composable
+    private fun Presets() {
         val namer = rememberPresetNamer()
         BeautyPresetsContent(
             ui = ui(BeautyTab.PRESETS),
@@ -87,7 +91,7 @@ class BeautyScreenshotTest {
 
     /** The panel as it appears in the camera: a dark sheet over a photo-like preview. */
     @Composable
-    private fun Panel(state: BeautyUiState) {
+    private fun Panel(state: BeautyUiState) = WithDeviceLocale {
         StudioTheme {
             Box(
                 Modifier
@@ -98,4 +102,11 @@ class BeautyScreenshotTest {
             }
         }
     }
+}
+
+/** The harness switches resource qualifiers but not Locale.getDefault(), which the digit formatters read. */
+@Composable
+private fun WithDeviceLocale(content: @Composable () -> Unit) {
+    java.util.Locale.setDefault(LocalConfiguration.current.locales[0])
+    content()
 }
