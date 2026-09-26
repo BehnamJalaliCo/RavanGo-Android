@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Input names -->
+    <string name="audio_input_builtin">Phone microphone</string>
+    <string name="audio_input_wired">Wired microphone</string>
+    <string name="audio_input_usb">USB microphone</string>
+    <string name="audio_input_bluetooth">Bluetooth headset</string>
+    <string name="audio_input_bluetooth_le">Bluetooth LE headset</string>
+    <string name="audio_input_hdmi">HDMI audio</string>
+    <string name="audio_input_other">External input</string>
+    <string name="audio_input_position_back">back</string>
+    <string name="audio_input_position_front">front</string>
+    <string name="audio_input_position_bottom">bottom</string>
+    <!-- %1$s = microphone name, %2$s = position -->
+    <string name="audio_input_with_position">%1$s (%2$s)</string>
+    <!-- %1$s = product name reported by the device, %2$s = generic kind -->
+    <string name="audio_input_named">%1$s · %2$s</string>
+
+    <!-- Errors -->
+    <string name="audio_error_mic_permission">Microphone access is needed to record sound.</string>
+    <string name="audio_error_bluetooth_permission">Allow access to nearby devices to use your Bluetooth microphone. Recording uses the phone microphone for now.</string>
+    <string name="audio_error_input_lost">The selected microphone was disconnected. Recording continues with the phone microphone.</string>
+    <string name="audio_error_bluetooth_unavailable">Couldn\'t connect to the Bluetooth microphone. Recording uses the phone microphone.</string>
+    <string name="audio_error_mic_unavailable">The microphone is busy or unavailable (another app or a call may be using it).</string>
+    <string name="audio_error_recording_failed">The audio recording couldn\'t be saved.</string>
+</resources>

@@ -7,5 +7,6 @@ dependencies {
     api(project(":core:model"))
     api(project(":core:media"))
     implementation(project(":core:common"))
+    implementation(project(":core:datastore"))
     implementation(libs.androidx.core.ktx)
 }
