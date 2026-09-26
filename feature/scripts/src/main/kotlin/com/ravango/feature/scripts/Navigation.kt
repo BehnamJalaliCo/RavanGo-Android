@@ -1,6 +1,7 @@
 package com.ravango.feature.scripts
 
 import androidx.navigation.NavGraphBuilder
+import com.ravango.core.designsystem.motion.RgNavDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.ravango.core.navigation.AiStudioRoute
@@ -21,6 +22,7 @@ const val PICKED_SCRIPT_ID_KEY = "picked_script_id"
 /** Registers this feature's destinations. Navigation to other features uses routes from :core:navigation. */
 fun NavGraphBuilder.scriptsDestinations(navController: NavHostController) {
     composable<ScriptsRoute> {
+        RgNavDestination(this) {
         ScriptsScreenRoute(
             onBack = { navController.popBackStack() },
             onOpenEditor = { id -> navController.navigate(ScriptEditorRoute(scriptId = id)) },
@@ -32,8 +34,10 @@ fun NavGraphBuilder.scriptsDestinations(navController: NavHostController) {
                 navController.popBackStack()
             },
         )
+        }
     }
     composable<ScriptEditorRoute> {
+        RgNavDestination(this) {
         ScriptEditorScreenRoute(
             onBack = { navController.popBackStack() },
             onNavigate = { action, id ->
@@ -48,5 +52,6 @@ fun NavGraphBuilder.scriptsDestinations(navController: NavHostController) {
             onOpenPaywall = { feature -> navController.navigate(PaywallRoute(source = "script_editor", feature = feature)) },
             onOpenSettings = { navController.navigate(SettingsRoute) },
         )
+        }
     }
 }

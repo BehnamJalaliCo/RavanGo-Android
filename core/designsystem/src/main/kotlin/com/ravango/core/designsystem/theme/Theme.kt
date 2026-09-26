@@ -9,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import com.ravango.core.model.ThemeMode
 
 val LocalReduceMotion = staticCompositionLocalOf { false }
@@ -19,13 +21,13 @@ private fun schemeFrom(c: RgColors): ColorScheme = if (c.isDark) {
         onPrimary = c.onAccent,
         primaryContainer = c.accentSoft,
         onPrimaryContainer = c.textPrimary,
-        secondary = Palette.Rose300,
+        secondary = c.tones.periwinkle.content,
         onSecondary = Palette.Ink950,
-        secondaryContainer = c.pastelRose,
+        secondaryContainer = c.tones.periwinkle.container,
         onSecondaryContainer = c.textPrimary,
-        tertiary = Palette.Mint400,
+        tertiary = c.tones.mint.content,
         onTertiary = Palette.Ink950,
-        tertiaryContainer = c.pastelMint,
+        tertiaryContainer = c.tones.mint.container,
         onTertiaryContainer = c.textPrimary,
         background = c.background,
         onBackground = c.textPrimary,
@@ -49,14 +51,14 @@ private fun schemeFrom(c: RgColors): ColorScheme = if (c.isDark) {
         primary = c.accent,
         onPrimary = c.onAccent,
         primaryContainer = c.accentSoft,
-        onPrimaryContainer = Palette.Lavender700,
-        secondary = Palette.Rose500,
+        onPrimaryContainer = c.onAccentSoft,
+        secondary = c.tones.periwinkle.content,
         onSecondary = androidx.compose.ui.graphics.Color.White,
-        secondaryContainer = c.pastelRose,
+        secondaryContainer = c.tones.periwinkle.container,
         onSecondaryContainer = c.textPrimary,
-        tertiary = Palette.Mint500,
+        tertiary = c.tones.mint.content,
         onTertiary = androidx.compose.ui.graphics.Color.White,
-        tertiaryContainer = c.pastelMint,
+        tertiaryContainer = c.tones.mint.container,
         onTertiaryContainer = c.textPrimary,
         background = c.background,
         onBackground = c.textPrimary,
@@ -133,4 +135,11 @@ object RgTheme {
         @Composable @ReadOnlyComposable get() = LocalRgColors.current
     val reduceMotion: Boolean
         @Composable @ReadOnlyComposable get() = LocalReduceMotion.current
+
+    /**
+     * Separator for inline metadata built in code ("12 words · 2 min"). Persian layouts get the Persian comma: in the
+     * brand font "·" is drawn exactly like the Persian zero "۰", so next to a number it changes the number.
+     */
+    val metaSeparator: String
+        @Composable @ReadOnlyComposable get() = if (LocalLayoutDirection.current == LayoutDirection.Rtl) "، " else " · "
 }

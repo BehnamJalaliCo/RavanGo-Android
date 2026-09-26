@@ -165,7 +165,7 @@ private fun ExportForm(state: ExportUiState, vm: ExportActions) {
                     Column(Modifier.weight(1f)) {
                         Text("\u2066" + localized("$w × $h") + "\u2069", style = MaterialTheme.typography.titleLarge, color = Color.White)
                         Text(
-                            (if (s.codec == VideoCodec.H264) "H.264" else "HEVC") + " · " + localized("${s.frameRate}") + " fps",
+                            (if (s.codec == VideoCodec.H264) "H.264" else "HEVC") + RgTheme.metaSeparator + localized("${s.frameRate}") + " fps",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.65f),
                         )
@@ -332,7 +332,7 @@ private fun ExportDone(done: ExportState.Succeeded, vm: ExportActions, onBackToE
         }
         Text(stringResource(R.string.editor_export_done), style = MaterialTheme.typography.headlineSmall, color = Color.White)
         Text(
-            localized("${done.width}×${done.height}") + " · " + formatBytes(done.sizeBytes) + " · " + timecode(done.durationUs, tenths = false),
+            localized("${done.width}×${done.height}") + RgTheme.metaSeparator + formatBytes(done.sizeBytes) + RgTheme.metaSeparator + timecode(done.durationUs, tenths = false),
             style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.7f),
         )
         if (done.galleryUri != null) Text(stringResource(R.string.editor_export_saved_gallery), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f))

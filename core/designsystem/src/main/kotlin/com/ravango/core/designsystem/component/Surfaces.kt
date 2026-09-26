@@ -5,6 +5,7 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -22,12 +23,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -50,7 +56,9 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Soft, slowly drifting pastel blobs behind content. Static when the user enables "reduce motion".
+ * Soft, slowly drifting pastel blobs behind content. The drift is read in the draw phase only (no recomposition) and
+ * the radial brushes are built once per size, so the background costs a few draw calls per frame. Static when the
+ * user enables "reduce motion".
  */
 @Composable
 fun GradientBackground(
@@ -59,40 +67,42 @@ fun GradientBackground(
 ) {
     val colors = RgTheme.colors
     val reduceMotion = RgTheme.reduceMotion
-    val phase = if (reduceMotion) {
-        0.25f
+    val phase: State<Float> = if (reduceMotion) {
+        remember { mutableFloatStateOf(0.25f) }
     } else {
-        val transition = rememberInfiniteTransition(label = "blobs")
-        val p by transition.animateFloat(
+        rememberInfiniteTransition(label = "blobs").animateFloat(
             initialValue = 0f,
             targetValue = 1f,
-            animationSpec = infiniteRepeatable(tween(24_000, easing = LinearEasing), RepeatMode.Restart),
+            animationSpec = infiniteRepeatable(tween(28_000, easing = LinearEasing), RepeatMode.Restart),
             label = "phase",
         )
-        p
     }
     Box(
         modifier
             .fillMaxSize()
             .background(colors.background)
-            .drawBehind {
+            .drawWithCache {
                 val w = size.width
                 val h = size.height
-                val alpha = if (colors.isDark) 0.55f else 0.85f
-                colors.blobs.forEachIndexed { i, c ->
-                    val angle = (phase + i * 0.25f) * 2f * Math.PI.toFloat()
-                    val cx = w * (0.2f + 0.6f * ((i % 2) + 0.35f * cos(angle)) / 1.35f)
-                    val cy = h * (0.12f + 0.22f * i + 0.05f * sin(angle * 1.3f))
-                    val r = maxOf(w, h) * (0.38f + 0.04f * sin(angle))
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            listOf(c.copy(alpha = alpha), c.copy(alpha = 0f)),
-                            center = Offset(cx, cy),
-                            radius = r,
-                        ),
-                        radius = r,
-                        center = Offset(cx, cy),
-                    )
+                val base = maxOf(w, h) * 0.42f
+                val alpha = if (colors.isDark) 0.62f else 0.9f
+                // One brush per blob, centred on the origin; drawing translates/scales it (no per-frame allocation).
+                val brushes = colors.blobs.map { c ->
+                    Brush.radialGradient(listOf(c.copy(alpha = alpha), c.copy(alpha = alpha * 0.35f), c.copy(alpha = 0f)), center = Offset.Zero, radius = base)
+                }
+                onDrawBehind {
+                    val p = phase.value
+                    brushes.forEachIndexed { i, brush ->
+                        val angle = (p + i * 0.25f) * 2f * Math.PI.toFloat()
+                        val cx = w * (0.2f + 0.6f * ((i % 2) + 0.35f * cos(angle)) / 1.35f)
+                        val cy = h * (0.1f + 0.24f * i + 0.05f * sin(angle * 1.3f))
+                        val scale = 1f + 0.08f * sin(angle)
+                        translate(cx, cy) {
+                            scale(scale, scale, pivot = Offset.Zero) {
+                                drawCircle(brush, radius = base, center = Offset.Zero)
+                            }
+                        }
+                    }
                 }
             },
         content = content,
@@ -141,19 +151,29 @@ fun Modifier.pressable(
     role: Role = Role.Button,
     haptic: HapticEvent? = HapticEvent.TAP,
     pressedOverlay: Color? = null,
+    pressScale: Float = Motion.PressScale,
     onClick: () -> Unit,
 ): Modifier = composed {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val focused by interaction.collectIsFocusedAsState()
-    val scale by animateFloatAsState(if (pressed && enabled) Motion.PressScale else 1f, Motion.snappy(), label = "press")
+    val reduceMotion = RgTheme.reduceMotion
+    // Presses sink quickly and release with a soft, springy rebound (the "alive" feel of top-tier apps).
+    val scale by animateFloatAsState(
+        if (pressed && enabled && !reduceMotion) pressScale else 1f,
+        if (pressed) spring(dampingRatio = 1f, stiffness = 1400f) else spring(dampingRatio = 0.5f, stiffness = 600f),
+        label = "press",
+    )
     val haptics = rememberHaptics()
     val colors = RgTheme.colors
     val overlay = pressedOverlay ?: (if (colors.isDark) Color.White.copy(alpha = 0.08f) else colors.textPrimary.copy(alpha = 0.06f))
     val overlayAlpha by animateFloatAsState(if (pressed && enabled && shape != null) 1f else 0f, Motion.quick(120), label = "overlay")
     val ring = colors.accent
     this
-        .graphicsLayer { scaleX = scale; scaleY = scale }
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
         .then(
             if (shape == null) Modifier else Modifier.drawWithContent {
                 drawContent()

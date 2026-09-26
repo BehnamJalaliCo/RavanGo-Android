@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.ravango.core.common.format.formatNumber
 import com.ravango.core.designsystem.component.ProBadge
 import com.ravango.core.designsystem.component.RgBottomSheet
+import com.ravango.core.designsystem.component.RgButtonSize
 import com.ravango.core.designsystem.component.RgOutlineButton
 import com.ravango.core.designsystem.component.RgPrimaryButton
 import com.ravango.core.designsystem.component.RgSecondaryButton
@@ -77,6 +78,23 @@ fun TemplateSheet(
     onStart: (TemplateStartMode, TemplateTexts) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    RgBottomSheet(onDismiss = onDismiss) {
+        TemplateDetailContent(template, busyMode, captionsIncluded, onStart, Modifier.padding(horizontal = Spacing.gutter))
+    }
+}
+
+/**
+ * Template details and the three ways to start a project from it. Shown in [TemplateSheet] and in the Templates
+ * screen's expanding card. One primary action (with a script); AI and "no script" are quieter.
+ */
+@Composable
+fun TemplateDetailContent(
+    template: ProjectTemplate,
+    busyMode: TemplateStartMode?,
+    captionsIncluded: Boolean,
+    onStart: (TemplateStartMode, TemplateTexts) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val colors = RgTheme.colors
     val accent = Color(template.accentArgb)
     val name = templateName(template)
@@ -86,47 +104,47 @@ fun TemplateSheet(
     val busy = busyMode != null
     val locale = currentLocale()
 
-    RgBottomSheet(onDismiss = onDismiss) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.gutter), verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .size(width = 84.dp, height = 108.dp)
-                        .clip(RoundedCornerShape(Radius.lg))
-                        .background(Brush.linearGradient(listOf(accent.copy(alpha = 0.55f), accent.copy(alpha = 0.18f)))),
-                ) {
-                    AspectFramePreview(template.aspectRatio, accent, template.autoCaptions, Modifier.fillMaxWidth().height(108.dp))
-                }
-                Spacer(Modifier.width(Spacing.lg))
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                    Text(name, style = MaterialTheme.typography.headlineSmall, color = colors.textPrimary)
-                    Text(templateDescription(template), style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                }
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(width = 84.dp, height = 108.dp)
+                    .clip(RoundedCornerShape(Radius.lg))
+                    .background(Brush.linearGradient(listOf(accent.copy(alpha = 0.55f), accent.copy(alpha = 0.18f)))),
+            ) {
+                AspectFramePreview(template.aspectRatio, accent, template.autoCaptions, Modifier.fillMaxWidth().height(108.dp))
             }
-            TemplateTags(template, captionsIncluded)
+            Spacer(Modifier.width(Spacing.lg))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Text(name, style = MaterialTheme.typography.headlineSmall, color = colors.textPrimary)
+                Text(templateDescription(template), style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            }
+        }
+        TemplateTags(template, captionsIncluded)
 
-            if (headings.isNotEmpty()) {
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(Radius.lg))
-                        .background(colors.surfaceMuted)
-                        .padding(Spacing.lg),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-                ) {
-                    Text(stringResource(R.string.projects_template_outline), style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
-                    headings.forEachIndexed { i, heading ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(22.dp).clip(CircleShape).background(accent.copy(alpha = 0.22f)), contentAlignment = Alignment.Center) {
-                                Text(formatNumber(i + 1, locale),style = MaterialTheme.typography.labelSmall, color = colors.textPrimary)
-                            }
-                            Spacer(Modifier.width(Spacing.md))
-                            Text(translate(heading) ?: heading, style = MaterialTheme.typography.bodyMedium, color = colors.textPrimary)
+        if (headings.isNotEmpty()) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(Radius.lg))
+                    .background(colors.surfaceMuted)
+                    .padding(Spacing.lg),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                Text(stringResource(R.string.projects_template_outline), style = MaterialTheme.typography.labelLarge, color = colors.textSecondary)
+                headings.forEachIndexed { i, heading ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(22.dp).clip(CircleShape).background(accent.copy(alpha = 0.22f)), contentAlignment = Alignment.Center) {
+                            Text(formatNumber(i + 1, locale), style = MaterialTheme.typography.labelSmall, color = colors.textPrimary)
                         }
+                        Spacer(Modifier.width(Spacing.md))
+                        Text(translate(heading) ?: heading, style = MaterialTheme.typography.bodyMedium, color = colors.textPrimary)
                     }
                 }
             }
+        }
 
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             RgPrimaryButton(
                 text = stringResource(R.string.projects_template_start_with_script),
                 onClick = { onStart(TemplateStartMode.WITH_SCRIPT, texts) },
@@ -135,20 +153,24 @@ fun TemplateSheet(
                 enabled = !busy,
                 modifier = Modifier.fillMaxWidth(),
             )
-            RgSecondaryButton(
-                text = stringResource(R.string.projects_template_write_with_ai),
-                onClick = { onStart(TemplateStartMode.WITH_AI, texts) },
-                icon = Icons.Rounded.AutoAwesome,
-                enabled = !busy,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            RgOutlineButton(
-                text = stringResource(R.string.projects_template_record_without_script),
-                onClick = { onStart(TemplateStartMode.WITHOUT_SCRIPT, texts) },
-                icon = Icons.Rounded.Videocam,
-                enabled = !busy,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                RgSecondaryButton(
+                    text = stringResource(R.string.projects_template_write_with_ai),
+                    onClick = { onStart(TemplateStartMode.WITH_AI, texts) },
+                    icon = Icons.Rounded.AutoAwesome,
+                    enabled = !busy,
+                    size = RgButtonSize.MEDIUM,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                RgOutlineButton(
+                    text = stringResource(R.string.projects_template_record_without_script),
+                    onClick = { onStart(TemplateStartMode.WITHOUT_SCRIPT, texts) },
+                    icon = Icons.Rounded.Videocam,
+                    enabled = !busy,
+                    size = RgButtonSize.MEDIUM,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }

@@ -4,4 +4,6 @@
     <color name="ic_launcher_background">#FFFFFF</color>
     <!-- Logo ink: near-black by day, white at night (splash). -->
     <color name="rg_logo_ink">#0B0F1B</color>
+    <!-- App window behind screens (post-splash): matches the theme background so transitions never flash. -->
+    <color name="rg_window_background">#F5F7FD</color>
 </resources>

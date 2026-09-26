@@ -193,10 +193,10 @@ private fun HubContent(
 ) {
     val colors = RgTheme.colors
     val tints = mapOf(
-        ToolGroup.WRITE to colors.pastelLavender,
-        ToolGroup.IMPROVE to colors.pastelMint,
-        ToolGroup.PUBLISH to colors.pastelPeach,
-        ToolGroup.TRANSLATE to colors.pastelSky,
+        ToolGroup.WRITE to colors.tones.lilac,
+        ToolGroup.IMPROVE to colors.tones.mint,
+        ToolGroup.PUBLISH to colors.tones.peach,
+        ToolGroup.TRANSLATE to colors.tones.sky,
     )
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -229,18 +229,18 @@ private fun HubContent(
 }
 
 /** Two-column grid rows inside a LazyColumn. */
-private fun LazyListScope.toolGrid(tools: List<AiTool>, tint: androidx.compose.ui.graphics.Color, onOpen: (AiTool) -> Unit) {
+private fun LazyListScope.toolGrid(tools: List<AiTool>, tone: com.ravango.core.designsystem.theme.RgTone, onOpen: (AiTool) -> Unit) {
     tools.chunked(2).forEach { row ->
         item(key = "row_${row.first().name}") {
             if (row.size == 1) {
-                WideToolTile(row.first(), tint, { onOpen(row.first()) }, Modifier.padding(horizontal = Spacing.gutter))
+                WideToolTile(row.first(), tone.container, tone.content, { onOpen(row.first()) }, Modifier.padding(horizontal = Spacing.gutter))
             } else {
                 // Equal-height tiles per row, whatever the subtitle length.
                 Row(
                     Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(horizontal = Spacing.gutter),
                     horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                 ) {
-                    row.forEach { t -> ToolTile(t, tint, { onOpen(t) }, Modifier.weight(1f).fillMaxHeight()) }
+                    row.forEach { t -> ToolTile(t, tone.container, tone.content, { onOpen(t) }, Modifier.weight(1f).fillMaxHeight()) }
                 }
             }
         }
@@ -256,7 +256,8 @@ private fun VideoToolsCard(eyeContact: CapabilityState, onOpenProjects: () -> Un
                 title = stringResource(R.string.ai_video_title),
                 subtitle = stringResource(R.string.ai_video_body),
                 icon = Icons.Rounded.VideoLibrary,
-                iconBackground = RgTheme.colors.pastelSky,
+                iconBackground = RgTheme.colors.tones.sky.container,
+                iconTint = RgTheme.colors.tones.sky.content,
             )
             Spacer(Modifier.height(Spacing.sm))
             VideoFeatureRow(stringResource(R.string.ai_video_captions))

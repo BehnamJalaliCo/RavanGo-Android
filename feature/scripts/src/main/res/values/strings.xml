@@ -21,7 +21,7 @@
     <string name="scripts_sort">Sort</string>
     <string name="scripts_sort_updated">Recently edited</string>
     <string name="scripts_sort_created">Newest first</string>
-    <string name="scripts_sort_title">Title (A–Z)</string>
+    <string name="scripts_sort_title">Title (A to Z)</string>
     <string name="scripts_sort_opened">Recently opened</string>
     <string name="scripts_card_words">%1$s words</string>
     <string name="scripts_card_duration_cd">Reading time at %1$s words per minute</string>
@@ -68,7 +68,7 @@
     <string name="scripts_editor_direction">Text direction</string>
     <string name="scripts_editor_saving">Saving…</string>
     <string name="scripts_editor_saved">Saved</string>
-    <string name="scripts_editor_save_failed">Couldn’t save — your text is kept here; we’ll retry</string>
+    <string name="scripts_editor_save_failed">Couldn’t save. Your text is kept here and we’ll retry</string>
     <string name="scripts_editor_edit_mode">Edit</string>
     <string name="scripts_editor_preview_mode">Preview</string>
     <string name="scripts_editor_preview_empty">Nothing to preview yet.</string>

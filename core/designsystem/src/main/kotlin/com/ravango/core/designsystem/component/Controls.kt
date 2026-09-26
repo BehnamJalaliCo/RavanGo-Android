@@ -47,7 +47,14 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.animation.core.Animatable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.positionInParent
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -173,7 +180,7 @@ fun RgSlider(
             if (to - from > 0.5f) {
                 drawRoundRect(
                     brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                        listOf(com.ravango.core.designsystem.theme.Palette.Lavender400, com.ravango.core.designsystem.theme.Palette.Rose400),
+                        listOf(com.ravango.core.designsystem.theme.Palette.LogoSky, colors.accent),
                         startX = from,
                         endX = to,
                     ),
@@ -275,7 +282,10 @@ fun RgSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Mod
     }
 }
 
-/** Segmented control with a sliding pill indicator. */
+/**
+ * Segmented control with a sliding pill indicator: the raised pill glides between segments on a fast spring (drawn in
+ * the draw phase, so it costs no relayout), and labels cross-fade their color. Snaps with reduce motion.
+ */
 @Composable
 fun <T> RgSegmentedControl(
     options: List<T>,
@@ -287,29 +297,61 @@ fun <T> RgSegmentedControl(
 ) {
     val colors = RgTheme.colors
     val haptics = rememberHaptics()
+    val reduceMotion = RgTheme.reduceMotion
+    // Segment bounds (x, width) in the padded content area, reported after placement.
+    val bounds = remember { mutableStateMapOf<Int, Offset>() }
+    val selectedIndex = options.indexOf(selected)
+    val target = bounds[selectedIndex]
+    val indicatorX = remember { Animatable(0f) }
+    val indicatorW = remember { Animatable(0f) }
+    var placed by remember { mutableStateOf(false) }
+    LaunchedEffect(target) {
+        val t = target ?: return@LaunchedEffect
+        if (!placed || reduceMotion) {
+            indicatorX.snapTo(t.x)
+            indicatorW.snapTo(t.y)
+            placed = true
+        } else {
+            launch { indicatorX.animateTo(t.x, Motion.spatialFast()) }
+            launch { indicatorW.animateTo(t.y, Motion.spatialFast()) }
+        }
+    }
+    val indicatorColor = if (glass) Color.White else colors.surfaceRaised
+    val indicatorEdge = if (glass) Color.Transparent else if (colors.isDark) Color.White.copy(alpha = 0.06f) else colors.shadowTint.copy(alpha = 0.10f)
+    val indicatorShadow = colors.shadowTint.copy(alpha = if (colors.isDark || glass) 0f else 0.07f)
     Layout(
         modifier = modifier
             .height(Dimens.controlMedium)
             .clip(RoundedCornerShape(Radius.pill))
             .background(if (glass) Color.Black.copy(alpha = 0.35f) else colors.surfaceMuted)
             .then(if (!glass && colors.isDark) Modifier.border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(Radius.pill)) else Modifier)
-            .padding(4.dp),
+            .padding(4.dp)
+            .drawBehind {
+                if (!placed || selectedIndex < 0) return@drawBehind
+                val w = indicatorW.value
+                val r = CornerRadius(size.height / 2)
+                // A 1px-offset tint under the pill reads as a soft lift without a (costly) blur.
+                drawRoundRect(indicatorShadow, Offset(indicatorX.value, 1.5.dp.toPx()), Size(w, size.height), r)
+                drawRoundRect(indicatorColor, Offset(indicatorX.value, 0f), Size(w, size.height), r)
+                drawRoundRect(indicatorEdge, Offset(indicatorX.value, 0f), Size(w, size.height), r, style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
+            },
         content = {
-            options.forEach { option ->
+            options.forEachIndexed { index, option ->
                 val isSelected = option == selected
-                val bg by animateColorAsState(if (isSelected) (if (glass) Color.White else colors.surfaceRaised) else Color.Transparent, Motion.quick(), label = "seg")
-                val fg = when {
-                    isSelected && glass -> Color.Black
-                    isSelected -> colors.textPrimary
-                    glass -> Color.White.copy(alpha = 0.85f)
-                    else -> colors.textSecondary
-                }
+                val fg by animateColorAsState(
+                    when {
+                        isSelected && glass -> Color.Black
+                        isSelected -> colors.textPrimary
+                        glass -> Color.White.copy(alpha = 0.85f)
+                        else -> colors.textSecondary
+                    },
+                    Motion.quick(), label = "segFg",
+                )
                 val segShape = RoundedCornerShape(Radius.pill)
                 Box(
                     Modifier
-                        .then(if (isSelected && !glass) Modifier.softShadow(if (colors.isDark) 0.dp else 2.dp, segShape) else Modifier)
+                        .onPlaced { c -> bounds[index] = Offset(c.positionInParent().x, c.size.width.toFloat()) }
                         .clip(segShape)
-                        .background(bg)
                         .pressable(shape = segShape, haptic = null, role = Role.Tab) { if (!isSelected) { haptics.perform(HapticEvent.SNAP); onSelect(option) } }
                         .semantics { semanticsSelected = isSelected }
                         .padding(horizontal = 14.dp),

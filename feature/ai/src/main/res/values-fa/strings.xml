@@ -77,7 +77,7 @@
     <string name="ai_option_audience">مخاطب</string>
     <string name="ai_option_audience_hint">مثلاً: فریلنسرهای تازه‌کار</string>
     <string name="ai_option_duration">مدت</string>
-    <string name="ai_option_duration_value">%1$s · حدود %2$s کلمه</string>
+    <string name="ai_option_duration_value">%1$s، حدود %2$s کلمه</string>
     <string name="ai_option_target_length">طول هدف</string>
     <string name="ai_option_language">زبان خروجی</string>
     <string name="ai_option_translate_to">ترجمه به</string>
@@ -152,4 +152,5 @@
     <string name="ai_video_eye_unavailable">نیازمند مدل تصحیح نگاه روی سرور</string>
     <string name="ai_video_open_projects">باز کردن پروژه‌ها</string>
     <string name="ai_back_to_tools">بازگشت به ابزارها</string>
+    <string name="ai_credits_of_total">از %1$s اعتبار این ماه باقی مانده</string>
 </resources>

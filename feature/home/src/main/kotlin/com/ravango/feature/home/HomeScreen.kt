@@ -1,5 +1,6 @@
 package com.ravango.feature.home
 
+import com.ravango.core.designsystem.theme.BalancedLines
 import com.ravango.core.designsystem.component.RgSpinner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -134,10 +135,32 @@ import com.ravango.feature.home.common.aspectLabel
 import com.ravango.feature.home.common.currentLocale
 import com.ravango.feature.home.common.formatRelativeTime
 import com.ravango.feature.home.common.formatSuggestedDuration
-import com.ravango.feature.home.common.rememberEntranceActive
-import com.ravango.feature.home.common.staggeredEntrance
 import com.ravango.feature.home.common.templateName
 import java.util.Calendar
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.rounded.WorkspacePremium
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import com.ravango.core.designsystem.component.RavanGoLogo
+import com.ravango.core.designsystem.component.RavanGoLogoStyle
+import com.ravango.core.designsystem.component.RgTextButton
+import com.ravango.core.designsystem.component.SkeletonCard
+import com.ravango.core.designsystem.component.SkeletonLine
+import com.ravango.core.designsystem.motion.RgEnter
+import com.ravango.core.designsystem.motion.RgExit
+import com.ravango.core.designsystem.motion.SharedKeys
+import com.ravango.core.designsystem.motion.rememberEntranceActive
+import com.ravango.core.designsystem.motion.rgSharedBounds
+import com.ravango.core.designsystem.motion.staggeredEntrance
+import com.ravango.core.designsystem.motion.staggeredSlideIn
+import com.ravango.core.designsystem.theme.Motion
+import com.ravango.core.designsystem.theme.RgTone
 
 private const val MAX_IMPORT_ITEMS = 30
 
@@ -207,12 +230,16 @@ internal fun HomeContent(
     onTemplate: (ProjectTemplate) -> Unit,
 ) {
     val entrance = rememberEntranceActive(ready = !state.loading)
+    val listState = rememberLazyListState()
+    // The floating record button only appears once the hero (the screen's primary action) has scrolled away,
+    // so there is never more than one "record" call to action on screen.
+    val heroGone by remember { derivedStateOf { listState.firstVisibleItemIndex >= 2 } }
 
     GradientBackground {
         LazyColumn(
             Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 140.dp),
-            verticalArrangement = Arrangement.spacedBy(Spacing.lg),
+            state = listState,
+            contentPadding = PaddingValues(bottom = 120.dp),
         ) {
             // Entrance order is fixed per section (computed here, not inside item content, so recomposition is stable).
             var section = 0
@@ -224,24 +251,17 @@ internal fun HomeContent(
                 HeroCard(
                     onRecord = { onNavigate(CameraRoute()) },
                     onAudioOnly = { onNavigate(CameraRoute(audioOnly = true)) },
-                    modifier = Modifier.staggeredEntrance(heroIndex, entrance),
+                    modifier = Modifier.padding(top = Spacing.xl).staggeredEntrance(heroIndex, entrance),
                 )
             }
             val actionsIndex = ++section
             item(key = "actions") {
-                QuickActions(state, onNavigate, onTeleprompter, onImport, Modifier.staggeredEntrance(actionsIndex, entrance))
-            }
-            if (state.loading) {
-                item(key = "loading") {
-                    Row(Modifier.padding(horizontal = Spacing.gutter), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                        repeat(3) { ShimmerBox(Modifier.size(width = 148.dp, height = 188.dp), RoundedCornerShape(Radius.lg)) }
-                    }
-                }
+                QuickActions(onNavigate, onTeleprompter, onImport, entrance, actionsIndex, Modifier.padding(top = Spacing.xxl))
             }
             state.continueItem?.let { item ->
                 val index = ++section
                 item(key = "continue") {
-                    ContinueCard(item, now, { onNavigate(EditorRoute(item.item.project.id)) }, Modifier.staggeredEntrance(index, entrance))
+                    ContinueCard(item, now, { onNavigate(EditorRoute(item.item.project.id)) }, Modifier.padding(top = Spacing.xxl).staggeredEntrance(index, entrance))
                 }
             }
             if (state.isNewUser) {
@@ -250,31 +270,38 @@ internal fun HomeContent(
                     WelcomeCard(
                         onWrite = { onNavigate(ScriptEditorRoute()) },
                         onRecord = { onNavigate(CameraRoute()) },
-                        modifier = Modifier.staggeredEntrance(index, entrance),
+                        modifier = Modifier.padding(top = Spacing.xxl).staggeredEntrance(index, entrance),
                     )
                 }
+            }
+            if (state.loading) {
+                item(key = "loading") { LoadingProjects(Modifier.padding(top = Spacing.xxl)) }
             }
             if (state.recentProjects.isNotEmpty()) {
                 val index = ++section
                 item(key = "projects") {
-                    RecentProjects(state.recentProjects, now, onNavigate, Modifier.staggeredEntrance(index, entrance))
+                    RecentProjects(state.recentProjects, now, onNavigate, entrance, Modifier.padding(top = Spacing.xl).staggeredEntrance(index, entrance))
                 }
             }
             if (state.recentScripts.isNotEmpty()) {
                 val index = ++section
                 item(key = "scripts") {
-                    RecentScripts(state.recentScripts, state.wordsPerMinute, onNavigate, Modifier.staggeredEntrance(index, entrance))
+                    RecentScripts(state.recentScripts, state.wordsPerMinute, onNavigate, Modifier.padding(top = Spacing.xl).staggeredEntrance(index, entrance))
                 }
             }
             val templatesIndex = ++section
             item(key = "templates") {
-                TemplatesTeaser(state.templates, onTemplate, { onNavigate(TemplatesRoute) }, Modifier.staggeredEntrance(templatesIndex, entrance))
+                TemplatesTeaser(state.templates, onTemplate, { onNavigate(TemplatesRoute) }, Modifier.padding(top = Spacing.xl).staggeredEntrance(templatesIndex, entrance))
             }
         }
-        RecordFab(
-            onClick = { onNavigate(CameraRoute()) },
+        AnimatedVisibility(
+            visible = heroGone,
             modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(Spacing.lg),
-        )
+            enter = RgEnter.pop(),
+            exit = RgExit.pop(),
+        ) {
+            RecordFab(onClick = { onNavigate(CameraRoute()) })
+        }
     }
 }
 
@@ -292,79 +319,98 @@ private fun HomeHeader(state: HomeUiState, now: Long, onNavigate: (Any) -> Unit,
             DayPart.NIGHT -> R.string.home_greeting_night
         },
     )
-    val name = state.userName ?: stringResource(R.string.home_app_name)
-    Row(
-        modifier.fillMaxWidth().statusBarsPadding().padding(start = Spacing.gutter, end = Spacing.gutter, top = Spacing.lg),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(greeting, style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(name, style = MaterialTheme.typography.headlineMedium, color = colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                if (state.syncPhase != SyncPhase.DISABLED) {
-                    Spacer(Modifier.width(Spacing.sm))
-                    SyncDot(state.syncPhase)
-                }
+    Column(modifier.fillMaxWidth().statusBarsPadding().padding(start = Spacing.gutter, end = Spacing.gutter, top = Spacing.md)) {
+        // Brand bar: the official lockup on the start side, plan + account on the end side (all 40dp tall).
+        Row(Modifier.fillMaxWidth().height(Dimens.controlMedium), verticalAlignment = Alignment.CenterVertically) {
+            RavanGoLogo(style = RavanGoLogoStyle.HORIZONTAL, height = 30.dp, contentDescription = stringResource(R.string.home_app_name))
+            Spacer(Modifier.weight(1f))
+            if (state.isPaid) {
+                PlanBadge(stringResource(if (state.plan == Plan.LIFETIME) R.string.home_plan_lifetime else R.string.home_plan_pro))
+            } else {
+                GoProChip { onNavigate(PaywallRoute(source = "home")) }
             }
+            Spacer(Modifier.width(Spacing.sm))
+            Avatar(state.avatarUrl, state.userName, state.syncPhase, onClick = { onNavigate(AccountRoute) })
         }
-        Spacer(Modifier.width(Spacing.sm))
-        if (state.isPaid) {
-            ProBadge(text = stringResource(if (state.plan == Plan.LIFETIME) R.string.home_plan_lifetime else R.string.home_plan_pro))
-        } else {
-            GoProChip { onNavigate(PaywallRoute(source = "home")) }
-        }
-        Spacer(Modifier.width(Spacing.sm))
-        Avatar(state.avatarUrl, state.userName, onClick = { onNavigate(AccountRoute) })
+        Spacer(Modifier.height(Spacing.xl))
+        Text(
+            state.userName?.let { stringResource(R.string.home_greeting_with_name, greeting, it) } ?: greeting,
+            style = MaterialTheme.typography.titleMedium,
+            color = colors.textSecondary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Spacer(Modifier.height(Spacing.xxs))
+        Text(stringResource(R.string.home_headline), style = MaterialTheme.typography.headlineMedium, color = colors.textPrimary)
     }
 }
 
+/** Upsell chip: gold like every Pro surface, dark ink label. */
 @Composable
 private fun GoProChip(onClick: () -> Unit) {
+    val colors = RgTheme.colors
     val shape = RoundedCornerShape(Radius.pill)
     Row(
         Modifier
             .height(Dimens.controlSmall)
-            .softShadow(6.dp, shape, Palette.Rose500)
+            .softShadow(6.dp, shape, Palette.Gold400)
             .clip(shape)
-            .background(RgTheme.colors.proGradient)
+            .background(colors.proGradient)
             .pressable(shape = shape, haptic = HapticEvent.TAP, onClick = onClick)
             .padding(start = 10.dp, end = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Rounded.AutoAwesome, null, tint = Color.White, modifier = Modifier.size(Dimens.iconSmall))
+        Icon(Icons.Rounded.AutoAwesome, null, tint = colors.onPro, modifier = Modifier.size(Dimens.iconSmall))
         Spacer(Modifier.width(6.dp))
-        Text(stringResource(R.string.home_go_pro), style = ButtonText.small, color = Color.White, maxLines = 1)
+        Text(stringResource(R.string.home_go_pro), style = ButtonText.small, color = colors.onPro, maxLines = 1)
     }
 }
 
 @Composable
-private fun Avatar(url: String?, name: String?, onClick: () -> Unit) {
+private fun PlanBadge(text: String) {
+    val colors = RgTheme.colors
+    Row(
+        Modifier.height(Dimens.controlSmall).clip(RoundedCornerShape(Radius.pill)).background(colors.proGradient).padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Rounded.WorkspacePremium, null, tint = colors.onPro, modifier = Modifier.size(Dimens.iconSmall))
+        Spacer(Modifier.width(6.dp))
+        Text(text, style = ButtonText.small, color = colors.onPro, maxLines = 1)
+    }
+}
+
+@Composable
+private fun Avatar(url: String?, name: String?, syncPhase: SyncPhase, onClick: () -> Unit) {
     val colors = RgTheme.colors
     val description = stringResource(R.string.home_account)
-    Box(
-        Modifier
-            .size(44.dp)
-            .clip(CircleShape)
-            .background(colors.brandGradientSoft)
-            .border(1.5.dp, colors.surface, CircleShape)
-            .semantics { contentDescription = description }
-            .pressable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        val initial = name?.firstOrNull()?.uppercase()
-        if (initial != null) {
-            Text(initial, style = MaterialTheme.typography.titleMedium, color = colors.accent)
-        } else {
-            Icon(Icons.Rounded.Person, null, tint = colors.accent)
+    Box(Modifier.size(Dimens.controlMedium)) {
+        Box(
+            Modifier
+                .matchParentSize()
+                .clip(CircleShape)
+                .background(colors.brandGradientSoft)
+                .border(1.5.dp, colors.surface, CircleShape)
+                .semantics { contentDescription = description }
+                .pressable(shape = CircleShape, onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) {
+            val initial = name?.firstOrNull()?.uppercase()
+            if (initial != null) {
+                Text(initial, style = MaterialTheme.typography.titleMedium, color = colors.onAccentSoft)
+            } else {
+                Icon(Icons.Rounded.Person, null, tint = colors.onAccentSoft, modifier = Modifier.size(Dimens.iconMedium + 2.dp))
+            }
+            if (!url.isNullOrBlank()) {
+                AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape))
+            }
         }
-        if (!url.isNullOrBlank()) {
-            AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().clip(CircleShape))
-        }
+        if (syncPhase != SyncPhase.DISABLED) SyncDot(syncPhase, Modifier.align(Alignment.BottomEnd))
     }
 }
 
+/** Sync status as a small dot on the avatar (pulses while syncing). */
 @Composable
-private fun SyncDot(phase: SyncPhase) {
+private fun SyncDot(phase: SyncPhase, modifier: Modifier = Modifier) {
     val colors = RgTheme.colors
     val (color, label) = when (phase) {
         SyncPhase.SYNCING -> colors.accent to R.string.home_sync_syncing
@@ -381,13 +427,15 @@ private fun SyncDot(phase: SyncPhase) {
     } else {
         null
     }
+    val ring = colors.background
     Box(
-        Modifier
-            .size(18.dp)
+        modifier
+            .size(14.dp)
             .semantics { contentDescription = description }
             .drawBehind {
                 val p = pulse?.value
-                if (p != null) drawCircle(color.copy(alpha = (1f - p) * 0.45f), radius = size.minDimension / 2 * (0.5f + p * 0.5f))
+                if (p != null) drawCircle(color.copy(alpha = (1f - p) * 0.45f), radius = size.minDimension / 2 * (0.6f + p * 0.6f))
+                drawCircle(ring, radius = 6.dp.toPx())
                 drawCircle(color, radius = 4.dp.toPx())
             },
     )
@@ -397,6 +445,10 @@ private fun SyncDot(phase: SyncPhase) {
 
 // region Hero
 
+/**
+ * The screen's primary call to action. Brand-blue gradient echoing the logo: a large soft play triangle sits behind
+ * the content, a slow sheen passes over it, and the record button carries the only white fill on the card.
+ */
 @Composable
 private fun HeroCard(onRecord: () -> Unit, onAudioOnly: () -> Unit, modifier: Modifier = Modifier) {
     val colors = RgTheme.colors
@@ -405,70 +457,86 @@ private fun HeroCard(onRecord: () -> Unit, onAudioOnly: () -> Unit, modifier: Mo
         null
     } else {
         val t = rememberInfiniteTransition(label = "hero")
-        t.animateFloat(-0.6f, 1.6f, infiniteRepeatable(tween(3_400, easing = LinearEasing), RepeatMode.Restart), label = "shine")
+        t.animateFloat(-0.6f, 1.6f, infiniteRepeatable(tween(4_200, delayMillis = 1_400, easing = LinearEasing), RepeatMode.Restart), label = "shine")
     }
     Box(
         modifier
             .padding(horizontal = Spacing.gutter)
             .fillMaxWidth()
-            .heightIn(min = 184.dp)
-            .softShadow(Elevation.high, shape, colors.accent)
+            .pressable(shape = shape, haptic = HapticEvent.CONFIRM, pressScale = Motion.PressScaleLarge, onClick = onRecord)
+            .softShadow(Elevation.high, shape, colors.accentGlow)
             .clip(shape)
             .background(colors.ctaGradient)
-            .drawWithContent {
-                drawContent()
-                val x = shimmer?.value ?: return@drawWithContent
-                val cx = size.width * x
-                drawRect(
-                    Brush.linearGradient(
-                        listOf(Color.Transparent, Color.White.copy(alpha = 0.22f), Color.Transparent),
-                        start = Offset(cx - size.width * 0.25f, 0f),
-                        end = Offset(cx + size.width * 0.25f, size.height),
-                    ),
-                )
-            }
-            .pressable(haptic = HapticEvent.CONFIRM, onClick = onRecord),
-    ) {
-        // Decorative soft circles.
-        Box(
-            Modifier.matchParentSize().drawBehind {
-                drawCircle(Color.White.copy(alpha = 0.12f), size.height * 0.9f, Offset(size.width * 1.02f, -size.height * 0.1f))
-                drawCircle(Color.White.copy(alpha = 0.08f), size.height * 0.5f, Offset(size.width * 0.1f, size.height * 1.1f))
+            .drawWithCache {
+                val w = size.width
+                val h = size.height
+                // Two play triangles (the logo's counter) as a soft watermark on the side opposite the text. The
+                // symbol itself always points right, as media controls do in every locale.
+                val rtl = layoutDirection == LayoutDirection.Rtl
+                fun play(cxFraction: Float, cy: Float, r: Float) = Path().apply {
+                    val cx = w * (if (rtl) 1f - cxFraction else cxFraction)
+                    moveTo(cx - r * 0.5f, cy - r * 0.62f)
+                    lineTo(cx + r * 0.58f, cy)
+                    lineTo(cx - r * 0.5f, cy + r * 0.62f)
+                    close()
+                }
+                val big = play(0.86f, h * 0.36f, h * 0.5f)
+                val small = play(0.64f, h * 0.14f, h * 0.14f)
+                val sheenWidth = w * 0.5f
+                val sheen = Brush.linearGradient(listOf(Color.Transparent, Color.White.copy(alpha = 0.18f), Color.Transparent), start = Offset.Zero, end = Offset(sheenWidth, h))
+                val glow = Brush.radialGradient(listOf(Color.White.copy(alpha = 0.22f), Color.Transparent), center = Offset(if (rtl) w * 0.9f else w * 0.1f, 0f), radius = w * 0.7f)
+                onDrawWithContent {
+                    drawRect(glow)
+                    drawPath(big, Color.White.copy(alpha = 0.12f))
+                    drawPath(small, Color.White.copy(alpha = 0.16f))
+                    drawContent()
+                    val x = shimmer?.value ?: return@onDrawWithContent
+                    translate(left = w * x - sheenWidth / 2) { drawRect(sheen, size = Size(sheenWidth, h)) }
+                }
             },
-        )
-        Row(Modifier.padding(Spacing.xl), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.home_new_recording), style = MaterialTheme.typography.headlineSmall, color = Color.White)
-                Spacer(Modifier.height(Spacing.xs))
-                Text(stringResource(R.string.home_new_recording_body), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.92f))
-                Spacer(Modifier.height(Spacing.lg))
+    ) {
+        Column(Modifier.fillMaxWidth().padding(Spacing.xl)) {
+            Box(
+                Modifier.size(44.dp).clip(RoundedCornerShape(Radius.md)).background(Color.White.copy(alpha = 0.18f)).border(1.dp, Color.White.copy(alpha = 0.32f), RoundedCornerShape(Radius.md)),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.Rounded.Videocam, null, tint = Color.White, modifier = Modifier.size(Dimens.icon)) }
+            Spacer(Modifier.height(Spacing.lg))
+            Text(stringResource(R.string.home_new_recording), style = MaterialTheme.typography.headlineSmall, color = Color.White)
+            Spacer(Modifier.height(Spacing.xs))
+            Text(
+                stringResource(R.string.home_new_recording_body),
+                style = MaterialTheme.typography.bodyMedium.merge(BalancedLines),
+                color = Color.White.copy(alpha = 0.9f),
+            )
+            Spacer(Modifier.height(Spacing.xl))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 val pill = RoundedCornerShape(Radius.pill)
                 Row(
                     Modifier
-                        .height(Dimens.controlSmall)
+                        .height(Dimens.controlMedium)
                         .clip(pill)
-                        .background(Color.White.copy(alpha = 0.2f))
-                        .border(1.dp, Color.White.copy(alpha = 0.4f), pill)
-                        .pressable(shape = pill, onClick = onAudioOnly)
-                        .padding(start = 10.dp, end = 14.dp),
+                        .background(Color.White)
+                        .pressable(shape = pill, haptic = HapticEvent.CONFIRM, onClick = onRecord)
+                        .padding(start = 14.dp, end = 18.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Rounded.Mic, null, tint = Color.White, modifier = Modifier.size(Dimens.iconSmall))
-                    Spacer(Modifier.width(6.dp))
-                    Text(stringResource(R.string.home_audio_only), style = ButtonText.small, color = Color.White, maxLines = 1)
+                    Box(Modifier.size(10.dp).clip(CircleShape).background(colors.record))
+                    Spacer(Modifier.width(Spacing.sm))
+                    Text(stringResource(R.string.home_start_recording), style = ButtonText.medium, color = Palette.Blue700, maxLines = 1)
                 }
-            }
-            Spacer(Modifier.width(Spacing.lg))
-            Box(
-                Modifier
-                    .size(76.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.22f))
-                    .border(1.5.dp, Color.White.copy(alpha = 0.5f), CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Box(Modifier.size(54.dp).clip(CircleShape).background(Color.White), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Rounded.Videocam, null, tint = colors.accent, modifier = Modifier.size(28.dp))
+                Row(
+                    Modifier
+                        .height(Dimens.controlMedium)
+                        .clip(pill)
+                        .background(Color.White.copy(alpha = 0.16f))
+                        .border(1.dp, Color.White.copy(alpha = 0.36f), pill)
+                        .pressable(shape = pill, onClick = onAudioOnly)
+                        .padding(start = 12.dp, end = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Rounded.Mic, null, tint = Color.White, modifier = Modifier.size(Dimens.iconMedium - 2.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.home_audio_only), style = ButtonText.medium, color = Color.White, maxLines = 1)
                 }
             }
         }
@@ -479,54 +547,73 @@ private fun HeroCard(onRecord: () -> Unit, onAudioOnly: () -> Unit, modifier: Mo
 
 // region Quick actions
 
-private data class QuickAction(val label: String, val icon: ImageVector, val bubble: Color, val tint: Color, val onClick: () -> Unit)
+private data class QuickAction(val label: String, val icon: ImageVector, val tone: RgTone, val onClick: () -> Unit)
 
 @Composable
-private fun QuickActions(state: HomeUiState, onNavigate: (Any) -> Unit, onTeleprompter: () -> Unit, onImport: () -> Unit, modifier: Modifier = Modifier) {
-    val colors = RgTheme.colors
+private fun QuickActions(
+    onNavigate: (Any) -> Unit,
+    onTeleprompter: () -> Unit,
+    onImport: () -> Unit,
+    entrance: Boolean,
+    firstIndex: Int,
+    modifier: Modifier = Modifier,
+) {
+    val tones = RgTheme.colors.tones
     val actions = listOf(
-        QuickAction(stringResource(R.string.home_action_teleprompter), Icons.AutoMirrored.Rounded.Subject, colors.pastelLavender, colors.accent, onTeleprompter),
-        QuickAction(stringResource(R.string.home_action_scripts), Icons.Rounded.EditNote, colors.pastelSky, Color(0xFF4C8DDB), { onNavigate(ScriptsRoute()) }),
-        QuickAction(stringResource(R.string.home_action_ai), Icons.Rounded.AutoAwesome, colors.pastelRose, Color(0xFFE0557A), { onNavigate(AiStudioRoute()) }),
-        QuickAction(stringResource(R.string.home_action_editor), Icons.Rounded.MovieCreation, colors.pastelPeach, Color(0xFFE07B3C), onImport),
-        QuickAction(stringResource(R.string.home_action_projects), Icons.Rounded.Folder, colors.pastelMint, colors.success, { onNavigate(ProjectsRoute()) }),
-        QuickAction(stringResource(R.string.home_action_drafts), Icons.Rounded.Description, colors.pastelButter, Color(0xFFC99A12), { onNavigate(ProjectsRoute(tab = 1)) }),
-        QuickAction(stringResource(R.string.home_action_templates), Icons.Rounded.ViewQuilt, colors.pastelLavender, colors.accent, { onNavigate(TemplatesRoute) }),
-        QuickAction(stringResource(R.string.home_action_cloud), Icons.Rounded.Cloud, colors.pastelSky, Color(0xFF4C8DDB), { onNavigate(CloudRoute) }),
+        QuickAction(stringResource(R.string.home_action_teleprompter), Icons.AutoMirrored.Rounded.Subject, tones.sky, onTeleprompter),
+        QuickAction(stringResource(R.string.home_action_scripts), Icons.Rounded.EditNote, tones.periwinkle) { onNavigate(ScriptsRoute()) },
+        QuickAction(stringResource(R.string.home_action_ai), Icons.Rounded.AutoAwesome, tones.lilac) { onNavigate(AiStudioRoute()) },
+        QuickAction(stringResource(R.string.home_action_editor), Icons.Rounded.MovieCreation, tones.blush, onImport),
+        QuickAction(stringResource(R.string.home_action_projects), Icons.Rounded.Folder, tones.mint) { onNavigate(ProjectsRoute()) },
+        QuickAction(stringResource(R.string.home_action_drafts), Icons.Rounded.Description, tones.butter) { onNavigate(ProjectsRoute(tab = 1)) },
+        QuickAction(stringResource(R.string.home_action_templates), Icons.Rounded.ViewQuilt, tones.peach) { onNavigate(TemplatesRoute) },
+        QuickAction(stringResource(R.string.home_action_cloud), Icons.Rounded.Cloud, tones.sky) { onNavigate(CloudRoute) },
     )
-    Column(modifier.padding(horizontal = Spacing.gutter), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-        actions.chunked(4).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                row.forEach { action -> QuickTile(action, Modifier.weight(1f)) }
+    Column(modifier.padding(horizontal = Spacing.gutter - Spacing.xs), verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
+        actions.chunked(4).forEachIndexed { row, items ->
+            Row {
+                items.forEachIndexed { col, action ->
+                    // Tiles cascade in reading order (the row index leads, so the second row follows the first).
+                    QuickTile(action, Modifier.weight(1f).staggeredEntrance(firstIndex + row * 2 + col, entrance, rise = 16.dp))
+                }
             }
         }
     }
 }
 
+/** App-launcher style tool: a pastel squircle with a toned icon and a label below — no card, lots of air. */
 @Composable
 private fun QuickTile(action: QuickAction, modifier: Modifier = Modifier) {
-    GlassSurface(
-        modifier.clip(RoundedCornerShape(Radius.lg)).pressable(onClick = action.onClick),
-        shape = RoundedCornerShape(Radius.lg),
-        contentPadding = PaddingValues(horizontal = Spacing.xs, vertical = Spacing.md),
+    val shape = RoundedCornerShape(Radius.lg)
+    Column(
+        modifier
+            .clip(RoundedCornerShape(Radius.md))
+            .pressable(shape = RoundedCornerShape(Radius.md), onClick = action.onClick)
+            .padding(vertical = Spacing.xs),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(Modifier.size(46.dp).clip(RoundedCornerShape(16.dp)).background(action.bubble), contentAlignment = Alignment.Center) {
-                Icon(action.icon, null, tint = action.tint, modifier = Modifier.size(24.dp))
-            }
-            Spacer(Modifier.height(Spacing.sm))
-            // Shrinks slightly instead of truncating on narrow phones ("هوش مصنوعی" at 360dp).
-            Text(
-                action.label,
-                style = MaterialTheme.typography.labelMedium,
-                color = RgTheme.colors.textPrimary,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                softWrap = false,
-                autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 12.sp, stepSize = 0.5.sp),
-                modifier = Modifier.padding(horizontal = 2.dp),
-            )
+        Box(
+            Modifier
+                .size(58.dp)
+                .clip(shape)
+                .background(action.tone.container)
+                .border(1.dp, Color.White.copy(alpha = if (RgTheme.colors.isDark) 0.05f else 0.6f), shape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(action.icon, null, tint = action.tone.content, modifier = Modifier.size(26.dp))
         }
+        Spacer(Modifier.height(Spacing.sm))
+        // Shrinks slightly instead of truncating on narrow phones ("هوش مصنوعی" at 360dp).
+        Text(
+            action.label,
+            style = MaterialTheme.typography.labelMedium,
+            color = RgTheme.colors.textPrimary,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            softWrap = false,
+            autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 12.sp, stepSize = 0.5.sp),
+            modifier = Modifier.padding(horizontal = 2.dp),
+        )
     }
 }
 
@@ -537,8 +624,10 @@ private fun QuickTile(action: QuickAction, modifier: Modifier = Modifier) {
 @Composable
 private fun ContinueCard(item: ContinueItem, now: Long, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = RgTheme.colors
+    val shape = RoundedCornerShape(Radius.xl)
     GlassSurface(
-        modifier.padding(horizontal = Spacing.gutter).fillMaxWidth().clip(RoundedCornerShape(Radius.lg)).pressable(onClick = onClick),
+        modifier.padding(horizontal = Spacing.gutter).fillMaxWidth().clip(shape).pressable(shape = shape, pressScale = Motion.PressScaleLarge, onClick = onClick),
+        shape = shape,
         contentPadding = PaddingValues(Spacing.md),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -546,11 +635,11 @@ private fun ContinueCard(item: ContinueItem, now: Long, onClick: () -> Unit, mod
                 item.item.thumbnail,
                 accentSeed = item.item.project.id,
                 audioOnly = item.item.audioOnly,
-                modifier = Modifier.size(width = 60.dp, height = 76.dp).clip(RoundedCornerShape(Radius.sm)),
+                modifier = Modifier.size(width = 56.dp, height = 72.dp).clip(RoundedCornerShape(Radius.md)),
             )
             Spacer(Modifier.width(Spacing.md))
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.home_continue_label), style = MaterialTheme.typography.labelMedium, color = colors.accent)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(stringResource(R.string.home_continue_label), style = MaterialTheme.typography.labelMedium, color = colors.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(item.item.project.title, style = MaterialTheme.typography.titleMedium, color = colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
                     stringResource(R.string.home_continue_edited, formatRelativeTime(item.editedAt, now)),
@@ -558,8 +647,9 @@ private fun ContinueCard(item: ContinueItem, now: Long, onClick: () -> Unit, mod
                     color = colors.textSecondary,
                 )
             }
-            Box(Modifier.size(40.dp).clip(CircleShape).background(colors.accent), contentAlignment = Alignment.Center) {
-                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, stringResource(R.string.home_continue_action), tint = colors.onAccent)
+            Spacer(Modifier.width(Spacing.sm))
+            Box(Modifier.size(Dimens.controlMedium).clip(CircleShape).background(colors.accentSoft), contentAlignment = Alignment.Center) {
+                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, stringResource(R.string.home_continue_action), tint = colors.onAccentSoft)
             }
         }
     }
@@ -571,39 +661,70 @@ private fun WelcomeCard(onWrite: () -> Unit, onRecord: () -> Unit, modifier: Mod
     RgCard(
         modifier.padding(horizontal = Spacing.gutter).fillMaxWidth(),
         shape = RoundedCornerShape(Radius.xl),
-        color = colors.surface.copy(alpha = 0.85f),
+        color = colors.surface.copy(alpha = 0.9f),
         contentPadding = PaddingValues(Spacing.xl),
     ) {
+        Box(Modifier.size(44.dp).clip(RoundedCornerShape(Radius.md)).background(colors.tones.periwinkle.container), contentAlignment = Alignment.Center) {
+            Icon(Icons.Rounded.EditNote, null, tint = colors.tones.periwinkle.content, modifier = Modifier.size(Dimens.icon))
+        }
+        Spacer(Modifier.height(Spacing.md))
         Text(stringResource(R.string.home_welcome_title), style = MaterialTheme.typography.titleLarge, color = colors.textPrimary)
         Spacer(Modifier.height(Spacing.xs))
         Text(stringResource(R.string.home_welcome_body), style = MaterialTheme.typography.bodyMedium, color = colors.textSecondary)
         Spacer(Modifier.height(Spacing.lg))
-        RgPrimaryButton(stringResource(R.string.home_welcome_write), onWrite, icon = Icons.Rounded.EditNote, size = RgButtonSize.MEDIUM, modifier = Modifier.fillMaxWidth())
-        Spacer(Modifier.height(Spacing.sm))
-        RgSecondaryButton(stringResource(R.string.home_welcome_record), onRecord, icon = Icons.Rounded.Videocam, size = RgButtonSize.MEDIUM, modifier = Modifier.fillMaxWidth())
+        // The hero above is the screen's primary action; here writing is secondary and recording a quiet link.
+        RgSecondaryButton(stringResource(R.string.home_welcome_write), onWrite, icon = Icons.Rounded.EditNote, size = RgButtonSize.MEDIUM, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(Spacing.xs))
+        RgTextButton(stringResource(R.string.home_welcome_record), onRecord, modifier = Modifier.align(Alignment.CenterHorizontally))
     }
 }
 
 @Composable
-private fun RecentProjects(items: List<HomeProject>, now: Long, onNavigate: (Any) -> Unit, modifier: Modifier = Modifier) {
+private fun LoadingProjects(modifier: Modifier = Modifier) {
+    Column(modifier) {
+        SkeletonLine(Modifier.padding(horizontal = Spacing.gutter, vertical = Spacing.md), widthFraction = 0.35f, height = 16.dp)
+        Row(Modifier.padding(horizontal = Spacing.gutter), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            repeat(3) { SkeletonCard(Modifier.width(PROJECT_CARD_WIDTH), thumbnailAspect = PROJECT_CARD_ASPECT) }
+        }
+    }
+}
+
+private val PROJECT_CARD_WIDTH = 152.dp
+private const val PROJECT_CARD_ASPECT = 0.78f
+
+@Composable
+private fun RecentProjects(items: List<HomeProject>, now: Long, onNavigate: (Any) -> Unit, entrance: Boolean, modifier: Modifier = Modifier) {
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Column(modifier) {
         SectionHeader(stringResource(R.string.home_recent_projects), action = stringResource(R.string.home_see_all), onAction = { onNavigate(ProjectsRoute()) })
+        Spacer(Modifier.height(Spacing.xs))
         LazyRow(contentPadding = PaddingValues(horizontal = Spacing.gutter), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
-            itemsIndexed(items, key = { _, it -> it.project.id }) { _, item ->
-                ProjectCard(item, now) { onNavigate(EditorRoute(item.project.id)) }
+            itemsIndexed(items, key = { _, it -> it.project.id }) { index, item ->
+                ProjectCard(item, now, Modifier.staggeredSlideIn(index, entrance, rtl)) { onNavigate(EditorRoute(item.project.id)) }
             }
         }
     }
 }
 
 @Composable
-private fun ProjectCard(item: HomeProject, now: Long, onClick: () -> Unit) {
+private fun ProjectCard(item: HomeProject, now: Long, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val colors = RgTheme.colors
     val locale = currentLocale()
     val project = item.project
-    Column(Modifier.width(148.dp).pressable(onClick = onClick)) {
-        Box(Modifier.size(width = 148.dp, height = 188.dp).clip(RoundedCornerShape(Radius.lg)).border(1.dp, colors.outline, RoundedCornerShape(Radius.lg))) {
+    val shape = RoundedCornerShape(Radius.lg)
+    Column(modifier.width(PROJECT_CARD_WIDTH).pressable(onClick = onClick)) {
+        // The thumbnail morphs into the editor's preview (container transform).
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(PROJECT_CARD_ASPECT)
+                .rgSharedBounds(SharedKeys.project(project.id), shape)
+                .clip(shape)
+                .border(1.dp, colors.outline, shape),
+        ) {
             ProjectThumbnail(item.thumbnail, accentSeed = project.id, audioOnly = item.audioOnly, modifier = Modifier.fillMaxSize())
+            // Bottom scrim keeps the corner pills legible on bright thumbnails.
+            Box(Modifier.matchParentSize().background(Brush.verticalGradient(0.6f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.28f))))
             DarkPill(statusText(project.status), Modifier.align(Alignment.TopStart).padding(Spacing.sm), dot = statusColor(project.status))
             if (project.durationUs > 0) {
                 DarkPill(formatDuration(project.durationUs, locale), Modifier.align(Alignment.BottomEnd).padding(Spacing.sm))
@@ -632,10 +753,11 @@ private fun statusText(status: ProjectStatus): String = stringResource(
     },
 )
 
+/** Status dot colors tuned to read on the dark frosted pill. */
 @Composable
 private fun statusColor(status: ProjectStatus): Color = when (status) {
     ProjectStatus.RECORDED -> Palette.Butter400
-    ProjectStatus.EDITING -> Palette.Lavender300
+    ProjectStatus.EDITING -> Palette.Blue300
     ProjectStatus.EXPORTED -> Palette.Mint400
 }
 
@@ -643,7 +765,7 @@ private fun statusColor(status: ProjectStatus): Color = when (status) {
 @Composable
 private fun DarkPill(text: String, modifier: Modifier = Modifier, dot: Color? = null) {
     Row(
-        modifier.height(22.dp).clip(RoundedCornerShape(Radius.pill)).background(Color.Black.copy(alpha = 0.45f)).padding(horizontal = 8.dp),
+        modifier.height(22.dp).clip(RoundedCornerShape(Radius.pill)).background(Palette.Ink.copy(alpha = 0.5f)).padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (dot != null) {
@@ -660,6 +782,7 @@ private fun RecentScripts(scripts: List<Script>, wpm: Int, onNavigate: (Any) -> 
     val locale = currentLocale()
     Column(modifier) {
         SectionHeader(stringResource(R.string.home_recent_scripts), action = stringResource(R.string.home_see_all), onAction = { onNavigate(ScriptsRoute()) })
+        Spacer(Modifier.height(Spacing.xs))
         Column(Modifier.padding(horizontal = Spacing.gutter), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             scripts.forEach { script ->
                 val words = script.wordCount
@@ -667,10 +790,18 @@ private fun RecentScripts(scripts: List<Script>, wpm: Int, onNavigate: (Any) -> 
                 val minutes = (seconds + 59) / 60
                 val wordsText = pluralStringResource(R.plurals.home_words, words, words.toString().localizeDigits(locale))
                 val readText = if (seconds < 60) stringResource(R.string.home_read_under_minute) else pluralStringResource(R.plurals.home_read_minutes, minutes, minutes.toString().localizeDigits(locale))
-                RgCard(Modifier.fillMaxWidth(), onClick = { onNavigate(ScriptEditorRoute(scriptId = script.id)) }, contentPadding = PaddingValues(Spacing.md)) {
+                val shape = RoundedCornerShape(Radius.lg)
+                RgCard(
+                    // The card morphs into the script editor.
+                    Modifier.fillMaxWidth().rgSharedBounds(SharedKeys.script(script.id), shape),
+                    shape = shape,
+                    onClick = { onNavigate(ScriptEditorRoute(scriptId = script.id)) },
+                    contentPadding = PaddingValues(start = Spacing.md, end = Spacing.sm, top = Spacing.md, bottom = Spacing.md),
+                ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(Dimens.listIcon).clip(RoundedCornerShape(Radius.sm)).background(colors.pastelLavender), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Rounded.Description, null, tint = colors.accent, modifier = Modifier.size(Dimens.iconMedium + 2.dp))
+                        val tone = colors.tones.periwinkle
+                        Box(Modifier.size(Dimens.listIcon).clip(RoundedCornerShape(Radius.sm)).background(tone.container), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Rounded.Description, null, tint = tone.content, modifier = Modifier.size(Dimens.iconMedium + 2.dp))
                         }
                         Spacer(Modifier.width(Spacing.md))
                         Column(Modifier.weight(1f)) {
@@ -681,15 +812,18 @@ private fun RecentScripts(scripts: List<Script>, wpm: Int, onNavigate: (Any) -> 
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
-                            Text("$wordsText · $readText", style = MaterialTheme.typography.bodySmall, color = colors.textSecondary)
+                            Text(wordsText + RgTheme.metaSeparator + readText, style = MaterialTheme.typography.bodySmall, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
+                        Spacer(Modifier.width(Spacing.sm))
+                        // Quiet secondary action: the card itself opens the script.
                         RgIconButton(
                             Icons.Rounded.PlayArrow,
                             stringResource(R.string.home_play_prompter),
                             { onNavigate(TeleprompterRoute(script.id)) },
-                            container = colors.accent,
-                            tint = colors.onAccent,
-                            size = 40.dp,
+                            container = colors.accentSoft,
+                            tint = colors.onAccentSoft,
+                            size = Dimens.controlMedium,
+                            iconSize = Dimens.iconMedium + 2.dp,
                         )
                     }
                 }
@@ -702,6 +836,7 @@ private fun RecentScripts(scripts: List<Script>, wpm: Int, onNavigate: (Any) -> 
 private fun TemplatesTeaser(templates: List<ProjectTemplate>, onTemplate: (ProjectTemplate) -> Unit, onSeeAll: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier) {
         SectionHeader(stringResource(R.string.home_templates), action = stringResource(R.string.home_see_all), onAction = onSeeAll)
+        Spacer(Modifier.height(Spacing.xs))
         LazyRow(contentPadding = PaddingValues(horizontal = Spacing.gutter), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
             itemsIndexed(templates, key = { _, t -> t.id }) { _, template ->
                 TemplateCard(template) { onTemplate(template) }
@@ -717,16 +852,23 @@ private fun TemplateCard(template: ProjectTemplate, onClick: () -> Unit) {
     val shape = RoundedCornerShape(Radius.lg)
     Column(
         Modifier
-            .width(150.dp)
+            .width(148.dp)
             .clip(shape)
             .background(colors.surface)
             .border(1.dp, colors.outline, shape)
-            .pressable(onClick = onClick),
+            .pressable(shape = shape, onClick = onClick),
     ) {
-        Box(Modifier.fillMaxWidth().height(118.dp).background(Brush.linearGradient(listOf(accent.copy(alpha = 0.6f), accent.copy(alpha = 0.15f))))) {
+        Box(
+            Modifier
+                .padding(Spacing.xs)
+                .fillMaxWidth()
+                .height(112.dp)
+                .clip(RoundedCornerShape(Radius.md))
+                .background(Brush.linearGradient(listOf(accent.copy(alpha = if (colors.isDark) 0.45f else 0.55f), accent.copy(alpha = 0.12f)))),
+        ) {
             AspectFramePreview(template.aspectRatio, accent, template.autoCaptions, Modifier.fillMaxSize().padding(Spacing.md))
         }
-        Column(Modifier.padding(Spacing.md)) {
+        Column(Modifier.padding(start = Spacing.md, end = Spacing.md, top = Spacing.xs, bottom = Spacing.md)) {
             Text(templateName(template), style = MaterialTheme.typography.titleSmall, color = colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(formatSuggestedDuration(template.suggestedDurationSec), style = MaterialTheme.typography.bodySmall, color = colors.textSecondary)
         }
@@ -749,22 +891,22 @@ private fun RecordFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
     }
     Box(
         modifier
-            .size(84.dp)
+            .size(80.dp)
             .drawBehind {
                 val p = pulse?.value ?: return@drawBehind
-                drawCircle(colors.record.copy(alpha = (1f - p) * 0.35f), radius = size.minDimension / 2 * (0.78f + 0.22f * p))
+                drawCircle(colors.record.copy(alpha = (1f - p) * 0.3f), radius = size.minDimension / 2 * (0.78f + 0.22f * p))
             },
         contentAlignment = Alignment.Center,
     ) {
         Box(
             Modifier
-                .size(64.dp)
+                .size(62.dp)
                 .shadow(16.dp, CircleShape, ambientColor = colors.record.copy(alpha = 0.5f), spotColor = colors.record.copy(alpha = 0.5f))
                 .clip(CircleShape)
                 .background(colors.recordGradient)
-                .border(3.dp, Color.White.copy(alpha = 0.85f), CircleShape)
+                .border(3.dp, Color.White.copy(alpha = 0.9f), CircleShape)
                 .semantics { contentDescription = description }
-                .pressable(haptic = HapticEvent.RECORD_START, onClick = onClick),
+                .pressable(shape = CircleShape, haptic = HapticEvent.RECORD_START, onClick = onClick),
             contentAlignment = Alignment.Center,
         ) {
             Icon(Icons.Rounded.Videocam, null, tint = Color.White, modifier = Modifier.size(28.dp))
@@ -774,7 +916,7 @@ private fun RecordFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
 
 @Composable
 private fun ImportingOverlay(visible: Boolean) {
-    AnimatedVisibility(visible, enter = fadeIn(), exit = fadeOut()) {
+    AnimatedVisibility(visible, enter = RgEnter.fade(), exit = RgExit.fade()) {
         // Swallows touches so nothing underneath is triggered while media is prepared.
         Box(Modifier.fillMaxSize().background(RgTheme.colors.scrim).pointerInput(Unit) { detectTapGestures { } }, contentAlignment = Alignment.Center) {
             GlassSurface {

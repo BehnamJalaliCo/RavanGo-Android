@@ -1,5 +1,6 @@
 package com.ravango.feature.paywall
 
+import com.ravango.core.designsystem.theme.BalancedLines
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -85,6 +86,13 @@ import com.ravango.core.designsystem.component.RgTextButton
 import com.ravango.core.designsystem.component.ShimmerBox
 import com.ravango.core.designsystem.component.pressable
 import com.ravango.core.designsystem.theme.HapticEvent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.graphics.graphicsLayer
+import com.ravango.core.designsystem.component.softShadow
+import com.ravango.core.designsystem.motion.rgFadeThrough
+import com.ravango.core.designsystem.theme.Elevation
+import com.ravango.core.designsystem.theme.Motion
+import com.ravango.core.designsystem.theme.TabularNumbers
 import com.ravango.core.designsystem.theme.Palette
 import com.ravango.core.designsystem.theme.Radius
 import com.ravango.core.designsystem.theme.RgTheme
@@ -193,12 +201,12 @@ internal fun PaywallContent(
                         AlreadyPaidCard(state, onManage = onManage)
                     }
                 }
-                item(key = "benefits") { Benefits(state) }
                 if (!state.isPaid || state.entitlements.plan == Plan.LIFETIME) {
                     item(key = "plans") {
                         PlansSection(state, onSelect = onSelect, onRetry = onRetry)
                     }
                 }
+                item(key = "benefits") { Benefits(state) }
                 val packs = state.catalog?.packs.orEmpty()
                 if (packs.isNotEmpty()) {
                     item(key = "packs-header") { CreditsHeader(state) }
@@ -234,43 +242,43 @@ private fun TopRow(restoring: Boolean, onRestore: () -> Unit, onClose: () -> Uni
 
 @Composable
 private fun Hero(state: PaywallUiState) {
+    val colors = RgTheme.colors
     val reduceMotion = RgTheme.reduceMotion
     val shift = if (reduceMotion) {
-        0.3f
+        remember { androidx.compose.runtime.mutableFloatStateOf(0.3f) }
     } else {
-        val transition = rememberInfiniteTransition(label = "hero")
-        val v by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(9_000, easing = LinearEasing), RepeatMode.Reverse), label = "shift")
-        v
+        rememberInfiniteTransition(label = "hero").animateFloat(0f, 1f, infiniteRepeatable(tween(9_000, easing = LinearEasing), RepeatMode.Reverse), label = "shift")
     }
     val shape = RoundedCornerShape(Radius.xxl)
     Box(
         Modifier
             .padding(horizontal = Spacing.gutter)
             .fillMaxWidth()
+            .softShadow(Elevation.high, shape, Palette.Ink)
             .clip(shape)
             .drawBehind {
                 val w = size.width
                 val h = size.height
-                // Brand hues deepened so the white headline and body stay legible (the pastel version measured <2:1).
-                drawRect(
-                    Brush.linearGradient(
-                        listOf(Color(0xFF6F5CEB), Color(0xFF9E5BE0), Color(0xFFD95E97), Color(0xFFE77A6C)),
-                        start = Offset(-w * shift, 0f),
-                        end = Offset(w * (2f - shift), h),
-                    ),
-                )
-                drawRect(Brush.verticalGradient(0.4f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.16f)))
-                drawCircle(Color.White.copy(alpha = 0.16f), radius = h * 0.55f, center = Offset(w * (0.85f - 0.2f * shift), h * 0.15f))
-                drawCircle(Color.White.copy(alpha = 0.10f), radius = h * 0.4f, center = Offset(w * (0.1f + 0.15f * shift), h * 0.95f))
+                val p = shift.value
+                // Midnight ink → brand navy, lit by a drifting gold glow and a cool blue rim light.
+                drawRect(Brush.linearGradient(listOf(Palette.Ink, Color(0xFF141B3D), Palette.Blue800), start = Offset.Zero, end = Offset(w, h)))
+                val gold = Offset(w * (0.78f - 0.12f * p), h * 0.12f)
+                drawCircle(Brush.radialGradient(listOf(Palette.Gold400.copy(alpha = 0.42f), Color.Transparent), gold, h * 0.75f), h * 0.75f, gold)
+                val blue = Offset(w * (0.1f + 0.1f * p), h * 1.05f)
+                drawCircle(Brush.radialGradient(listOf(Palette.LogoSky.copy(alpha = 0.35f), Color.Transparent), blue, h * 0.7f), h * 0.7f, blue)
             }
+            .border(1.dp, Brush.verticalGradient(listOf(Palette.Gold300.copy(alpha = 0.5f), Color.White.copy(alpha = 0.04f))), shape)
             .padding(Spacing.xxl),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-            Box(
-                Modifier.size(56.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.22f)).border(1.dp, Color.White.copy(alpha = 0.4f), CircleShape),
-                contentAlignment = Alignment.Center,
-            ) { Icon(Icons.Rounded.WorkspacePremium, null, tint = Color.White, modifier = Modifier.size(30.dp)) }
-            Text(stringResource(R.string.paywall_title), style = MaterialTheme.typography.labelLarge, color = Color.White.copy(alpha = 0.85f))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(48.dp).clip(RoundedCornerShape(Radius.md)).background(colors.proGradient),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Icons.Rounded.WorkspacePremium, null, tint = colors.onPro, modifier = Modifier.size(28.dp)) }
+                Spacer(Modifier.width(Spacing.md))
+                Text(stringResource(R.string.paywall_title), style = MaterialTheme.typography.titleMedium, color = Palette.Gold300)
+            }
             Text(
                 stringResource(state.feature?.headlineRes() ?: R.string.paywall_hero_default),
                 style = MaterialTheme.typography.headlineMedium,
@@ -279,8 +287,8 @@ private fun Hero(state: PaywallUiState) {
             )
             Text(
                 stringResource(if (state.feature != null) R.string.paywall_hero_subtitle_feature else R.string.paywall_hero_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.92f),
+                style = MaterialTheme.typography.bodyMedium.merge(BalancedLines),
+                color = Color.White.copy(alpha = 0.82f),
             )
         }
     }
@@ -332,11 +340,12 @@ private fun Benefits(state: PaywallUiState) {
                 rows.forEach { (benefit, icon, text) ->
                     val isHighlighted = benefit == highlighted
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        val tone = RgTheme.colors.tones.all[benefit.ordinal % RgTheme.colors.tones.all.size]
                         Box(
                             Modifier.size(36.dp).clip(RoundedCornerShape(Radius.sm))
-                                .background(if (isHighlighted) RgTheme.colors.proGradient else RgTheme.colors.brandGradientSoft),
+                                .background(if (isHighlighted) RgTheme.colors.proGradient else Brush.linearGradient(listOf(tone.container, tone.container))),
                             contentAlignment = Alignment.Center,
-                        ) { Icon(icon, null, tint = if (isHighlighted) Color.White else RgTheme.colors.accent, modifier = Modifier.size(20.dp)) }
+                        ) { Icon(icon, null, tint = if (isHighlighted) RgTheme.colors.onPro else tone.content, modifier = Modifier.size(20.dp)) }
                         Spacer(Modifier.width(Spacing.md))
                         Text(
                             text,
@@ -345,7 +354,9 @@ private fun Benefits(state: PaywallUiState) {
                             color = RgTheme.colors.textPrimary,
                             modifier = Modifier.weight(1f),
                         )
-                        Icon(Icons.Rounded.Check, null, tint = RgTheme.colors.success, modifier = Modifier.size(18.dp))
+                        Box(Modifier.size(22.dp).clip(CircleShape).background(RgTheme.colors.tones.mint.container), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Rounded.Check, null, tint = RgTheme.colors.tones.mint.content, modifier = Modifier.size(14.dp))
+                        }
                     }
                 }
             }
@@ -355,6 +366,7 @@ private fun Benefits(state: PaywallUiState) {
 
 @Composable
 private fun PlansSection(state: PaywallUiState, onSelect: (PlanChoice) -> Unit, onRetry: () -> Unit) {
+    val reduceMotion = RgTheme.reduceMotion
     Column(Modifier.padding(horizontal = Spacing.gutter), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         Text(stringResource(R.string.paywall_plans_title), style = MaterialTheme.typography.titleLarge, color = RgTheme.colors.textPrimary)
         val availability = state.availability
@@ -366,13 +378,13 @@ private fun PlansSection(state: PaywallUiState, onSelect: (PlanChoice) -> Unit, 
                 state.catalogError != null || catalog == null || catalog.isEmpty -> 2
                 else -> 3
             },
-            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            transitionSpec = { rgFadeThrough(reduceMotion) },
             label = "plans",
         ) { mode ->
             when (mode) {
                 0 -> UnavailableCard(state, (availability as? BillingAvailability.Unavailable)?.reason, onRetry)
                 1 -> Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                    repeat(3) { ShimmerBox(Modifier.fillMaxWidth().height(84.dp), RoundedCornerShape(Radius.lg)) }
+                    repeat(3) { ShimmerBox(Modifier.fillMaxWidth().height(88.dp), RoundedCornerShape(Radius.xl)) }
                     Text(stringResource(R.string.paywall_loading), style = MaterialTheme.typography.bodySmall, color = RgTheme.colors.textSecondary)
                 }
                 2 -> ProductsMissingCard(state, onRetry)
@@ -391,8 +403,9 @@ private fun PlansSection(state: PaywallUiState, onSelect: (PlanChoice) -> Unit, 
 private fun PlanCard(offer: PlanOffer, state: PaywallUiState, savings: Int?, onSelect: (PlanChoice) -> Unit) {
     val colors = RgTheme.colors
     val selected = state.selected == offer.choice
-    val borderColor by animateColorAsState(if (selected) colors.accent else colors.outline, label = "border")
-    val shape = RoundedCornerShape(Radius.lg)
+    val borderColor by animateColorAsState(if (selected) colors.accent else colors.outline, Motion.quick(), label = "border")
+    val container by animateColorAsState(if (selected) colors.accentSoft else colors.surface, Motion.quick(), label = "container")
+    val shape = RoundedCornerShape(Radius.xl)
     val title = stringResource(
         when (offer.choice) {
             PlanChoice.YEARLY -> R.string.paywall_plan_yearly
@@ -400,11 +413,13 @@ private fun PlanCard(offer: PlanOffer, state: PaywallUiState, savings: Int?, onS
             PlanChoice.LIFETIME -> R.string.paywall_plan_lifetime
         },
     )
-    val price = when (offer.choice) {
-        PlanChoice.YEARLY -> stringResource(R.string.paywall_per_year, offer.price.formattedPrice)
-        PlanChoice.MONTHLY -> stringResource(R.string.paywall_per_month, offer.price.formattedPrice)
-        PlanChoice.LIFETIME -> stringResource(R.string.paywall_one_time, offer.price.formattedPrice)
-    }
+    val period = stringResource(
+        when (offer.choice) {
+            PlanChoice.YEARLY -> R.string.paywall_period_year
+            PlanChoice.MONTHLY -> R.string.paywall_period_month
+            PlanChoice.LIFETIME -> R.string.paywall_period_once
+        },
+    )
     val subtitle = when (offer.choice) {
         PlanChoice.YEARLY -> stringResource(R.string.paywall_per_month_equivalent, formatMicros(offer.price.priceMicros / 12, offer.price.currencyCode))
         PlanChoice.MONTHLY -> stringResource(R.string.paywall_monthly_note)
@@ -414,34 +429,42 @@ private fun PlanCard(offer: PlanOffer, state: PaywallUiState, savings: Int?, onS
             formatBytes(state.config.lifetime.cloudQuotaBytes),
         )
     }
-    Row(
+    Column(
         Modifier
             .fillMaxWidth()
+            .then(if (selected) Modifier.softShadow(Elevation.mid, shape, colors.accentGlow) else Modifier)
             .clip(shape)
-            .background(if (selected) colors.accentSoft.copy(alpha = 0.55f) else colors.surface)
+            .background(container)
             .border(if (selected) 2.dp else 1.dp, borderColor, shape)
-            .pressable(haptic = HapticEvent.SNAP) { onSelect(offer.choice) }
+            .pressable(shape = shape, haptic = HapticEvent.SNAP) { onSelect(offer.choice) }
             .padding(Spacing.lg),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
-        Box(
-            Modifier.size(22.dp).clip(CircleShape).border(2.dp, if (selected) colors.accent else colors.outlineStrong, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            androidx.compose.animation.AnimatedVisibility(selected) { Box(Modifier.size(12.dp).clip(CircleShape).background(colors.accent)) }
-        }
-        Spacer(Modifier.width(Spacing.md))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, color = colors.textPrimary)
-                if (offer.choice == PlanChoice.YEARLY) RgTag(stringResource(R.string.paywall_best_value), color = colors.pastelMint, contentColor = colors.success)
+        if (savings != null || offer.trialDays != null || offer.choice == PlanChoice.YEARLY) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                if (offer.choice == PlanChoice.YEARLY) RgTag(stringResource(R.string.paywall_best_value), color = colors.tones.mint.container, contentColor = colors.tones.mint.content)
+                if (savings != null) RgTag(stringResource(R.string.paywall_save_badge, formatNumber(savings)), color = colors.tones.blush.container, contentColor = colors.tones.blush.content)
+                offer.trialDays?.let { RgTag(stringResource(R.string.paywall_trial_badge, formatNumber(it)), color = colors.tones.sky.container, contentColor = colors.tones.sky.content) }
             }
-            Text(price, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = colors.textPrimary)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.textSecondary)
         }
-        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-            if (savings != null) RgTag(stringResource(R.string.paywall_save_badge, formatNumber(savings)), color = colors.pastelRose, contentColor = colors.danger)
-            offer.trialDays?.let { RgTag(stringResource(R.string.paywall_trial_badge, formatNumber(it)), color = colors.accentSoft, contentColor = colors.accent) }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            val radioScale by animateFloatAsState(if (selected) 1f else 0f, Motion.spatialBouncy(), label = "radio")
+            Box(
+                Modifier.size(24.dp).clip(CircleShape).border(2.dp, if (selected) colors.accent else colors.outlineStrong, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(Modifier.size(12.dp).graphicsLayer { scaleX = radioScale; scaleY = radioScale }.clip(CircleShape).background(colors.accent))
+            }
+            Spacer(Modifier.width(Spacing.md))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, color = colors.textPrimary)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = colors.textSecondary)
+            }
+            Spacer(Modifier.width(Spacing.md))
+            Column(horizontalAlignment = Alignment.End) {
+                Text(offer.price.formattedPrice, style = MaterialTheme.typography.titleLarge.merge(TabularNumbers), color = colors.textPrimary, maxLines = 1)
+                Text(period, style = MaterialTheme.typography.labelMedium, color = colors.textSecondary, maxLines = 1)
+            }
         }
     }
 }
@@ -494,8 +517,8 @@ private fun CreditsHeader(state: PaywallUiState) {
 private fun PackRow(pack: PackOffer, enabled: Boolean, onBuy: () -> Unit) {
     RgCard(Modifier.padding(horizontal = Spacing.gutter).fillMaxWidth(), contentPadding = PaddingValues(Spacing.lg)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(40.dp).clip(RoundedCornerShape(Radius.sm)).background(RgTheme.colors.brandGradientSoft), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.AutoAwesome, null, tint = RgTheme.colors.accent)
+            Box(Modifier.size(40.dp).clip(RoundedCornerShape(Radius.sm)).background(RgTheme.colors.tones.lilac.container), contentAlignment = Alignment.Center) {
+                Icon(Icons.Rounded.AutoAwesome, null, tint = RgTheme.colors.tones.lilac.content)
             }
             Spacer(Modifier.width(Spacing.md))
             Column(Modifier.weight(1f)) {
@@ -548,8 +571,8 @@ private fun BottomBar(state: PaywallUiState, onPurchase: () -> Unit, onContinueF
                     loading = state.purchasing,
                     size = RgButtonSize.HERO,
                     brush = RgTheme.colors.proGradient,
-                    // Dark ink on the gold → rose → lavender gradient: ≥7:1 everywhere (white measured ~1.6:1 on gold).
-                    contentColor = Palette.Ink950,
+                    // Dark ink on the gold Pro gradient: ≥8:1 everywhere (white measures ~1.6:1 on gold).
+                    contentColor = RgTheme.colors.onPro,
                 )
                 Spacer(Modifier.height(Spacing.sm))
                 Text(terms, style = MaterialTheme.typography.bodySmall, color = RgTheme.colors.textSecondary, textAlign = TextAlign.Center)

@@ -42,6 +42,20 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDirection
 import com.ravango.core.designsystem.component.ShimmerBox
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.graphics.graphicsLayer
+import com.ravango.core.designsystem.motion.RgEnter
+import com.ravango.core.designsystem.motion.RgExit
+import com.ravango.core.designsystem.motion.SharedKeys
+import com.ravango.core.designsystem.motion.rememberEntranceActive
+import com.ravango.core.designsystem.motion.rgSharedBounds
+import com.ravango.core.designsystem.motion.staggeredEntrance
+import com.ravango.core.designsystem.theme.Motion
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -300,6 +314,7 @@ internal fun ScriptsContent(
     snackbarHostState: SnackbarHostState? = null,
 ) {
     val untitled = stringResource(R.string.scripts_untitled)
+    val entrance = rememberEntranceActive(ready = !state.loading)
     val libraryEmpty = !state.loading && state.items.isEmpty() && state.query.isBlank() && state.filter == LibraryFilter.All
     RgScreen(
         title = stringResource(if (state.pickMode) R.string.scripts_pick_title else R.string.scripts_title),
@@ -312,7 +327,7 @@ internal fun ScriptsContent(
         snackbarHostState = snackbarHostState,
         actions = { if (!libraryEmpty) SortMenu(state.sort, onSort) },
         floatingActionButton = {
-            if (!state.pickMode && !libraryEmpty) {
+            AnimatedVisibility(!state.pickMode && !libraryEmpty, enter = RgEnter.rise(), exit = RgExit.sink()) {
                 RgPrimaryButton(
                     text = stringResource(R.string.scripts_new),
                     onClick = onCreate,
@@ -369,7 +384,7 @@ internal fun ScriptsContent(
                         )
                     }
                 }
-                else -> items(state.items, key = { it.script.id }) { item ->
+                else -> itemsIndexed(state.items, key = { _, it -> it.script.id }) { index, item ->
                     val folder = state.folders.firstOrNull { it.id == item.script.folderId }
                     SwipeableScriptCard(
                         item = item,
@@ -381,7 +396,7 @@ internal fun ScriptsContent(
                         onLongClick = { onLongPress(item.script) },
                         onFavorite = { onFavorite(item.script) },
                         onDelete = { onDelete(item.script) },
-                        modifier = Modifier.animateItem(),
+                        modifier = Modifier.animateItem().staggeredEntrance(index, entrance),
                     )
                 }
             }
@@ -602,13 +617,24 @@ private fun ScriptCard(
     val script = item.script
     val matchBg = colors.warning.copy(alpha = if (colors.isDark) 0.32f else 0.28f)
     val uiDirection = LocalLayoutDirection.current
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val reduceMotion = RgTheme.reduceMotion
+    val scale by animateFloatAsState(
+        if (pressed && !reduceMotion) Motion.PressScaleLarge else 1f,
+        if (pressed) spring(dampingRatio = 1f, stiffness = 1400f) else spring(dampingRatio = 0.5f, stiffness = 600f),
+        label = "press",
+    )
     Column(
         Modifier
             .fillMaxWidth()
+            .graphicsLayer { scaleX = scale; scaleY = scale }
+            // The card morphs into the script editor (container transform).
+            .rgSharedBounds(SharedKeys.script(script.id), shape)
             .clip(shape)
             .background(colors.surface)
             .border(1.dp, colors.outline, shape)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .combinedClickable(interactionSource = interaction, indication = null, onClick = onClick, onLongClick = onLongClick)
             .padding(start = Spacing.lg, end = Spacing.xs, top = Spacing.xs, bottom = Spacing.md)
             .animateContentSize(),
     ) {
@@ -855,11 +881,11 @@ internal fun CreateContent(onNew: () -> Unit, onImport: () -> Unit, onPaste: () 
         RgListItem(stringResource(R.string.scripts_create_blank), subtitle = stringResource(R.string.scripts_create_blank_hint), icon = Icons.Rounded.Edit, onClick = onNew)
         RgListItem(
             stringResource(R.string.scripts_create_import), subtitle = stringResource(R.string.scripts_create_import_hint), icon = Icons.Rounded.FileOpen,
-            iconTint = Palette.Mint500, iconBackground = colors.pastelMint, onClick = onImport,
+            iconTint = colors.tones.mint.content, iconBackground = colors.tones.mint.container, onClick = onImport,
         )
         RgListItem(
             stringResource(R.string.scripts_create_paste), subtitle = stringResource(R.string.scripts_create_paste_hint), icon = Icons.Rounded.ContentPaste,
-            iconTint = Palette.Peach400, iconBackground = colors.pastelPeach, onClick = onPaste,
+            iconTint = colors.tones.peach.content, iconBackground = colors.tones.peach.container, onClick = onPaste,
         )
     }
 }
