@@ -46,7 +46,8 @@ tags:
 - takeScreenshot: scripts_library_with_script
 
 # Search
-- tapOn: '.*Search titles and text.*|.*جست.وجو در عنوان و متن.*'
+- tapOn:
+    id: scripts_search
 - inputText: Maestro
 - extendedWaitUntil:
     visible: '.*Maestro script.*'

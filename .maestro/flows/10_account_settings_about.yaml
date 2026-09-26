@@ -114,7 +114,10 @@ tags:
     commands:
       - takeScreenshot: about_tester_dialog
       # A wrong code must be rejected (the real code is never used in tests).
-      - tapOn: 'Owner code|کد مالک'
+      # The code field sits between the message and the buttons (a dialog window: no test tags there).
+      - tapOn:
+          below: '.*Enter the owner code.*|.*کد مالک را وارد کنید.*'
+          above: 'Unlock|باز کردن'
       - inputText: not-the-owner-code
       - tapOn: 'Unlock|باز کردن'
       - waitForAnimationToEnd:

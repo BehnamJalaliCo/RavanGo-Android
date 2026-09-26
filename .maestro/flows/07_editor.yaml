@@ -77,9 +77,11 @@ tags:
     text: 'Text|متن'
     index: 0
 - extendedWaitUntil:
-    visible: '.*Type your text….*|.*متن خود را بنویسید….*'
+    visible:
+      id: editor_text_input
     timeout: 10000
-- tapOn: '.*Type your text….*|.*متن خود را بنویسید….*'
+- tapOn:
+    id: editor_text_input
 - inputText: Hello RavanGo
 - tapOn: 'Add text|افزودن متن'
 - hideKeyboard

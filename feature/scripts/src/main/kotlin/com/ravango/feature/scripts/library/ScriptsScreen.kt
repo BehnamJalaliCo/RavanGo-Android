@@ -92,6 +92,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -416,7 +417,7 @@ private fun SearchBar(query: String, onQueryChange: (String) -> Unit, modifier: 
                 textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.textPrimary, textDirection = TextDirection.Content),
                 cursorBrush = SolidColor(colors.accent),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().testTag("scripts_search"),
             )
         }
         if (query.isNotEmpty()) {

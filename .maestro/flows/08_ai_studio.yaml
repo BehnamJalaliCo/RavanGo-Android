@@ -25,8 +25,7 @@ tags:
     timeout: 3000
 - takeScreenshot: ai_tool_script
 - tapOn:
-    text: '.*e\.g\. 3 habits that doubled my productivity.*|.*مثلاً: سه عادتی که بهره.وری.ام را دو برابر کرد.*'
-    optional: true
+    id: ai_input
 - inputText: Three habits for better videos
 - hideKeyboard
 - scrollUntilVisible:
