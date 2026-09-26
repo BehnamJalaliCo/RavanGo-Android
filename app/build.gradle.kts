@@ -49,6 +49,17 @@ android {
         buildConfig = true
     }
 
+    // Per-ABI APKs keep downloads small (native ML Kit libraries are ~9 MB per ABI); the universal APK installs
+    // everywhere. Google Play builds use the App Bundle, which splits automatically.
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
+            isUniversalApk = true
+        }
+    }
+
     signingConfigs {
         // Shared debug key (public, non-secret) so debug/CI builds install over each other across machines.
         getByName("debug") {

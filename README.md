@@ -41,8 +41,12 @@
 
 | فایل | کاربرد |
 |---|---|
-| `RavanGo-release.apk` | نسخه‌ی بهینه‌شده (R8) برای نصب و استفاده |
-| `RavanGo-debug.apk` | نسخه‌ی اشکال‌زدایی (قابل نصب کنار نسخه‌ی release با شناسه‌ی `com.ravango.app.debug`) |
+| `RavanGo-release-arm64-v8a.apk` | **اکثر گوشی‌ها** (۶۴ بیتی) — نسخه‌ی بهینه‌شده (R8) |
+| `RavanGo-release-armeabi-v7a.apk` | گوشی‌های قدیمی ۳۲ بیتی |
+| `RavanGo-release-universal.apk` | اگر مطمئن نیستید؛ روی همه‌ی دستگاه‌ها نصب می‌شود (حجم بیشتر) |
+| `RavanGo-release-x86_64.apk` | شبیه‌ساز / دستگاه‌های x86 |
+| `RavanGo-release.aab` | App Bundle برای انتشار در Google Play |
+| `RavanGo-debug-universal.apk` | نسخه‌ی اشکال‌زدایی (قابل نصب کنار نسخه‌ی release با شناسه‌ی `com.ravango.app.debug`) |
 
 برای نسخه‌های رسمی، یک tag به شکل `v1.0.0` push کنید تا Release با همان نام ساخته شود.
 
