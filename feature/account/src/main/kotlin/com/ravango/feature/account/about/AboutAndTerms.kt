@@ -1,6 +1,26 @@
 package com.ravango.feature.account.about
 
 import android.content.Intent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ravango.core.designsystem.component.RgTextField
+import com.ravango.core.designsystem.component.RgTextButton
+import com.ravango.core.designsystem.theme.HapticEvent
+import com.ravango.core.designsystem.theme.rememberHaptics
+import kotlinx.coroutines.launch
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +58,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.ravango.core.common.AppConfig
 import com.ravango.core.common.format.localizeDigits
 import com.ravango.core.designsystem.component.GlassSurface
@@ -55,7 +76,20 @@ import javax.inject.Inject
 
 /** Exposes build configuration (version, links, support email) to the static screens. */
 @HiltViewModel
-class AppInfoViewModel @Inject constructor(val config: AppConfig) : ViewModel()
+class AppInfoViewModel @Inject constructor(
+    val config: AppConfig,
+    private val tester: com.ravango.platform.billing.TesterAccess,
+) : ViewModel() {
+    val testerActive = tester.active
+    val testerAvailable: Boolean get() = tester.available
+
+    private val _unlockResult = kotlinx.coroutines.flow.MutableStateFlow<Boolean?>(null)
+    val unlockResult: kotlinx.coroutines.flow.StateFlow<Boolean?> = _unlockResult
+
+    fun unlock(code: String) = viewModelScope.launch { _unlockResult.value = tester.unlock(code) }
+    fun disableTester() = viewModelScope.launch { tester.disable() }
+    fun clearResult() { _unlockResult.value = null }
+}
 
 private val termsSections = listOf(
     R.string.account_terms_accept_title to R.string.account_terms_accept_body,
@@ -98,6 +132,25 @@ fun AboutScreen(
 ) {
     val context = LocalContext.current
     val config = viewModel.config
+    val haptics = rememberHaptics()
+    var versionTaps by remember { mutableIntStateOf(0) }
+    var showUnlock by remember { mutableStateOf(false) }
+    val testerActive by viewModel.testerActive.collectAsStateWithLifecycle()
+    val unlockResult by viewModel.unlockResult.collectAsStateWithLifecycle()
+    if (showUnlock) {
+        TesterUnlockDialog(
+            failed = unlockResult == false,
+            onSubmit = viewModel::unlock,
+            onDismiss = { showUnlock = false; viewModel.clearResult() },
+        )
+    }
+    LaunchedEffect(unlockResult) {
+        if (unlockResult == true) {
+            haptics.perform(HapticEvent.CONFIRM)
+            showUnlock = false
+            viewModel.clearResult()
+        }
+    }
     RgScreen(title = stringResource(R.string.account_about), onBack = onBack) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = Spacing.xxl),
@@ -117,6 +170,18 @@ fun AboutScreen(
                         stringResource(R.string.account_version, "${config.versionName} (${config.versionCode})".localizeDigits()),
                         style = MaterialTheme.typography.bodyMedium,
                         color = RgTheme.colors.textSecondary,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(Radius.sm))
+                            .clickable(interactionSource = null, indication = null) {
+                                // Hidden entry for owners/testers: tap the version 7 times.
+                                versionTaps++
+                                if (versionTaps >= 7 && viewModel.testerAvailable) {
+                                    versionTaps = 0
+                                    haptics.perform(HapticEvent.CONFIRM)
+                                    showUnlock = true
+                                }
+                            }
+                            .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
                     )
                     Spacer(Modifier.height(Spacing.sm))
                     Text(
@@ -124,6 +189,18 @@ fun AboutScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = RgTheme.colors.textSecondary,
                         textAlign = TextAlign.Center,
+                    )
+                }
+            }
+            AnimatedVisibility(testerActive) {
+                RgGroup {
+                    RgListItem(
+                        stringResource(R.string.account_tester_active),
+                        subtitle = stringResource(R.string.account_tester_active_sub),
+                        icon = Icons.Rounded.Verified,
+                        iconTint = Color.White,
+                        iconBackground = RgTheme.colors.accent,
+                        trailing = { RgTextButton(stringResource(R.string.account_tester_disable), viewModel::disableTester, color = RgTheme.colors.danger) },
                     )
                 }
             }
@@ -167,4 +244,32 @@ fun AboutScreen(
             )
         }
     }
+}
+
+@Composable
+private fun TesterUnlockDialog(failed: Boolean, onSubmit: (String) -> Unit, onDismiss: () -> Unit) {
+    var code by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = RgTheme.colors.backgroundElevated,
+        shape = RoundedCornerShape(Radius.xl),
+        title = { Text(stringResource(R.string.account_tester_title), style = MaterialTheme.typography.titleLarge) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Text(stringResource(R.string.account_tester_message), style = MaterialTheme.typography.bodyMedium, color = RgTheme.colors.textSecondary)
+                RgTextField(
+                    value = code,
+                    onValueChange = { code = it },
+                    placeholder = stringResource(R.string.account_tester_code_hint),
+                    isError = failed,
+                    supportingText = if (failed) stringResource(R.string.account_tester_wrong_code) else null,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { if (code.isNotBlank()) onSubmit(code) }),
+                )
+            }
+        },
+        confirmButton = { RgTextButton(stringResource(R.string.account_tester_unlock), { onSubmit(code) }, enabled = code.isNotBlank()) },
+        dismissButton = { RgTextButton(stringResource(com.ravango.core.ui.R.string.action_cancel), onDismiss, color = RgTheme.colors.textSecondary) },
+    )
 }

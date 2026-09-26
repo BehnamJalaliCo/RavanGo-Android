@@ -24,5 +24,6 @@ object AppModule {
         privacyPolicyUrl = BuildConfig.PRIVACY_URL,
         termsUrl = BuildConfig.TERMS_URL,
         supportEmail = BuildConfig.SUPPORT_EMAIL,
+        ownerCodeSha256 = BuildConfig.OWNER_CODE_SHA256,
     )
 }

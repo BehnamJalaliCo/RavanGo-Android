@@ -272,4 +272,12 @@
     <string name="account_about_privacy_title">ساخته‌شده برای سازندگان، با احترام به حریم خصوصی</string>
     <string name="account_about_privacy_body">بدون تبلیغ و بدون ردیابی. ضبط‌هایت روی دستگاه خودت می‌مانند، مگر این‌که خودت پشتیبان‌گیری را انتخاب کنی.</string>
     <string name="account_made_with_love">با دقت و علاقه برای سازندگان فارسی‌زبان و انگلیسی‌زبان ساخته شده است.</string>
+    <string name="account_tester_title">دسترسی آزمایشی</string>
+    <string name="account_tester_message">کد مالک را وارد کنید تا همه‌ی قابلیت‌های نسخه‌ی حرفه‌ای برای تست روی همین گوشی باز شود. هیچ خریدی انجام نمی‌شود.</string>
+    <string name="account_tester_code_hint">کد مالک</string>
+    <string name="account_tester_wrong_code">این کد معتبر نیست.</string>
+    <string name="account_tester_unlock">باز کردن</string>
+    <string name="account_tester_active">حالت تست حرفه‌ای فعال است</string>
+    <string name="account_tester_active_sub">همه‌ی قابلیت‌های حرفه‌ای روی این گوشی برای تست باز هستند.</string>
+    <string name="account_tester_disable">خاموش کردن</string>
 </resources>

@@ -272,4 +272,12 @@
     <string name="account_about_privacy_title">Made for creators, with privacy</string>
     <string name="account_about_privacy_body">No ads and no tracking. Your recordings stay on your device unless you choose to back them up.</string>
     <string name="account_made_with_love">Made with care for Persian and English creators.</string>
+    <string name="account_tester_title">Tester access</string>
+    <string name="account_tester_message">Enter the owner code to unlock every Pro feature on this device for testing. No purchase is made.</string>
+    <string name="account_tester_code_hint">Owner code</string>
+    <string name="account_tester_wrong_code">That code is not valid.</string>
+    <string name="account_tester_unlock">Unlock</string>
+    <string name="account_tester_active">Pro test mode is on</string>
+    <string name="account_tester_active_sub">All Pro features are unlocked on this device for testing.</string>
+    <string name="account_tester_disable">Turn off</string>
 </resources>

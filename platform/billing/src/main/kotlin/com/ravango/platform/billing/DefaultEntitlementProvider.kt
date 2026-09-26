@@ -35,6 +35,7 @@ class DefaultEntitlementProvider @Inject constructor(
     private val billing: BillingRepository,
     private val usageDao: AiUsageDao,
     private val clock: Clock,
+    private val tester: TesterAccess,
     @ApplicationScope scope: CoroutineScope,
 ) : EntitlementProvider {
 
@@ -53,7 +54,7 @@ class DefaultEntitlementProvider @Inject constructor(
 
     private val monthlyUsedLocal: Flow<Int> = periodStarts.flatMapLatest { usageDao.observeUsedSince(it) }
 
-    override val entitlements: StateFlow<Entitlements> = combine(
+    private val purchased: Flow<Entitlements> = combine(
         billing.config,
         billing.ownership,
         monthlyUsedLocal,
@@ -61,6 +62,10 @@ class DefaultEntitlementProvider @Inject constructor(
         billing.serverEntitlement,
     ) { config, ownership, localUsed, packs, server ->
         EntitlementCalculator.compute(config, ownership, monthlyUsed(localUsed, server), packs, clock.now())
+    }
+
+    override val entitlements: StateFlow<Entitlements> = combine(purchased, tester.active) { real, testMode ->
+        if (testMode) EntitlementCalculator.tester() else real
     }.stateIn(
         scope,
         SharingStarted.Eagerly,
@@ -74,6 +79,7 @@ class DefaultEntitlementProvider @Inject constructor(
     }
 
     override suspend fun tryConsumeAiCredits(operation: AiOperation, units: Int): Boolean = mutex.withLock {
+        if (tester.active.value) return@withLock true // Pro test mode never spends credits.
         val credits = operation.credits * units.coerceAtLeast(1)
         val now = clock.now()
         val limits = billing.config.value.limitsFor(entitlements.value.plan)
@@ -87,6 +93,7 @@ class DefaultEntitlementProvider @Inject constructor(
     }
 
     override suspend fun refundAiCredits(operation: AiOperation, units: Int): Unit = mutex.withLock {
+        if (tester.active.value) return@withLock
         val credits = operation.credits * units.coerceAtLeast(1)
         val index = recent.indexOfLast { (op, r) -> op == operation && r.total == credits }
         val now = clock.now()

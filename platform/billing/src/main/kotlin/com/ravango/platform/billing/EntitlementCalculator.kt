@@ -60,6 +60,25 @@ object EntitlementCalculator {
         )
     }
 
+    /** Everything unlocked, effectively unlimited credits and quota — used by Pro test mode ([TesterAccess]). */
+    fun tester(): Entitlements = Entitlements(
+        plan = com.ravango.core.model.Plan.PRO,
+        features = com.ravango.core.model.ProFeature.entries.toSet(),
+        aiCreditsPerMonth = TESTER_CREDITS,
+        aiCreditsRemaining = TESTER_CREDITS,
+        cloudQuotaBytes = 1L shl 40,
+        maxRecordShortSide = 4320,
+        maxRecordFps = 240,
+        maxExportShortSide = 2160,
+        maxExportFps = 60,
+        maxSavedPresets = Int.MAX_VALUE,
+        watermarkOnExport = false,
+        isTrial = false,
+        expiresAt = null,
+    )
+
+    const val TESTER_CREDITS = 99_999
+
     /** Monthly allowance is spent first (it resets), purchased packs last (they never expire). Null = not enough. */
     fun reserve(credits: Int, allowance: Int, monthlyUsed: Int, packBalance: Int): CreditReservation? {
         if (credits <= 0) return CreditReservation(0, 0)

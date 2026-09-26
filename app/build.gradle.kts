@@ -39,6 +39,7 @@ android {
         buildConfigField("String", "PRIVACY_URL", quoted(secret("privacyPolicyUrl")))
         buildConfigField("String", "TERMS_URL", quoted(secret("termsUrl")))
         buildConfigField("String", "SUPPORT_EMAIL", quoted(secret("supportEmail")))
+        buildConfigField("String", "OWNER_CODE_SHA256", quoted(secret("ownerCodeSha256").lowercase()))
         buildConfigField("String", "DISTRIBUTION", quoted(secret("distribution").ifBlank { "play" }))
     }
 

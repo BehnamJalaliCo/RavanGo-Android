@@ -20,6 +20,11 @@ data class AppConfig(
     val privacyPolicyUrl: String,
     val termsUrl: String,
     val supportEmail: String,
+    /**
+     * SHA-256 (hex) of the owner/tester code that unlocks "Pro test mode" on a device (About → tap version 7×).
+     * Empty disables the feature. Only the hash ships in the app; the code itself is never stored in the repo.
+     */
+    val ownerCodeSha256: String = "",
 ) {
     val isCloudConfigured: Boolean get() = supabaseUrl.isNotBlank() && supabaseAnonKey.isNotBlank()
     val isAiGatewayConfigured: Boolean get() = aiGatewayUrl.isNotBlank()
