@@ -252,7 +252,7 @@ sealed interface OverlayItem {
 
 @Serializable
 data class TextStyleSpec(
-    val font: PrompterFont = PrompterFont.VAZIRMATN,
+    val font: PrompterFont = PrompterFont.RAVAGH,
     val sizeSp: Float = 32f,
     val weight: Int = 700,
     val color: ArgbColor = 0xFFFFFFFF,
@@ -314,7 +314,7 @@ enum class SubtitleAnimation { NONE, FADE, POP, KARAOKE, WORD_BY_WORD, SLIDE_UP 
 
 @Serializable
 data class SubtitleStyle(
-    val font: PrompterFont = PrompterFont.VAZIRMATN,
+    val font: PrompterFont = PrompterFont.RAVAGH,
     val sizeSp: Float = 26f,
     val weight: Int = 700,
     val color: ArgbColor = 0xFFFFFFFF,

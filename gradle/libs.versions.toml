@@ -47,6 +47,9 @@ billing = "8.0.0"
 # Images
 coil = "2.7.0"
 
+# Licenses
+aboutlibraries = "13.1.0"
+
 # Testing
 junit = "4.13.2"
 truth = "1.4.4"
@@ -139,6 +142,10 @@ billing-ktx = { module = "com.android.billingclient:billing-ktx", version.ref = 
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 coil-video = { module = "io.coil-kt:coil-video", version.ref = "coil" }
 
+# Licenses
+aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutlibraries" }
+aboutlibraries-compose-m3 = { module = "com.mikepenz:aboutlibraries-compose-m3", version.ref = "aboutlibraries" }
+
 # Test
 junit = { module = "junit:junit", version.ref = "junit" }
 truth = { module = "com.google.truth:truth", version.ref = "truth" }
@@ -165,6 +172,7 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 room = { id = "androidx.room", version.ref = "room" }
+aboutlibraries = { id = "com.mikepenz.aboutlibraries.plugin.android", version.ref = "aboutlibraries" }
 
 # Convention plugins (build-logic)
 ravango-android-application = { id = "ravango.android.application" }

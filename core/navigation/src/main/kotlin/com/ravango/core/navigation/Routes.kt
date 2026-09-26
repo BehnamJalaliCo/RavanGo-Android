@@ -46,4 +46,6 @@ import kotlinx.serialization.Serializable
 @Serializable data object PrivacyRoute
 @Serializable data object TermsRoute
 @Serializable data object AboutRoute
+/** Open-source and font licenses (hosted by the app module, which owns the generated license data). */
+@Serializable data object LicensesRoute
 @Serializable data class PaywallRoute(val source: String = "", val feature: String? = null)

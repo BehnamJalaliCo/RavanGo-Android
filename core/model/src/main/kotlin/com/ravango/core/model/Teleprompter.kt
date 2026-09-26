@@ -2,8 +2,9 @@ package com.ravango.core.model
 
 import kotlinx.serialization.Serializable
 
+/** [RAVAGH] is the RavanGo brand font (licensed); the others are bundled open fonts or system fonts. */
 @Serializable
-enum class PrompterFont { VAZIRMATN, SAHEL, SAMIM, SYSTEM_SANS, SYSTEM_SERIF, SYSTEM_MONO }
+enum class PrompterFont { RAVAGH, VAZIRMATN, SAHEL, SAMIM, SYSTEM_SANS, SYSTEM_SERIF, SYSTEM_MONO }
 
 @Serializable
 enum class PrompterTextAlign { START, CENTER, END, JUSTIFY }
@@ -20,7 +21,7 @@ enum class PrompterPlacement { TOP, CENTER, BOTTOM }
 data class TeleprompterSettings(
     val wordsPerMinute: Int = 140,
     val fontSizeSp: Float = 34f,
-    val font: PrompterFont = PrompterFont.VAZIRMATN,
+    val font: PrompterFont = PrompterFont.RAVAGH,
     val fontWeight: Int = 500,
     val textColor: ArgbColor = 0xFFFFFFFF,
     val highlightColor: ArgbColor = 0xFFFFD166,
