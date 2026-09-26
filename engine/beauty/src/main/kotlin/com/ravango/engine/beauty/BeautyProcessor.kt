@@ -28,6 +28,9 @@ import com.ravango.engine.beauty.gl.BeautyShaders
 import com.ravango.engine.beauty.gl.DepthBufferGl
 import com.ravango.engine.beauty.gl.FaceMeshGl
 import com.ravango.engine.beauty.gl.MakeupTexturesGl
+import com.ravango.engine.beauty.makeup.MakeupShaders
+import com.ravango.engine.beauty.makeup.MakeupStyle
+import com.ravango.engine.beauty.makeup.MakeupStyleGl
 import com.ravango.engine.beauty.mesh.FaceAssets
 import com.ravango.engine.beauty.mesh.FaceLandmarkIndex
 import com.ravango.engine.beauty.mesh.FaceTopology
@@ -74,6 +77,9 @@ internal class BeautyControls(tier: TierHint) {
     @Volatile var filterSwipe: FilterSwipe? = null
     @Volatile var backgroundBitmap: Bitmap? = null
     @Volatile var onEffectsStatus: (EffectsStatus) -> Unit = {}
+
+    // ADDED — makeup look style (liner/lash/lip/brow variants, see MakeupStyle).
+    @Volatile var makeupStyle: MakeupStyle = MakeupStyle.Default
 }
 
 /**
@@ -166,6 +172,7 @@ internal class BeautyProcessor(
     private var topology: FaceTopology? = null
     private var meshGl: FaceMeshGl? = null
     private val textures = MakeupTexturesGl()
+    private val lookStyle = MakeupStyleGl() // ADDED — makeup look styles (look atlas + style uniforms)
     private var poses: Array<PoseFit> = emptyArray()
     private var reshapeField: ReshapeField? = null
     private var lensWarpField: LensWarpField? = null
@@ -260,6 +267,7 @@ internal class BeautyProcessor(
         meshGl?.release()
         meshGl = null
         textures.release()
+        lookStyle.release()
         luts.release()
         maskTexture.release()
         atlasTexture.release()
@@ -841,9 +849,11 @@ internal class BeautyProcessor(
         p.bindTexture("uMakeupA", 3, textures.ids[0])
         p.bindTexture("uMakeupB", 4, textures.ids[1])
         p.bindTexture("uMakeupC", 5, textures.ids[2])
+        lookStyle.bind(p, controls.makeupStyle, FaceAssets.loaded?.model, unitD = 6, unitE = 7) // ADDED — look styles
         for (s in 0 until DetectionFrame.MAX_FACES) {
             if (!faceVisible[s]) continue
             val k = tracks.faces[s].presence
+            lookStyle.setFace(p, k) // ADDED — look styles
             setLayer(p, "uFoundation", MakeupFeature.FOUNDATION, k)
             setLayer(p, "uContour", MakeupFeature.CONTOUR, k)
             setLayer(p, "uBlush", MakeupFeature.BLUSH, k)
@@ -1330,7 +1340,7 @@ internal class BeautyProcessor(
     private fun compositeProgram() = compositeProgram ?: GlProgram(BeautyShaders.VERTEX, BeautyShaders.COMPOSITE).also { compositeProgram = it }
     private fun maskRegionsProgram() = maskRegionsProgram ?: GlProgram(BeautyShaders.MESH_VERTEX, BeautyShaders.MASK_REGIONS).also { maskRegionsProgram = it }
     private fun maskSolidProgram() = maskSolidProgram ?: GlProgram(BeautyShaders.MESH_VERTEX, BeautyShaders.MASK_SOLID).also { maskSolidProgram = it }
-    private fun makeupProgram() = makeupProgram ?: GlProgram(BeautyShaders.MESH_VERTEX, BeautyShaders.MAKEUP).also { makeupProgram = it }
+    private fun makeupProgram() = makeupProgram ?: GlProgram(BeautyShaders.MESH_VERTEX, MakeupShaders.MAKEUP).also { makeupProgram = it }
     private fun warpProgram() = warpProgram ?: GlProgram(BeautyShaders.WARP_VERTEX, BeautyShaders.WARP_FRAGMENT).also { warpProgram = it }
     private fun finalProgram() = finalProgram ?: GlProgram(BeautyShaders.VERTEX, EffectsShaders.FINAL).also { finalProgram = it }
     private fun maskRefineProgram() = maskRefineProgram ?: GlProgram(BeautyShaders.VERTEX, EffectsShaders.MASK_REFINE).also { maskRefineProgram = it }

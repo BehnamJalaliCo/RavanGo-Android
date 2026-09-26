@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- دسته‌های سینی لنز (زیر کاروسل) -->
+    <string name="camera_tray_recents">اخیر</string>
+    <string name="camera_tray_favorites">علاقه‌مندی‌ها</string>
+    <string name="camera_tray_for_you">برای تو</string>
+    <string name="camera_tray_makeup">آرایش</string>
+    <string name="camera_tray_beauty">زیبایی</string>
+    <string name="camera_tray_fun">سرگرمی</string>
+    <string name="camera_tray_filters">فیلترها</string>
+    <string name="camera_tray_categories">دسته‌های لنز</string>
+
+    <string name="camera_tray_none">هیچ</string>
+    <string name="camera_tray_clear">حذف</string>
+    <string name="camera_tray_look_strength">شدت استایل</string>
+    <string name="camera_tray_empty_recents">استایل‌ها و لنزهایی که استفاده می‌کنی این‌جا می‌آیند</string>
+    <string name="camera_tray_empty_favorites">روی هر استایل یا لنز انگشت نگه دار تا این‌جا اضافه شود</string>
+    <string name="camera_tray_hint_look">برای تنظیم شدت بکش · برای علاقه‌مندی انگشت نگه دار</string>
+    <string name="camera_tray_hint_look_pro">استایل حرفه‌ای · برای باز کردن، حلقهٔ ضبط را بزن</string>
+    <string name="camera_tray_hint_combine">با لنزت ترکیب می‌شود؛ از «سرگرمی» یکی انتخاب کن</string>
+    <string name="camera_tray_favorite_add">افزودن به علاقه‌مندی‌ها</string>
+    <string name="camera_tray_favorite_remove">حذف از علاقه‌مندی‌ها</string>
+    <string name="camera_tray_look_active">استایل: %1$s</string>
+</resources>

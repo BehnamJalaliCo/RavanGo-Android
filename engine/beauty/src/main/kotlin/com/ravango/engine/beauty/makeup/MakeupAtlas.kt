@@ -84,7 +84,7 @@ object MakeupAtlas {
             return out
         }
 
-        private inline fun bothSides(block: (mirror: Boolean) -> Unit) { block(false); block(true) }
+        inline fun bothSides(block: (mirror: Boolean) -> Unit) { block(false); block(true) }
 
         private fun m(u: Float, mirror: Boolean) = if (mirror) 1f - u else u
 
@@ -161,33 +161,45 @@ object MakeupAtlas {
 
         fun eyeliner(cv: UvCanvas) {
             bothSides { mirror ->
-                val upper = pts(L.RIGHT_EYE_UPPER, mirror) // inner → outer (… 161, 246, 33)
-                val n = upper.size / 2
-                val iu = upper[0]; val iv = upper[1]
-                val ou = upper[(n - 1) * 2]; val ov = upper[(n - 1) * 2 + 1]
-                // Lid line on the lash line: thin at the inner corner, fuller towards the outer corner. Its lower half
-                // lies inside the eye opening, which is never painted, so the visible line sits right above the lashes.
-                cv.stroke(Geometry.smoothOpen(upper, 3), feather = 0.0011f,
-                    halfWidth = { t -> 0.0016f + 0.0036f * t.pow(1.6f) },
-                    profile = { t -> 0.55f + 0.45f * smoothstep(0f, 0.12f, t) })
-                // Wing: a tapered triangle whose lower edge continues from the outer corner up to a lifted tip and
-                // whose upper edge leaves the lid a little before the corner.
-                val axis = atan2(ov - iv, ou - iu)
-                val wingAngle = axis + (if (mirror) 0.42f else -0.42f)
-                val len = 0.026f
-                val tipU = ou + cos(wingAngle) * len; val tipV = ov + sin(wingAngle) * len
-                val p1u = upper[(n - 3) * 2]; val p1v = upper[(n - 3) * 2 + 1]
-                val p2u = upper[(n - 2) * 2]; val p2v = upper[(n - 2) * 2 + 1]
-                val wing = floatArrayOf(
-                    p1u, p1v + 0.0042f,
-                    p2u, p2v + 0.0056f,
-                    tipU, tipV,
-                    ou, ov - 0.0008f,
-                    p2u, p2v - 0.001f,
-                    p1u, p1v - 0.001f,
-                )
-                cv.polygon(wing, feather = 0.0009f)
+                lidLine(cv, mirror)
+                cv.polygon(classicWing(mirror), feather = 0.0009f)
             }
+        }
+
+        /**
+         * Lid line on the lash line: thin at the inner corner, fuller towards the outer corner. Its lower half lies
+         * inside the eye opening, which is never painted, so the visible line sits right above the lashes.
+         */
+        fun lidLine(cv: UvCanvas, mirror: Boolean) {
+            val upper = pts(L.RIGHT_EYE_UPPER, mirror) // inner → outer (… 161, 246, 33)
+            cv.stroke(Geometry.smoothOpen(upper, 3), feather = 0.0011f,
+                halfWidth = { t -> 0.0016f + 0.0036f * t.pow(1.6f) },
+                profile = { t -> 0.55f + 0.45f * smoothstep(0f, 0.12f, t) })
+        }
+
+        /**
+         * Classic flick: a tapered triangle whose lower edge continues from the outer corner up to a lifted tip and
+         * whose upper edge leaves the lid a little before the corner.
+         */
+        fun classicWing(mirror: Boolean): FloatArray {
+            val upper = pts(L.RIGHT_EYE_UPPER, mirror)
+            val n = upper.size / 2
+            val iu = upper[0]; val iv = upper[1]
+            val ou = upper[(n - 1) * 2]; val ov = upper[(n - 1) * 2 + 1]
+            val axis = atan2(ov - iv, ou - iu)
+            val wingAngle = axis + (if (mirror) 0.42f else -0.42f)
+            val len = 0.026f
+            val tipU = ou + cos(wingAngle) * len; val tipV = ov + sin(wingAngle) * len
+            val p1u = upper[(n - 3) * 2]; val p1v = upper[(n - 3) * 2 + 1]
+            val p2u = upper[(n - 2) * 2]; val p2v = upper[(n - 2) * 2 + 1]
+            return floatArrayOf(
+                p1u, p1v + 0.0042f,
+                p2u, p2v + 0.0056f,
+                tipU, tipV,
+                ou, ov - 0.0008f,
+                p2u, p2v - 0.001f,
+                p1u, p1v - 0.001f,
+            )
         }
 
         fun lashes(cv: UvCanvas) {
@@ -205,9 +217,14 @@ object MakeupAtlas {
             }
         }
 
-        private fun plantLashes(
+        /**
+         * Plants [count] curled lashes along [line] (t ∈ [from, to]); each root grows [strands] hairs fanned
+         * [fan] radians apart (volume lash clusters when > 1).
+         */
+        fun plantLashes(
             cv: UvCanvas, line: FloatArray, count: Int, upwards: Boolean, outwardSign: Float, rnd: Random,
             length: (Float) -> Float, width: Float, value: Float, from: Float, to: Float,
+            strands: Int = 1, fan: Float = 0.26f,
         ) {
             val lengths = Geometry.cumulativeLengths(line)
             val total = lengths.last()
@@ -231,13 +248,20 @@ object MakeupAtlas {
                 var du = nu + outwardSign * sweep
                 var dv = nv
                 val dl = sqrt(du * du + dv * dv); du /= dl; dv /= dl
-                val len = length(t) * (0.85f + rnd.nextFloat() * 0.3f)
-                // Curl: the tip bends further outwards/upwards.
-                val cu = su + du * len * 0.55f; val cvv = sv + dv * len * 0.55f
-                val tipU = cu + (du + outwardSign * 0.35f) * len * 0.45f
-                val tipV = cvv + (dv + (if (upwards) 0.15f else -0.15f)) * len * 0.45f
-                cv.stroke(floatArrayOf(su, sv, cu, cvv, tipU, tipV), feather = 0.0006f,
-                    halfWidth = { s -> width * (1f - 0.75f * s) }, value = value * (0.8f + rnd.nextFloat() * 0.2f))
+                val baseLen = length(t) * (0.85f + rnd.nextFloat() * 0.3f)
+                for (h in 0 until strands) {
+                    val offset = if (strands == 1) 0f else (h - (strands - 1) / 2f) * fan + (rnd.nextFloat() - 0.5f) * fan * 0.4f
+                    val c0 = cos(offset); val s0 = sin(offset)
+                    val hu = du * c0 - dv * s0
+                    val hv = du * s0 + dv * c0
+                    val len = baseLen * (1f - 0.18f * kotlin.math.abs(offset) / max(fan, 1e-3f))
+                    // Curl: the tip bends further outwards/upwards.
+                    val cu = su + hu * len * 0.55f; val cvv = sv + hv * len * 0.55f
+                    val tipU = cu + (hu + outwardSign * 0.35f) * len * 0.45f
+                    val tipV = cvv + (hv + (if (upwards) 0.15f else -0.15f)) * len * 0.45f
+                    cv.stroke(floatArrayOf(su, sv, cu, cvv, tipU, tipV), feather = 0.0006f,
+                        halfWidth = { s -> width * (1f - 0.75f * s) }, value = value * (0.8f + rnd.nextFloat() * 0.2f))
+                }
             }
         }
 
@@ -245,41 +269,52 @@ object MakeupAtlas {
 
         fun eyeshadow(cv: UvCanvas) {
             bothSides { mirror ->
-                val eye = pts(L.RIGHT_EYE_UPPER, mirror) // inner → outer
-                val brow = pts(L.RIGHT_BROW_LOWER, mirror) // head → tail
-                val n = eye.size / 2
-                val iu = eye[0]; val iv = eye[1]
-                val ou = eye[(n - 1) * 2]; val ov = eye[(n - 1) * 2 + 1]
-                // Extend past the outer corner towards the brow tail (outer "V").
-                val extU = ou + (brow[8] - ou) * 0.35f; val extV = ov + (brow[9] - ov) * 0.35f
-                val lashLine = eye + floatArrayOf(extU, extV)
-                val lashLengths = Geometry.cumulativeLengths(lashLine)
-                val browLengths = Geometry.cumulativeLengths(brow)
-                val poly = Geometry.smoothClosed(lashLine + reversed(brow), 2)
-                val axisU = ou - iu; val axisV = ov - iv
-                val axisLen2 = axisU * axisU + axisV * axisV
-                val hit = FloatArray(2)
-                val b = UvCanvas.bounds(poly, 0.012f)
-                cv.forBox(b[0], b[1], b[2], b[3], { u, v ->
-                    val cover = smoothstep(-0.009f, 0.006f, Geometry.signedDistance(poly, u, v))
-                    if (cover <= 0f) 0f else {
-                        Geometry.distanceToPolyline(lashLine, lashLengths, u, v, hit)
-                        val dEye = hit[0]
-                        Geometry.distanceToPolyline(brow, browLengths, u, v, hit)
-                        val dBrow = hit[0]
-                        val t = dEye / max(dEye + dBrow, 1e-6f) // 0 at the lash line, 1 at the brow
-                        val s = (((u - iu) * axisU + (v - iv) * axisV) / axisLen2).coerceIn(0f, 1.4f)
-                        val gradient = 1f - smoothstep(0.04f, 0.58f, t)
-                        val outer = 0.72f + 0.28f * smoothstep(0.25f, 1.05f, s)
-                        cover * gradient * outer
-                    }
-                }, UvCanvas.Op.MAX)
+                lidField(cv, mirror) { cover, t, s ->
+                    val gradient = 1f - smoothstep(0.04f, 0.58f, t)
+                    val outer = 0.72f + 0.28f * smoothstep(0.25f, 1.05f, s)
+                    cover * gradient * outer
+                }
                 // Smudged outer lower lash line.
                 val lower = pts(L.RIGHT_EYE_LOWER, mirror)
                 val outerLower = lower.copyOfRange(8, lower.size)
                 cv.stroke(outerLower, feather = 0.006f, halfWidth = { 0.004f }, profile = { t -> 0.45f * smoothstep(0f, 0.6f, t) })
             }
             cv.blur(1)
+        }
+
+        /**
+         * Visits the eyelid region (lash line → brow, extended past the outer corner towards the brow tail) with
+         * `cover` (feathered region coverage), `t` (0 at the lash line → 1 at the brow) and `s` (0 at the inner
+         * corner → 1 at the outer corner, up to 1.4 past it); [f] returns the value (MAX-combined).
+         */
+        fun lidField(cv: UvCanvas, mirror: Boolean, f: (cover: Float, t: Float, s: Float) -> Float) {
+            val eye = pts(L.RIGHT_EYE_UPPER, mirror) // inner → outer
+            val brow = pts(L.RIGHT_BROW_LOWER, mirror) // head → tail
+            val n = eye.size / 2
+            val iu = eye[0]; val iv = eye[1]
+            val ou = eye[(n - 1) * 2]; val ov = eye[(n - 1) * 2 + 1]
+            // Extend past the outer corner towards the brow tail (outer "V").
+            val extU = ou + (brow[8] - ou) * 0.35f; val extV = ov + (brow[9] - ov) * 0.35f
+            val lashLine = eye + floatArrayOf(extU, extV)
+            val lashLengths = Geometry.cumulativeLengths(lashLine)
+            val browLengths = Geometry.cumulativeLengths(brow)
+            val poly = Geometry.smoothClosed(lashLine + reversed(brow), 2)
+            val axisU = ou - iu; val axisV = ov - iv
+            val axisLen2 = axisU * axisU + axisV * axisV
+            val hit = FloatArray(2)
+            val b = UvCanvas.bounds(poly, 0.012f)
+            cv.forBox(b[0], b[1], b[2], b[3], { u, v ->
+                val cover = smoothstep(-0.009f, 0.006f, Geometry.signedDistance(poly, u, v))
+                if (cover <= 0f) 0f else {
+                    Geometry.distanceToPolyline(lashLine, lashLengths, u, v, hit)
+                    val dEye = hit[0]
+                    Geometry.distanceToPolyline(brow, browLengths, u, v, hit)
+                    val dBrow = hit[0]
+                    val t = dEye / max(dEye + dBrow, 1e-6f) // 0 at the lash line, 1 at the brow
+                    val s = (((u - iu) * axisU + (v - iv) * axisV) / axisLen2).coerceIn(0f, 1.4f)
+                    f(cover, t, s)
+                }
+            }, UvCanvas.Op.MAX)
         }
 
         fun blush(cv: UvCanvas) {
@@ -382,7 +417,7 @@ object MakeupAtlas {
             }, UvCanvas.Op.MULTIPLY)
         }
 
-        private fun reversed(pts: FloatArray): FloatArray {
+        fun reversed(pts: FloatArray): FloatArray {
             val n = pts.size / 2
             val out = FloatArray(pts.size)
             for (k in 0 until n) { out[k * 2] = pts[(n - 1 - k) * 2]; out[k * 2 + 1] = pts[(n - 1 - k) * 2 + 1] }

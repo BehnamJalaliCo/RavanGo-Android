@@ -1,6 +1,7 @@
 package com.ravango.engine.beauty
 
 import com.ravango.core.model.BeautyState
+import com.ravango.engine.beauty.makeup.MakeupStyle
 import com.ravango.engine.render.GlFrameProcessor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -93,6 +94,12 @@ interface BeautyEngine {
     /** ADDED — sets the iris recolour (applied while [BeautyState.enabled]). */
     fun setEyeColor(setting: EyeColorSetting) {}
 
+    /** ADDED — current makeup look style (liner / lash / lip / brow variants; not part of saved presets). */
+    val makeupStyle: StateFlow<MakeupStyle> get() = DefaultMakeupStyle
+
+    /** ADDED — sets the makeup look style (uniforms only: switching is instant and never re-bakes textures). */
+    fun setMakeupStyle(style: MakeupStyle) {}
+
     /** Before/after: when true, preview shows the unprocessed image (recording is unaffected unless [affectsRecording]). */
     fun setCompareMode(showOriginal: Boolean, affectsRecording: Boolean = false)
 
@@ -101,3 +108,4 @@ interface BeautyEngine {
 }
 
 private val NoEyeColor: StateFlow<EyeColorSetting> = MutableStateFlow(EyeColorSetting()).asStateFlow()
+private val DefaultMakeupStyle: StateFlow<MakeupStyle> = MutableStateFlow(MakeupStyle.Default).asStateFlow()
