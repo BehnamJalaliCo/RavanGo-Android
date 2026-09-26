@@ -49,7 +49,7 @@ data class ScriptFolder(
 @Serializable
 enum class ScriptSortOrder { UPDATED_DESC, CREATED_DESC, TITLE_ASC, LAST_OPENED_DESC }
 
-/** Counts spoken words, ignoring markup and director notes. Works for Persian and Latin scripts. */
+/** Counts spoken words, ignoring markup and director notes. ZWNJ-joined Persian words (e.g. «می‌خواهم») count as one word, matching the teleprompter engine. */
 fun countWords(text: String): Int {
     val cleaned = text
         .replace(Regex("\\[\\[.*?]]", RegexOption.DOT_MATCHES_ALL), " ")
@@ -57,5 +57,5 @@ fun countWords(text: String): Int {
         .replace("==", " ")
         .replace("**", " ")
         .replace(Regex("(?m)^##\\s*"), " ")
-    return cleaned.split(Regex("[\\s\\u200c\\u200f\\u200e]+")).count { token -> token.any { it.isLetterOrDigit() } }
+    return cleaned.split(Regex("[\\s\\u200f\\u200e]+")).count { token -> token.any { it.isLetterOrDigit() } }
 }
