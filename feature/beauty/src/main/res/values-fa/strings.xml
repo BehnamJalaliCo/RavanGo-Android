@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="beauty_title">زیبایی</string>
+    <string name="beauty_pro">حرفه‌ای</string>
+
+    <!-- Tabs -->
+    <string name="beauty_tab_skin">پوست</string>
+    <string name="beauty_tab_face">فرم صورت</string>
+    <string name="beauty_tab_eyes">چشم</string>
+    <string name="beauty_tab_mouth">لب و دهان</string>
+    <string name="beauty_tab_makeup">آرایش</string>
+    <string name="beauty_tab_presets">پیش‌تنظیم‌ها</string>
+
+    <!-- Beauty features -->
+    <string name="beauty_feature_smooth_skin">صاف‌کردن پوست</string>
+    <string name="beauty_feature_skin_retouch">روتوش</string>
+    <string name="beauty_feature_blemish_removal">رفع لک و جوش</string>
+    <string name="beauty_feature_skin_brightness">روشنایی</string>
+    <string name="beauty_feature_skin_tone">رنگ‌مایهٔ پوست</string>
+    <string name="beauty_feature_sharpen">وضوح</string>
+    <string name="beauty_feature_whitening">سفیدی پوست</string>
+    <string name="beauty_feature_dark_circles">سیاهی دور چشم</string>
+    <string name="beauty_feature_face_slim">باریک‌کردن صورت</string>
+    <string name="beauty_feature_jaw">فک</string>
+    <string name="beauty_feature_chin">چانه</string>
+    <string name="beauty_feature_cheekbone">استخوان گونه</string>
+    <string name="beauty_feature_forehead">پیشانی</string>
+    <string name="beauty_feature_nose">بینی</string>
+    <string name="beauty_feature_eye_size">اندازهٔ چشم</string>
+    <string name="beauty_feature_eye_shape">فرم چشم</string>
+    <string name="beauty_feature_teeth_whitening">سفیدی دندان</string>
+
+    <!-- Makeup layers -->
+    <string name="beauty_makeup_lipstick">رژ لب</string>
+    <string name="beauty_makeup_lip_color">تینت لب</string>
+    <string name="beauty_makeup_eyebrow">ابرو</string>
+    <string name="beauty_makeup_eyelashes">مژه</string>
+    <string name="beauty_makeup_eyeliner">خط چشم</string>
+    <string name="beauty_makeup_eyeshadow">سایهٔ چشم</string>
+    <string name="beauty_makeup_blush">رژگونه</string>
+    <string name="beauty_makeup_contour">کانتور</string>
+    <string name="beauty_makeup_highlight">هایلایت</string>
+    <string name="beauty_makeup_foundation">کرم‌پودر</string>
+
+    <!-- Bipolar slider ends -->
+    <string name="beauty_less">کمتر</string>
+    <string name="beauty_more">بیشتر</string>
+    <string name="beauty_tone_cooler">سردتر</string>
+    <string name="beauty_tone_warmer">گرم‌تر</string>
+    <string name="beauty_eye_rounder">گردتر</string>
+    <string name="beauty_eye_lifted">کشیده‌تر</string>
+    <string name="beauty_narrower">باریک‌تر</string>
+    <string name="beauty_wider">پهن‌تر</string>
+    <string name="beauty_shorter">کوتاه‌تر</string>
+    <string name="beauty_taller">بلندتر</string>
+
+    <!-- Built-in presets -->
+    <string name="beauty_preset_natural">طبیعی</string>
+    <string name="beauty_preset_glow">درخشان</string>
+    <string name="beauty_preset_studio">استودیویی</string>
+    <string name="beauty_preset_business">رسمی</string>
+    <string name="beauty_preset_glam">مجلسی</string>
+
+    <!-- Panel -->
+    <string name="beauty_compare">برای مقایسه با تصویر اصلی نگه دارید</string>
+    <string name="beauty_reset">بازنشانی</string>
+    <string name="beauty_reset_all">بازگشت به ظاهر طبیعی</string>
+    <string name="beauty_unlock_pro">باز کردن با نسخهٔ حرفه‌ای</string>
+    <string name="beauty_face_not_detected">چهره‌ای شناسایی نشد</string>
+    <string name="beauty_tracking_unavailable">ردیابی چهره روی این دستگاه در دسترس نیست</string>
+    <string name="beauty_gpu_error">جلوه‌های زیبایی روی این دستگاه متوقف شده‌اند</string>
+    <string name="beauty_quality_balanced">کیفیت متعادل برای ثابت ماندن نرخ فریم</string>
+    <string name="beauty_quality_light">کیفیت سبک برای روان ماندن ویدیو</string>
+    <string name="beauty_quality_minimal">کیفیت حداقلی؛ دستگاه مشغول است</string>
+    <string name="beauty_quality_thermal">کیفیت کاهش یافت؛ دستگاه گرم شده است</string>
+    <string name="beauty_active">فعال</string>
+
+    <!-- Presets -->
+    <string name="beauty_save_preset">ذخیرهٔ پیش‌تنظیم</string>
+    <string name="beauty_manage_presets">مدیریت پیش‌تنظیم‌ها</string>
+    <string name="beauty_preset_name">نام پیش‌تنظیم</string>
+    <string name="beauty_preset_name_placeholder">مثلاً لایو صبحگاهی</string>
+    <string name="beauty_preset_saved">پیش‌تنظیم ذخیره شد</string>
+    <string name="beauty_preset_applied">«%1$s» اعمال شد</string>
+    <string name="beauty_preset_deleted">پیش‌تنظیم حذف شد</string>
+    <string name="beauty_preset_renamed">نام پیش‌تنظیم تغییر کرد</string>
+    <string name="beauty_preset_copy_suffix">%1$s (رونوشت)</string>
+    <string name="beauty_error_save">ذخیرهٔ پیش‌تنظیم ممکن نشد. لطفاً دوباره تلاش کنید.</string>
+    <string name="beauty_presets_title">پیش‌تنظیم‌های زیبایی</string>
+    <string name="beauty_presets_current_title">ظاهر فعلی</string>
+    <string name="beauty_presets_save_current">ذخیرهٔ ظاهر فعلی</string>
+    <string name="beauty_presets_builtin">ظاهرهای آماده</string>
+    <string name="beauty_presets_mine">پیش‌تنظیم‌های من</string>
+    <string name="beauty_presets_empty_title">هنوز پیش‌تنظیمی ندارید</string>
+    <string name="beauty_presets_empty_message">ظاهر دلخواهتان را همین‌جا یا از پنل زیبایی در استودیوی دوربین ذخیره کنید.</string>
+    <string name="beauty_presets_limit">%1$s از %2$s پیش‌تنظیم استفاده شده است</string>
+    <string name="beauty_delete_preset_title">پیش‌تنظیم حذف شود؟</string>
+    <string name="beauty_delete_preset_message">«%1$s» از همهٔ دستگاه‌هایتان حذف می‌شود.</string>
+    <string name="beauty_no_adjustments">بدون تنظیم</string>
+    <plurals name="beauty_adjustments">
+        <item quantity="one">%1$s تنظیم</item>
+        <item quantity="other">%1$s تنظیم</item>
+    </plurals>
+</resources>
