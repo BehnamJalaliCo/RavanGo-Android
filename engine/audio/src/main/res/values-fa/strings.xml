@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Input names -->
+    <string name="audio_input_builtin">میکروفون گوشی</string>
+    <string name="audio_input_wired">میکروفون سیمی</string>
+    <string name="audio_input_usb">میکروفون USB</string>
+    <string name="audio_input_bluetooth">هدست بلوتوث</string>
+    <string name="audio_input_bluetooth_le">هدست بلوتوث LE</string>
+    <string name="audio_input_hdmi">صدای HDMI</string>
+    <string name="audio_input_other">ورودی خارجی</string>
+    <string name="audio_input_position_back">پشت</string>
+    <string name="audio_input_position_front">جلو</string>
+    <string name="audio_input_position_bottom">پایین</string>
+    <string name="audio_input_with_position">%1$s (%2$s)</string>
+    <string name="audio_input_named">%1$s · %2$s</string>
+
+    <!-- Errors -->
+    <string name="audio_error_mic_permission">برای ضبط صدا، دسترسی به میکروفون لازم است.</string>
+    <string name="audio_error_bluetooth_permission">برای استفاده از میکروفون بلوتوث، اجازهٔ دسترسی به دستگاه‌های نزدیک را بدهید. فعلاً ضبط با میکروفون گوشی انجام می‌شود.</string>
+    <string name="audio_error_input_lost">اتصال میکروفون انتخاب‌شده قطع شد. ضبط با میکروفون گوشی ادامه دارد.</string>
+    <string name="audio_error_bluetooth_unavailable">اتصال به میکروفون بلوتوث برقرار نشد؛ ضبط با میکروفون گوشی انجام می‌شود.</string>
+    <string name="audio_error_mic_unavailable">میکروفون در دسترس نیست؛ شاید برنامهٔ دیگری یا یک تماس از آن استفاده می‌کند.</string>
+    <string name="audio_error_recording_failed">ذخیرهٔ فایل صوتی ممکن نشد.</string>
+</resources>
