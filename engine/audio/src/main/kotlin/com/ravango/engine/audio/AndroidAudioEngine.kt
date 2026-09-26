@@ -68,10 +68,10 @@ import javax.inject.Singleton
  */
 @Singleton
 class AndroidAudioEngine @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     preferences: PreferencesDataSource,
     @ApplicationScope scope: CoroutineScope,
-    @IoDispatcher private val io: CoroutineDispatcher,
+    @param:IoDispatcher private val io: CoroutineDispatcher,
 ) : AudioEngine {
 
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
