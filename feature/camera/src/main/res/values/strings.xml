@@ -200,6 +200,7 @@
     <string name="camera_lens_hint_face">Show your face to the camera</string>
     <string name="camera_lens_hint_mouth">Open your mouth ✨</string>
     <string name="camera_lens_hint_pro">Pro lens · tap the shutter ring to unlock</string>
+    <string name="camera_lens_hint_unavailable">This lens isn\'t available on this device</string>
     <string name="camera_filter_none">Original</string>
     <string name="camera_filter_vivid">Vivid</string>
     <string name="camera_filter_warm">Warm</string>

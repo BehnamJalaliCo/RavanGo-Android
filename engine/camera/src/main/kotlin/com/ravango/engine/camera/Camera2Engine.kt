@@ -14,6 +14,7 @@ import com.ravango.core.common.device.StorageInfo
 import com.ravango.core.common.device.StorageSnapshot
 import com.ravango.core.common.device.ThermalLevel
 import com.ravango.core.common.device.ThermalMonitor
+import com.ravango.core.common.di.AppScopeExceptionHandler
 import com.ravango.core.common.di.ApplicationScope
 import com.ravango.core.common.di.IoDispatcher
 import com.ravango.core.common.log.RgLog
@@ -137,10 +138,20 @@ class Camera2Engine @Inject constructor(
     private val manager: CameraManager? = context.getSystemService(CameraManager::class.java)
     private val cameraThread = HandlerThread("RgCamera").apply { start() }
     private val cameraHandler = Handler(cameraThread.looper)
+    // Camera2 callbacks run on the camera HandlerThread: an exception escaping them would crash the app.
     private val sessionListener = object : CameraSession.Listener {
-        override fun onStreaming(cameraId: String) = handleStreaming()
-        override fun onCameraError(kind: CameraErrorKind, message: String?, recoverable: Boolean) = handleCameraError(kind, message, recoverable)
-        override fun onResult(result: CameraSession.CaptureSnapshot) = handleResult(result)
+        override fun onStreaming(cameraId: String) = guarded("onStreaming") { handleStreaming() }
+        override fun onCameraError(kind: CameraErrorKind, message: String?, recoverable: Boolean) =
+            guarded("onCameraError") { handleCameraError(kind, message, recoverable) }
+        override fun onResult(result: CameraSession.CaptureSnapshot) = guarded("onResult") { handleResult(result) }
+    }
+
+    private inline fun guarded(what: String, block: () -> Unit) {
+        try {
+            block()
+        } catch (t: Throwable) {
+            RgLog.e(TAG, "camera callback $what failed", t)
+        }
     }
     private val rendererCallbacks = object : CameraRenderer.Callbacks {
         override fun onPreviewFrame(frame: PreviewFrame) {
@@ -158,7 +169,7 @@ class Camera2Engine @Inject constructor(
     private val session: CameraSession? = manager?.let { CameraSession(it, cameraHandler, sessionListener) }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    private val commandScope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1))
+    private val commandScope = CoroutineScope(SupervisorJob() + Dispatchers.Default.limitedParallelism(1) + AppScopeExceptionHandler)
     private val commandMutex = Mutex()
     private val recordingMutex = Mutex()
     private val inventoryLock = Any()
@@ -183,7 +194,7 @@ class Camera2Engine @Inject constructor(
     private var lastAutoIso = 0
     private var lastAutoExposureNs = 0L
     private var lastColorTransform: ColorSpaceTransform? = null
-    private val retryRunnable = Runnable { reopenAfterError() }
+    private val retryRunnable = Runnable { guarded("retry") { reopenAfterError() } }
 
     // --- cross-thread ---
     @Volatile private var renderer: CameraRenderer? = null
@@ -601,10 +612,24 @@ class Camera2Engine @Inject constructor(
     // =========================================================================================================
 
     private fun control(block: (CameraCapabilities) -> Unit) {
-        cameraHandler.post {
-            val caps = activeCaps ?: return@post
+        postCamera("control") {
+            val caps = activeCaps ?: return@postCamera
             block(caps)
             pushRequest()
+        }
+    }
+
+    /**
+     * Posts [block] to the camera thread. An exception there would be uncaught on a HandlerThread (= app crash), so
+     * it is logged and recorded instead: a failed manual-control update must never take the app down.
+     */
+    private fun postCamera(what: String, block: () -> Unit) {
+        cameraHandler.post {
+            try {
+                block()
+            } catch (t: Throwable) {
+                RgLog.e(TAG, "camera-thread $what failed", t)
+            }
         }
     }
 
@@ -618,11 +643,11 @@ class Camera2Engine @Inject constructor(
     }
 
     override fun focusAndMeter(x: Float, y: Float) {
-        cameraHandler.post {
-            val caps = activeCaps ?: return@post
-            val mapping = renderer?.mapping?.get() ?: return@post
-            val stream = configuredStream ?: return@post
-            if (!caps.tapToFocus && !caps.tapToMeter) return@post
+        postCamera("focusAndMeter") {
+            val caps = activeCaps ?: return@postCamera
+            val mapping = renderer?.mapping?.get() ?: return@postCamera
+            val stream = configuredStream ?: return@postCamera
+            if (!caps.tapToFocus && !caps.tapToMeter) return@postCamera
             val (bx, by) = FrameGeometry.displayPointToBuffer(
                 x.coerceIn(0f, 1f), y.coerceIn(0f, 1f), mapping.previewRotationCw, mapping.rotationCw, mapping.crop, mapping.mirror,
             )
@@ -656,8 +681,8 @@ class Camera2Engine @Inject constructor(
     }
 
     override fun setAeAfLock(locked: Boolean) {
-        cameraHandler.post {
-            val caps = activeCaps ?: return@post
+        postCamera("setAeAfLock") {
+            val caps = activeCaps ?: return@postCamera
             aeLocked = locked && caps.aeLockAvailable
             var trigger = false
             if (locked) {

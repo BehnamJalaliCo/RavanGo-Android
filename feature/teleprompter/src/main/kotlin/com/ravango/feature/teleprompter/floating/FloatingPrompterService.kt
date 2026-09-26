@@ -134,7 +134,10 @@ internal class FloatingPrompterService : LifecycleService(), SavedStateRegistryO
         when (intent?.action) {
             ACTION_SHOW -> {
                 // Always enter the foreground first: startForegroundService() requires it even if we bail out.
-                startInForeground()
+                if (!startInForeground()) {
+                    close()
+                    return START_NOT_STICKY
+                }
                 val id = intent.getStringExtra(EXTRA_SCRIPT_ID)
                 when {
                     id.isNullOrBlank() -> close()
@@ -162,10 +165,14 @@ internal class FloatingPrompterService : LifecycleService(), SavedStateRegistryO
         return START_NOT_STICKY
     }
 
-    private fun startInForeground() {
+    /**
+     * Enters the foreground. Returns false instead of crashing when the system refuses (background start restrictions on
+     * Android 12+, a missing foreground-service permission, or a notification the OEM rejects).
+     */
+    private fun startInForeground(): Boolean = runCatching {
         val type = if (Build.VERSION.SDK_INT >= 34) ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE else 0
         ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(), type)
-    }
+    }.onFailure { RgLog.e(TAG, "could not enter the foreground", it) }.isSuccess
 
     private fun buildNotification(): Notification {
         val toggle = PendingIntent.getService(

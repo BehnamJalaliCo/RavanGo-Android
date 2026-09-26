@@ -93,6 +93,13 @@ data class EffectsState(
     val isNeutral: Boolean get() = lens == null && (filter == LiveFilter.NONE || filterIntensity <= 0) && !background.active
 }
 
+/** Pure state transitions of the effects layer (unit-tested). */
+internal object EffectsDefaults {
+    /** Selects [filter]; a real filter picked while the strength is 0 comes back at full strength (else: invisible). */
+    fun withFilter(state: EffectsState, filter: LiveFilter): EffectsState =
+        state.copy(filter = filter, filterIntensity = if (filter != LiveFilter.NONE && state.filterIntensity <= 0) 100 else state.filterIntensity)
+}
+
 /**
  * A live filter swipe on the preview: [target] slides in from the side the finger moves away from.
  * [progress] is the signed fraction of the preview width travelled (−1..1; negative = swiping towards the start
@@ -111,6 +118,10 @@ data class EffectsStatus(
     val backgroundWarmingUp: Boolean = false,
     /** Set when [BackgroundEffect.Image] is selected but no photo is loaded. */
     val backgroundImageMissing: Boolean = false,
+    /** ADDED — the selected lens cannot run on this device (face tracking unavailable, or its GPU pass failed). */
+    val lensUnavailable: Boolean = false,
+    /** ADDED — a selected effect's GPU pass failed on this device and was switched off (details in diagnostics). */
+    val effectsGpuError: Boolean = false,
 )
 
 /**

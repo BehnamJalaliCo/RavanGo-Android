@@ -16,21 +16,16 @@ import com.ravango.core.navigation.SignInRoute
 import com.ravango.core.navigation.TeleprompterRoute
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.res.stringResource
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import com.ravango.app.R
-import com.ravango.core.designsystem.component.RgConfirmDialog
 import androidx.navigation.compose.composable
 import com.ravango.core.navigation.HomeRoute
 import com.ravango.core.navigation.LicensesRoute
 import com.ravango.core.navigation.OnboardingRoute
 import com.ravango.core.navigation.ScriptEditorRoute
 import com.ravango.feature.account.accountDestinations
+import com.ravango.feature.account.diagnostics.CrashReportPrompt
 import com.ravango.feature.ai.aiDestinations
 import com.ravango.feature.beauty.beautyDestinations
 import com.ravango.feature.camera.cameraDestinations
@@ -42,7 +37,6 @@ import com.ravango.feature.projects.projectsDestinations
 import com.ravango.feature.scripts.scriptsDestinations
 import com.ravango.feature.teleprompter.teleprompterDestinations
 import kotlinx.coroutines.flow.StateFlow
-import com.ravango.core.ui.R as UiR
 
 /** Full-screen, always-dark capture/edit surfaces: entered with a fade-through instead of a lateral slide. */
 private fun NavDestination.isStudio(): Boolean =
@@ -55,7 +49,6 @@ private fun NavDestination.isModal(): Boolean = hasRoute<PaywallRoute>() || hasR
 fun RavanGoApp(
     onboardingCompleted: Boolean,
     sharedText: kotlinx.coroutines.flow.MutableStateFlow<String?>,
-    previousCrash: String?,
 ) {
     val navController = rememberNavController()
     val start: Any = remember { if (onboardingCompleted) HomeRoute else OnboardingRoute }
@@ -124,15 +117,6 @@ fun RavanGoApp(
         }
     }
 
-    var showCrashNotice by remember { mutableStateOf(previousCrash != null) }
-    if (showCrashNotice) {
-        RgConfirmDialog(
-            title = stringResource(R.string.crash_recovered_title),
-            message = stringResource(R.string.crash_recovered_message),
-            confirmText = stringResource(UiR.string.action_ok),
-            dismissText = stringResource(UiR.string.action_close),
-            onConfirm = { showCrashNotice = false },
-            onDismiss = { showCrashNotice = false },
-        )
-    }
+    // "RavanGo closed unexpectedly last time": view / share the on-device crash report (nothing is uploaded).
+    CrashReportPrompt()
 }

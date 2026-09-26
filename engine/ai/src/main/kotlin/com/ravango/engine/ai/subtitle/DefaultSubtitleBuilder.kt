@@ -137,7 +137,7 @@ class DefaultSubtitleBuilder @Inject constructor() : SubtitleBuilder {
         private const val RLM = '‏'
 
         private val TIME_LINE = Regex("""(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})""")
-        private val TAGS = Regex("""<[^>]+>|\{\\[^}]*}""")
+        private val TAGS = Regex("""<[^>]+>|\{\\[^}]*\}""")
         private val BIDI_MARKS = Regex("[‎‏؜‪-‮⁦-⁩]")
 
         private val SENTENCE_END = charArrayOf('.', '!', '?', '؟', '…', '۔')

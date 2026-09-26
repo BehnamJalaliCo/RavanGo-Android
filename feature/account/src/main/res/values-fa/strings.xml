@@ -280,4 +280,31 @@
     <string name="account_tester_active">حالت تست حرفه‌ای فعال است</string>
     <string name="account_tester_active_sub">همه‌ی قابلیت‌های حرفه‌ای روی این گوشی برای تست باز هستند.</string>
     <string name="account_tester_disable">خاموش کردن</string>
+
+    <!-- گزارش‌های خرابی (فقط روی دستگاه ذخیره می‌شوند؛ فقط خود کاربر آن‌ها را هم‌رسانی می‌کند). -->
+    <string name="account_crash_prompt_title">روان‌گو دفعه‌ی قبل ناگهان بسته شد</string>
+    <string name="account_crash_prompt_message">از این بابت متأسفیم. پیش‌نویس‌هایت خودکار ذخیره می‌شوند و ضبط‌های نیمه‌کاره تا جای ممکن بازیابی شده‌اند. گزارشی از علت مشکل روی همین گوشی ذخیره شد؛ اگر آن را برایمان بفرستی، زودتر درستش می‌کنیم. هیچ چیزی خودکار ارسال نمی‌شود.</string>
+    <string name="account_crash_view">دیدن گزارش</string>
+    <string name="account_crash_share">فرستادن گزارش</string>
+    <string name="account_crash_copy">کپی</string>
+    <string name="account_crash_copied">گزارش کپی شد</string>
+    <string name="account_crash_dismiss">فعلاً نه</string>
+    <string name="account_crash_share_chooser">فرستادن گزارش خرابی</string>
+    <string name="account_crash_reports">گزارش‌های خرابی</string>
+    <string name="account_crash_reports_none">هیچ گزارشی روی این گوشی نیست</string>
+    <plurals name="account_crash_reports_count">
+        <item quantity="one">%1$s گزارش روی این گوشی</item>
+        <item quantity="other">%1$s گزارش روی این گوشی</item>
+    </plurals>
+    <plurals name="account_crash_more">
+        <item quantity="one">…و %1$s گزارش قبلی</item>
+        <item quantity="other">…و %1$s گزارش قبلی</item>
+    </plurals>
+    <string name="account_crash_privacy">گزارش‌ها فقط روی همین گوشی می‌مانند و تنها جزئیات فنی دارند (مدل گوشی، نسخه‌ی اندروید و برنامه، پردازنده‌ی گرافیکی و ردِ خطا)؛ هیچ ویدیو، متن یا اطلاعات شخصی‌ای در آن‌ها نیست. فقط اگر خودت بخواهی آن‌ها را بفرست.</string>
+    <string name="account_crash_delete_all">پاک کردن همه</string>
+    <string name="account_crash_kind_java">خطای برنامه</string>
+    <string name="account_crash_kind_native">خرابی سیستمی</string>
+    <string name="account_crash_kind_anr">برنامه پاسخ نمی‌داد</string>
+    <string name="account_crash_empty_title">گزارش خرابی‌ای نیست</string>
+    <string name="account_crash_empty_message">اگر روان‌گو روزی ناگهان بسته شود، گزارشش این‌جا می‌آید تا بتوانی برایمان بفرستی.</string>
 </resources>

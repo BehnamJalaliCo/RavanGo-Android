@@ -13,8 +13,15 @@ import com.ravango.core.model.service.EntitlementProvider
 import com.ravango.engine.beauty.BeautyEngine
 import com.ravango.engine.beauty.BeautyStatus
 import com.ravango.engine.beauty.EyeColorSetting
+import com.ravango.feature.beauty.looks.LookController
+import com.ravango.feature.beauty.looks.LookDef
+import com.ravango.feature.beauty.looks.LookGating
+import com.ravango.feature.beauty.looks.LookResult
+import com.ravango.feature.beauty.looks.LooksState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -41,21 +48,26 @@ data class BeautyUiState(
     val state: BeautyState = BeautyState(),
     val status: BeautyStatus = BeautyStatus(),
     val entitlements: Entitlements = Entitlements(),
-    val tab: BeautyTab = BeautyTab.SKIN,
+    val tab: BeautyTab = BeautyTab.LOOKS,
     val selected: BeautyItem? = null,
     val presets: BeautyPresets = BeautyPresets(),
     val activePresetId: String? = null,
     val comparing: Boolean = false,
     val eyeColor: EyeColorSetting = EyeColorSetting(),
+    /** Complete looks: catalogue, active look + intensity, favourites (shared with the camera carousel). */
+    val looks: LooksState = LooksState(),
+    val lookFilter: LookFilter = LookFilter.ALL,
 ) {
     /** Current value of any item, including the eye colour which lives outside [BeautyState]. */
     fun valueOf(item: BeautyItem): Int =
         if (item == BeautyItem.EyeColor) eyeColor.intensity else BeautyCatalog.value(state, item)
 
-    /** The curated look the current makeup matches exactly, if any. */
-    val activeLook: MakeupLook? get() = MakeupLook.activeIn(state)
+    /** The complete look currently applied, if any. */
+    val activeLook: LookDef? get() = looks.active
 
-    val hasMakeup: Boolean get() = MakeupLook.hasMakeup(state)
+    val hasMakeup: Boolean get() = LookController.hasMakeup(state)
+
+    fun isLookLocked(look: LookDef): Boolean = !LookGating.allowed(look, entitlements)
 
     fun isLocked(item: BeautyItem): Boolean = BeautyCatalog.requiredPro(item)?.let { !entitlements.has(it) } ?: false
 
@@ -74,12 +86,17 @@ sealed interface BeautyEvent {
     data class PresetApplied(val preset: BeautyPreset) : BeautyEvent
     data object PresetDeleted : BeautyEvent
     data object PresetRenamed : BeautyEvent
-    data class LookApplied(val look: MakeupLook) : BeautyEvent
+    data class LookApplied(val look: LookDef) : BeautyEvent
+    data object LookSaved : BeautyEvent
     data object SaveFailed : BeautyEvent
 }
 
+/** Filter chips of the Looks tab. */
+enum class LookFilter { ALL, FULL, LIGHT, FAVOURITES, MINE }
+
 private data class LocalUi(
-    val tab: BeautyTab = BeautyTab.SKIN,
+    val tab: BeautyTab = BeautyTab.LOOKS,
+    val lookFilter: LookFilter = LookFilter.ALL,
     val selectedByTab: Map<BeautyTab, BeautyItem> = emptyMap(),
     val activePresetId: String? = null,
     val comparing: Boolean = false,
@@ -94,7 +111,13 @@ class BeautyViewModel @Inject constructor(
     private val engine: BeautyEngine,
     private val presetRepository: PresetRepository,
     private val entitlementProvider: EntitlementProvider,
+    private val looks: LookController,
 ) : ViewModel() {
+
+    private val failureHandler = CoroutineExceptionHandler { _, t -> RgLog.e(TAG, "Beauty task failed", t) }
+
+    /** Launches in [viewModelScope]; an unexpected failure is logged instead of crashing the app. */
+    private fun launchSafely(block: suspend CoroutineScope.() -> Unit): Job = viewModelScope.launch(failureHandler, block = block)
 
     private val local = MutableStateFlow(LocalUi())
     private val events = Channel<BeautyEvent>(Channel.BUFFERED)
@@ -115,7 +138,7 @@ class BeautyViewModel @Inject constructor(
             emit(BeautyPresets(loaded = true))
         }
 
-    private val engineState = combine(engine.state, engine.eyeColor) { state, eye -> state to eye }
+    private val engineState = combine(engine.state, engine.eyeColor, looks.state) { state, eye, l -> Triple(state, eye, l) }
 
     val uiState: StateFlow<BeautyUiState> = combine(
         engineState,
@@ -123,7 +146,7 @@ class BeautyViewModel @Inject constructor(
         entitlementProvider.entitlements,
         presets,
         local,
-    ) { (state, eyeColor), status, entitlements, presets, ui ->
+    ) { (state, eyeColor, lookState), status, entitlements, presets, ui ->
         val selected = ui.selectedByTab[ui.tab] ?: BeautyCatalog.items(ui.tab).firstOrNull()
         BeautyUiState(
             eyeColor = eyeColor,
@@ -135,6 +158,8 @@ class BeautyViewModel @Inject constructor(
             presets = presets,
             activePresetId = ui.activePresetId,
             comparing = ui.comparing,
+            looks = lookState,
+            lookFilter = ui.lookFilter,
         )
     }.stateIn(
         viewModelScope,
@@ -144,6 +169,7 @@ class BeautyViewModel @Inject constructor(
             status = engine.status.value,
             entitlements = entitlementProvider.entitlements.value,
             eyeColor = engine.eyeColor.value,
+            looks = looks.state.value,
         ),
     )
 
@@ -193,25 +219,51 @@ class BeautyViewModel @Inject constructor(
         if (!engine.state.value.enabled) engine.setState(engine.state.value.copy(enabled = true))
     }
 
-    /** One-tap curated makeup look; tapping the active look again removes it. */
-    fun applyLook(look: MakeupLook) {
-        if (!entitlementProvider.has(ProFeature.MAKEUP)) {
-            events.trySend(BeautyEvent.RequirePro(ProFeature.MAKEUP))
+    /** One-tap complete look; tapping the active look again removes it. Pro looks ask for the upgrade. */
+    fun applyLook(look: LookDef) {
+        cancelTransition()
+        if (looks.state.value.activeId == look.id && !looks.state.value.customised) {
+            looks.clear()
             return
         }
-        val current = engine.state.value
-        if (look.matches(current)) {
-            clearMakeup()
-            return
+        when (val r = looks.apply(look.id)) {
+            LookResult.Applied -> {
+                looks.recordRecent(look.key)
+                local.update { it.copy(activePresetId = null) }
+                events.trySend(BeautyEvent.LookApplied(look))
+            }
+            is LookResult.Locked -> events.trySend(BeautyEvent.RequirePro(r.feature))
+            LookResult.NotFound -> Unit
         }
-        animateTo(look.applyTo(current))
-        local.update { it.copy(activePresetId = null) }
-        events.trySend(BeautyEvent.LookApplied(look))
     }
 
+    fun setLookIntensity(value: Int) {
+        cancelTransition()
+        looks.setIntensity(value)
+    }
+
+    /** Removes the look (restores the settings from before it) — or all makeup when no look is active. */
     fun clearMakeup() {
-        animateTo(MakeupLook.cleared(engine.state.value))
+        cancelTransition()
+        if (looks.state.value.activeId != null) looks.clear() else engine.setState(LookController.stripMakeup(engine.state.value))
         local.update { it.copy(activePresetId = null) }
+    }
+
+    fun toggleFavourite(look: LookDef) = looks.toggleFavourite(look.key)
+
+    fun setLookFilter(filter: LookFilter) = local.update { it.copy(lookFilter = filter) }
+
+    /** "Customise this look": opens the Makeup tab with every layer of the look editable. */
+    fun customiseLook() = local.update { it.copy(tab = BeautyTab.MAKEUP) }
+
+    fun saveLook(name: String) {
+        launchSafely {
+            if (looks.saveCurrent(name) != null) events.send(BeautyEvent.LookSaved) else events.send(BeautyEvent.SaveFailed)
+        }
+    }
+
+    fun deleteLook(look: LookDef) {
+        if (look.isCustom) looks.deleteCustom(look.id)
     }
 
     fun reset(item: BeautyItem) {
@@ -259,7 +311,7 @@ class BeautyViewModel @Inject constructor(
     fun renamePreset(preset: BeautyPreset, name: String) {
         val clean = name.trim()
         if (preset.builtIn || clean.isEmpty()) return
-        viewModelScope.launch {
+        launchSafely {
             try {
                 presetRepository.saveBeautyPreset(clean, preset.state, id = preset.id)
                 events.send(BeautyEvent.PresetRenamed)
@@ -274,7 +326,7 @@ class BeautyViewModel @Inject constructor(
 
     fun deletePreset(preset: BeautyPreset) {
         if (preset.builtIn) return
-        viewModelScope.launch {
+        launchSafely {
             try {
                 presetRepository.deleteBeautyPreset(preset.id)
                 if (local.value.activePresetId == preset.id) local.update { it.copy(activePresetId = null) }
@@ -291,14 +343,14 @@ class BeautyViewModel @Inject constructor(
     private fun createPreset(name: String, state: BeautyState) {
         val clean = name.trim()
         if (clean.isEmpty()) return
-        viewModelScope.launch {
+        launchSafely {
             try {
                 val entitlements = entitlementProvider.entitlements.value
                 if (!entitlements.has(ProFeature.UNLIMITED_PRESETS) &&
                     presetRepository.customBeautyPresetCount() >= entitlements.maxSavedPresets
                 ) {
                     events.send(BeautyEvent.RequirePro(ProFeature.UNLIMITED_PRESETS))
-                    return@launch
+                    return@launchSafely
                 }
                 val saved = presetRepository.saveBeautyPreset(clean, state.copy(enabled = true))
                 local.update { it.copy(activePresetId = saved.id) }
@@ -319,7 +371,7 @@ class BeautyViewModel @Inject constructor(
     private fun animateTo(target: BeautyState) {
         cancelTransition()
         val from = engine.state.value
-        transition = viewModelScope.launch {
+        transition = launchSafely {
             val steps = TRANSITION_STEPS
             for (i in 1..steps) {
                 val t = i / steps.toFloat()

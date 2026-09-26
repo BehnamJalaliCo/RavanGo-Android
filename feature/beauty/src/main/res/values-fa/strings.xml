@@ -112,13 +112,4 @@
     <string name="beauty_face_tracked">چهره پیدا شد</string>
     <string name="beauty_faces_tracked">%1$s چهره</string>
     <string name="beauty_looking_for_face">در جست‌وجوی چهره…</string>
-    <string name="beauty_look_none">بدون آرایش</string>
-    <string name="beauty_look_natural">طبیعی</string>
-    <string name="beauty_look_soft_glam">گلم ملایم</string>
-    <string name="beauty_look_bold_lips">لب پررنگ</string>
-    <string name="beauty_look_smokey_eyes">چشم دودی</string>
-    <string name="beauty_look_k_beauty">کره‌ای</string>
-    <string name="beauty_look_bronzed">برنزه</string>
-    <string name="beauty_look_hint">با یک ضربه، استایل کامل را امتحان کنید</string>
-    <string name="beauty_look_hint_edit">هر لایه را در زبانهٔ «آرایش» دقیق‌تر تنظیم کنید</string>
 </resources>

@@ -2,6 +2,7 @@ package com.ravango.engine.render
 
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
+import com.ravango.core.common.diagnostics.Diagnostics
 import com.ravango.core.common.log.RgLog
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -48,28 +49,54 @@ object GlUtil {
     }
 }
 
-/** Compiled + linked shader program with cached uniform/attribute locations. */
-class GlProgram(vertexSource: String, fragmentSource: String) {
+/**
+ * Compiled + linked shader program with cached uniform/attribute locations.
+ *
+ * A compile or link failure throws [GlProgramException] (callers on the GL thread catch it and degrade the effect to
+ * pass-through) and is recorded in the on-device diagnostics with the program [name], the driver's info log and the
+ * GL renderer, so a report from a real device says exactly which shader broke on which GPU.
+ */
+class GlProgram(vertexSource: String, fragmentSource: String, val name: String = "program") {
     val id: Int
     private val locations = HashMap<String, Int>()
 
     init {
         val vs = compile(GLES20.GL_VERTEX_SHADER, vertexSource)
-        val fs = compile(GLES20.GL_FRAGMENT_SHADER, fragmentSource)
+        val fs = try {
+            compile(GLES20.GL_FRAGMENT_SHADER, fragmentSource)
+        } catch (t: Throwable) {
+            GLES20.glDeleteShader(vs)
+            throw t
+        }
         id = GLES20.glCreateProgram()
+        if (id == 0) {
+            GLES20.glDeleteShader(vs)
+            GLES20.glDeleteShader(fs)
+            fail("glCreateProgram returned 0 (glError 0x${Integer.toHexString(GLES20.glGetError())})", null)
+        }
         GLES20.glAttachShader(id, vs)
         GLES20.glAttachShader(id, fs)
+        GLES20.glBindAttribLocation(id, 0, "aPosition")
         GLES20.glLinkProgram(id)
         val status = IntArray(1)
         GLES20.glGetProgramiv(id, GLES20.GL_LINK_STATUS, status, 0)
+        GLES20.glDeleteShader(vs)
+        GLES20.glDeleteShader(fs)
         if (status[0] == 0) {
             val log = GLES20.glGetProgramInfoLog(id)
             GLES20.glDeleteProgram(id)
-            throw IllegalStateException("Program link failed: $log")
+            fail("link failed: $log", null)
         }
-        GLES20.glDeleteShader(vs)
-        GLES20.glDeleteShader(fs)
     }
+
+    private fun fail(what: String, source: String?): Nothing {
+        val message = "Shader program '$name' $what"
+        Diagnostics.record("GL", message + " [" + GlDiagnostics.rendererSummary() + "]" + (source?.let { "\n" + numbered(it) } ?: ""))
+        throw GlProgramException(message)
+    }
+
+    private fun numbered(source: String): String =
+        source.trimIndent().lines().mapIndexed { i, l -> "${i + 1}: $l" }.joinToString("\n").take(4_000)
 
     fun use() = GLES20.glUseProgram(id)
 
@@ -95,7 +122,9 @@ class GlProgram(vertexSource: String, fragmentSource: String) {
     fun release() = GLES20.glDeleteProgram(id)
 
     private fun compile(type: Int, source: String): Int {
+        val kind = if (type == GLES20.GL_VERTEX_SHADER) "vertex" else "fragment"
         val shader = GLES20.glCreateShader(type)
+        if (shader == 0) fail("$kind glCreateShader returned 0 (glError 0x${Integer.toHexString(GLES20.glGetError())})", null)
         GLES20.glShaderSource(shader, source)
         GLES20.glCompileShader(shader)
         val status = IntArray(1)
@@ -103,9 +132,69 @@ class GlProgram(vertexSource: String, fragmentSource: String) {
         if (status[0] == 0) {
             val log = GLES20.glGetShaderInfoLog(shader)
             GLES20.glDeleteShader(shader)
-            throw IllegalStateException("Shader compile failed: $log\n$source")
+            fail("$kind compile failed: $log", source)
         }
         return shader
+    }
+
+    companion object {
+        /** Builds a program, or returns null (already recorded in diagnostics) when this GPU rejects it. */
+        fun createOrNull(name: String, vertexSource: String, fragmentSource: String): GlProgram? = try {
+            GlProgram(vertexSource, fragmentSource, name)
+        } catch (e: GlProgramException) {
+            null
+        } catch (t: Throwable) {
+            Diagnostics.record("GL", "Shader program '$name' could not be built", t)
+            null
+        }
+    }
+}
+
+/** A shader program this GPU/driver rejected (details are in the diagnostics log). */
+class GlProgramException(message: String) : IllegalStateException(message)
+
+/**
+ * Facts about the GL implementation for crash reports, and rate-limited GL error checks for the render loop.
+ * Everything here must be called on a thread with a current EGL context.
+ */
+object GlDiagnostics {
+    @Volatile private var renderer: String = "unknown GPU"
+
+    /** Records GL vendor/renderer/version and limits in the diagnostics environment (call once per context). */
+    fun captureContextInfo(glVersion: Int) {
+        runCatching {
+            val vendor = GLES20.glGetString(GLES20.GL_VENDOR).orEmpty()
+            val name = GLES20.glGetString(GLES20.GL_RENDERER).orEmpty()
+            val version = GLES20.glGetString(GLES20.GL_VERSION).orEmpty()
+            val sl = GLES20.glGetString(GLES20.GL_SHADING_LANGUAGE_VERSION).orEmpty()
+            val v = IntArray(1)
+            fun int(pname: Int): Int { v[0] = 0; GLES20.glGetIntegerv(pname, v, 0); return v[0] }
+            renderer = "$name · $version"
+            Diagnostics.setEnv("gl.renderer", "$vendor $name")
+            Diagnostics.setEnv("gl.version", "$version (context ES $glVersion) · GLSL $sl")
+            Diagnostics.setEnv(
+                "gl.limits",
+                "maxTexture ${int(GLES20.GL_MAX_TEXTURE_SIZE)} · fragUnits ${int(GLES20.GL_MAX_TEXTURE_IMAGE_UNITS)} · " +
+                    "fragUniformVec ${int(GLES20.GL_MAX_FRAGMENT_UNIFORM_VECTORS)} · varyings ${int(GLES20.GL_MAX_VARYING_VECTORS)} · " +
+                    "maxRenderbuffer ${int(GLES20.GL_MAX_RENDERBUFFER_SIZE)}",
+            )
+            while (GLES20.glGetError() != GLES20.GL_NO_ERROR) Unit
+        }
+    }
+
+    fun rendererSummary(): String = renderer
+
+    /** Drains the GL error queue; records the first error (rate-limited by [Diagnostics]). Returns the error or 0. */
+    fun drainErrors(where: String): Int {
+        var first = GLES20.GL_NO_ERROR
+        var guard = 0
+        while (guard++ < 8) {
+            val err = GLES20.glGetError()
+            if (err == GLES20.GL_NO_ERROR) break
+            if (first == GLES20.GL_NO_ERROR) first = err
+        }
+        if (first != GLES20.GL_NO_ERROR) Diagnostics.record("GL", "glError 0x${Integer.toHexString(first)} after $where [$renderer]")
+        return first
     }
 }
 

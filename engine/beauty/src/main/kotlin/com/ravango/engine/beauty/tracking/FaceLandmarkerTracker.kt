@@ -9,6 +9,7 @@ import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.facelandmarker.FaceLandmarker
 import com.google.mediapipe.tasks.vision.facelandmarker.FaceLandmarkerResult
+import com.ravango.core.common.diagnostics.Diagnostics
 import com.ravango.core.common.log.RgLog
 import com.ravango.engine.beauty.mesh.FaceLandmarkIndex
 import java.io.FileInputStream
@@ -17,6 +18,7 @@ import java.nio.ByteOrder
 import java.nio.channels.FileChannel
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -39,6 +41,7 @@ internal class FaceLandmarkerTracker(context: Context) {
     private val executor: ExecutorService = Executors.newSingleThreadExecutor { r ->
         Thread(r, "rg-face-landmarker").apply { isDaemon = true; priority = Thread.NORM_PRIORITY + 1 }
     }
+    private val policy = DelegatePolicy(appContext, "face_landmarker")
 
     @Volatile var state: State = State.INITIALIZING; private set
     @Volatile var usingGpu: Boolean = false; private set
@@ -74,7 +77,24 @@ internal class FaceLandmarkerTracker(context: Context) {
     val isFailed: Boolean get() = state == State.FAILED
 
     fun start() {
-        executor.execute { initialize(preferGpu = true) }
+        submit { initialize(preferGpu = true) }
+    }
+
+    /**
+     * Runs [block] on the tracker thread. After [close] the executor rejects work; that must never surface as an
+     * exception on the MediaPipe callback thread or the GL thread (both would crash the app).
+     */
+    private fun submit(block: () -> Unit): Boolean = try {
+        executor.execute {
+            try {
+                block()
+            } catch (t: Throwable) {
+                Diagnostics.record(TAG, "Face landmarker task failed", t)
+            }
+        }
+        true
+    } catch (e: RejectedExecutionException) {
+        false
     }
 
     /** True when a new frame may be submitted now (ready, and no detection in flight or the last one timed out). */
@@ -120,6 +140,8 @@ internal class FaceLandmarkerTracker(context: Context) {
         return true
     }
 
+    private fun Throwable.brief(): String = "${javaClass.simpleName}: ${message?.take(160)}"
+
     /** Copies the newest unconsumed result into [out]; false when there is nothing new. */
     fun pollNew(out: DetectionFrame): Boolean {
         synchronized(lock) {
@@ -133,10 +155,12 @@ internal class FaceLandmarkerTracker(context: Context) {
     fun close() {
         if (closed) return
         closed = true
-        executor.execute {
+        // The graph is closed on the tracker thread, after any detection call in flight returned.
+        submit {
             runCatching { landmarker?.close() }
             landmarker = null
             model = null
+            if (usingGpu) policy.gpuStopped()
         }
         executor.shutdown()
     }
@@ -149,26 +173,36 @@ internal class FaceLandmarkerTracker(context: Context) {
         val buffer = model ?: try {
             loadModel().also { model = it }
         } catch (t: Throwable) {
-            RgLog.e(TAG, "Face landmarker model could not be loaded", t)
+            Diagnostics.record(TAG, "Face landmarker model could not be loaded", t)
+            Diagnostics.setEnv("mediapipe.face", "FAILED (model)")
             state = State.FAILED
             return
         }
         runCatching { landmarker?.close() }
         landmarker = null
-        val order = if (preferGpu) arrayOf(Delegate.GPU, Delegate.CPU) else arrayOf(Delegate.CPU)
+        val order = if (preferGpu && policy.gpuAllowed()) arrayOf(Delegate.GPU, Delegate.CPU) else arrayOf(Delegate.CPU)
+        val failures = ArrayList<String>()
         for (delegate in order) {
+            if (closed) return
+            val gpu = delegate == Delegate.GPU
+            if (gpu) policy.beginGpuInit()
             try {
                 landmarker = FaceLandmarker.createFromOptions(appContext, options(buffer, delegate))
-                usingGpu = delegate == Delegate.GPU
+                if (gpu) policy.endGpuInit(success = true)
+                usingGpu = gpu
                 consecutiveErrors = 0
                 state = State.READY
+                Diagnostics.setEnv("mediapipe.face", "$delegate" + if (failures.isEmpty()) "" else " (after: ${failures.joinToString()})")
                 RgLog.i(TAG, "Face landmarker ready on $delegate in ${SystemClock.elapsedRealtime() - started} ms")
                 return
             } catch (t: Throwable) {
                 // UnsatisfiedLinkError / RuntimeException from the native graph: try the next delegate.
-                RgLog.w(TAG, "Face landmarker init on $delegate failed", t)
+                if (gpu) policy.endGpuInit(success = false)
+                failures += "$delegate ${t.brief()}"
+                Diagnostics.record(TAG, "Face landmarker init on $delegate failed", t)
             }
         }
+        Diagnostics.setEnv("mediapipe.face", "FAILED (${failures.joinToString()})")
         state = State.FAILED
     }
 
@@ -273,10 +307,14 @@ internal class FaceLandmarkerTracker(context: Context) {
         if (consecutiveErrors == 1 || consecutiveErrors == MAX_ERRORS) RgLog.w(TAG, "Face landmarker error ($consecutiveErrors)", e)
         if (consecutiveErrors >= MAX_ERRORS && !closed) {
             if (usingGpu) {
-                RgLog.w(TAG, "Falling back to the CPU delegate")
+                Diagnostics.record(TAG, "Repeated errors on the GPU delegate; falling back to CPU", e)
+                policy.gpuStopped()
+                usingGpu = false
                 state = State.INITIALIZING
-                executor.execute { initialize(preferGpu = false) }
+                if (!submit { initialize(preferGpu = false) }) state = State.FAILED
             } else {
+                Diagnostics.record(TAG, "Face landmarker failed repeatedly on CPU; face effects are off", e)
+                Diagnostics.setEnv("mediapipe.face", "FAILED (runtime errors)")
                 state = State.FAILED
             }
         }

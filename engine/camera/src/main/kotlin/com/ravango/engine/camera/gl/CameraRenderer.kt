@@ -20,6 +20,7 @@ import com.ravango.engine.camera.recorder.PtsClock
 import com.ravango.engine.render.EglCore
 import com.ravango.engine.render.FullScreenQuad
 import com.ravango.engine.render.GlFrameProcessor
+import com.ravango.engine.render.GlDiagnostics
 import com.ravango.engine.render.GlFramebuffer
 import com.ravango.engine.render.GlProcessingContext
 import com.ravango.engine.render.GlProgram
@@ -177,11 +178,19 @@ internal class CameraRenderer(private val callbacks: Callbacks) {
         syncProcessors()
     }
 
+    /**
+     * Called from the UI thread (SurfaceHolder callbacks): must never throw. A surface that cannot be used (already
+     * abandoned, connected to another producer…) is logged and skipped; the next surfaceChanged retries.
+     */
     fun setPreviewSurface(surface: Surface, width: Int, height: Int) {
-        runOnGl(2_000) {
+        runOnGlQuietly("setPreviewSurface") {
             if (previewWindow !== surface) {
                 releasePreviewSurface()
-                val e = egl ?: return@runOnGl
+                val e = egl ?: return@runOnGlQuietly
+                if (!surface.isValid) {
+                    RgLog.w(TAG, "preview surface is no longer valid")
+                    return@runOnGlQuietly
+                }
                 previewEgl = try {
                     e.createWindowSurface(surface)
                 } catch (t: Throwable) {
@@ -189,10 +198,17 @@ internal class CameraRenderer(private val callbacks: Callbacks) {
                     EGL14.EGL_NO_SURFACE
                 }
                 if (previewEgl != EGL14.EGL_NO_SURFACE) {
-                    previewWindow = surface
-                    e.makeCurrent(previewEgl)
-                    EGL14.eglSwapInterval(e.display, 0)
-                    e.makeCurrent(pbuffer)
+                    try {
+                        e.makeCurrent(previewEgl)
+                        EGL14.eglSwapInterval(e.display, 0)
+                        previewWindow = surface
+                    } catch (t: Throwable) {
+                        RgLog.e(TAG, "preview surface cannot be made current", t)
+                        runCatching { e.makeCurrent(pbuffer) }
+                        runCatching { e.releaseSurface(previewEgl) }
+                        previewEgl = EGL14.EGL_NO_SURFACE
+                    }
+                    runCatching { e.makeCurrent(pbuffer) }
                 }
             }
             previewWidth = width
@@ -202,7 +218,7 @@ internal class CameraRenderer(private val callbacks: Callbacks) {
     }
 
     fun clearPreviewSurface(surface: Surface) {
-        runOnGl(2_000) { if (previewWindow === surface) releasePreviewSurface() }
+        runOnGlQuietly("clearPreviewSurface") { if (previewWindow === surface) releasePreviewSurface() }
     }
 
     /** Starts feeding [surface] (a MediaCodec input surface). Locks the output orientation. Blocking. */
@@ -250,8 +266,9 @@ internal class CameraRenderer(private val callbacks: Callbacks) {
         val st = SurfaceTexture(oesTexture)
         st.setOnFrameAvailableListener({ onFrameAvailable() }, handler)
         surfaceTexture = st
-        oesProgram = GlProgram(Shaders.VERTEX_TRANSFORM, Shaders.FRAGMENT_OES)
-        copyProgram = GlProgram(Shaders.VERTEX_TRANSFORM, Shaders.FRAGMENT_2D)
+        GlDiagnostics.captureContextInfo(e.glVersion)
+        oesProgram = GlProgram(Shaders.VERTEX_TRANSFORM, Shaders.FRAGMENT_OES, "camera.oes")
+        copyProgram = GlProgram(Shaders.VERTEX_TRANSFORM, Shaders.FRAGMENT_2D, "camera.copy")
         val max = IntArray(1)
         GLES20.glGetIntegerv(GLES20.GL_MAX_TEXTURE_SIZE, max, 0)
         processingContext = GlProcessingContext(e.glVersion, max[0])
@@ -534,6 +551,8 @@ internal class CameraRenderer(private val callbacks: Callbacks) {
             ),
         )
         statsWindowStart = now
+        // Once a second: surface GL errors (driver problems) in the diagnostics log; duplicates are rate-limited.
+        if (egl != null) runCatching { GlDiagnostics.drainErrors("camera frames") }
         previewFramesInWindow = 0
         encoderFramesInWindow = 0
         processNanosInWindow = 0
@@ -550,6 +569,15 @@ internal class CameraRenderer(private val callbacks: Callbacks) {
     private fun post(block: () -> Unit) {
         if (!thread.isAlive) return
         handler.post(block)
+    }
+
+    /** [runOnGl] for callers that must not throw (UI-thread callbacks): failures are logged and recorded. */
+    private fun runOnGlQuietly(what: String, block: () -> Unit) {
+        try {
+            runOnGl(2_000, block)
+        } catch (t: Throwable) {
+            RgLog.e(TAG, "$what failed", t)
+        }
     }
 
     /** Runs [block] on the GL thread and waits (bounded) for its result. */
