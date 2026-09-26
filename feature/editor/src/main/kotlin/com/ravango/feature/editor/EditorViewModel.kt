@@ -153,7 +153,8 @@ class EditorViewModel @Inject constructor(
             entitlementProvider.entitlements.collect { e ->
                 val changed = _state.value.entitlements.watermarkOnExport != e.watermarkOnExport
                 _state.update { it.copy(entitlements = e) }
-                if (changed && loaded) previewDoc.value = history.current.copy()
+                // Rebuild directly: the same document would be de-duplicated by the preview flow.
+                if (changed && loaded) preview.setDocument(history.current, watermark())
             }
         }
         viewModelScope.launch {

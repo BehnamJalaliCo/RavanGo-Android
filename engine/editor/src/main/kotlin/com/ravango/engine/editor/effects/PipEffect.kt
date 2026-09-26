@@ -44,6 +44,9 @@ private class PipShaderProgram(private val context: Context, private val item: O
     private var source: PipFrameSource? = null
     private var sourceFailed = false
 
+    /** External texture bound when no PiP frame exists yet (a 2D texture must never be bound to the OES target). */
+    private var placeholderTex = -1
+
     override fun configure(inputWidth: Int, inputHeight: Int): Size {
         outW = inputWidth
         outH = inputHeight
@@ -66,7 +69,8 @@ private class PipShaderProgram(private val context: Context, private val item: O
             program.use()
             program.setSamplerTexIdUniform("uTexSampler", inputTexId, 0)
             val src = source
-            program.setSamplerTexIdUniform("uPipSampler", src?.texId ?: inputTexId, 1)
+            val pipTex = src?.texId ?: placeholderTex.takeIf { it >= 0 } ?: GlUtil.createExternalTexture().also { placeholderTex = it }
+            program.setSamplerTexIdUniform("uPipSampler", pipTex, 1)
             program.setFloatsUniform("uPipMatrix", src?.transform ?: IDENTITY)
             val t = item.transform
             val widthPx = outW * t.scale * anim.scale
@@ -97,6 +101,8 @@ private class PipShaderProgram(private val context: Context, private val item: O
         super.release()
         source?.release()
         source = null
+        if (placeholderTex >= 0) runCatching { GlUtil.deleteTexture(placeholderTex) }
+        placeholderTex = -1
         try {
             program.delete()
         } catch (e: GlUtil.GlException) {
