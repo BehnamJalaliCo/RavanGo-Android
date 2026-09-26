@@ -101,17 +101,18 @@ object VideoModeSelector {
         val h: Int
         if (boxW.toDouble() / boxH > ratio) {
             h = boxH
-            w = align(boxH * ratio, boxW)
+            w = align(boxH * ratio, boxW, boxH)
         } else {
             w = boxW
-            h = align(boxW / ratio, boxH)
+            h = align(boxW / ratio, boxH, boxW)
         }
         return OutputSize(w, h)
     }
 
-    private fun align(value: Double, boxEdge: Int): Int {
+    private fun align(value: Double, boxEdge: Int, otherEdge: Int): Int {
         val v = value.roundToInt()
         if (v >= boxEdge) return boxEdge
+        if (v == otherEdge) return v // e.g. 1:1 keeps the standard 1080 edge
         return max(16, (v / 16) * 16)
     }
 
