@@ -24,7 +24,12 @@ crash buffer and dropbox crash/ANR entries per flow, and writes `summary.md` wit
 Selectors are the app's own strings as regexes matching **both** Persian and English (`'Scripts|متن.ها'`, `.` stands
 for the ZWNJ), so the same flows run in both languages; `-e APP_LANG=en` picks English during onboarding (default
 Persian). Where text is not enough, screens use `Modifier.testTag("…")` (exposed as resource ids by
-`testTagsAsResourceId` in `MainActivity`): `script_title`, `script_body`.
+`testTagsAsResourceId` in `MainActivity`): `script_title`, `script_body`, `scripts_search`, `ai_input`,
+`editor_text_input` — Compose text-field placeholders are not visible to UI automation, so fields need a tag.
+
+Besides the flows, every emulator job installs and runs the instrumented GL tests of `engine:beauty`
+(`ShaderProgramsTest` compiles every shader in GLES3/GLES2 modes, `EffectsPipelineTest` runs the effects processor
+off-screen) — results in the "Instrumented tests" section of `summary.md`.
 
 ## Results from CI (no login needed)
 
@@ -38,7 +43,10 @@ inputs: `locales`, `flows`). Matrix (parallel jobs): API 34 x86_64 in Persian, A
 
 The job fails (after uploading) when any flow fails or the app crashed / ANR'd. Layout of each flow folder
 (`<locale>/<flow>/`): `maestro.log`, `report.xml`, `maestro/…png` (step screenshots), `debug/` (Maestro's own failure
-screenshot + view hierarchy), `logcat.txt`, `crash_buffer.txt`, `dropbox_*.txt`, `video/` (failed flows only).
+screenshot + view hierarchy), `screenshots/` (one per step), `failure.png`, `logcat.txt`, `crash_buffer.txt`,
+`dropbox_*.txt`, `app-crash-reports/` (the app's own reports from `files/diagnostics/reports`), `app-events.log`
+(`files/diagnostics/events.log`), `video/` (failed flows only). `summary.md` also lists the camera engine lines of
+each flow (encoder/recording start, take stops, session errors, finalizer/muxer failures).
 
 ## Running locally
 
@@ -59,6 +67,10 @@ maestro studio                                           # inspect the screen / 
 
 # The CI runner (per-flow logcat, crash/ANR detection, summary.md):
 scripts/device-tests/run-suite.sh app/build/outputs/apk/debug/app-debug.apk build/device-tests "fa en"
+# … plus the instrumented GL tests:
+./gradlew :engine:beauty:assembleDebugAndroidTest
+TEST_APKS=engine/beauty/build/outputs/apk/androidTest/debug/beauty-debug-androidTest.apk \
+  scripts/device-tests/run-suite.sh app/build/outputs/apk/debug/app-debug.apk build/device-tests fa
 ```
 
 Emulator suggestion (same as CI): `-gpu swiftshader_indirect -camera-back emulated -camera-front emulated`, Pixel 5,
@@ -69,7 +81,9 @@ Emulator suggestion (same as CI): `-gpu swiftshader_indirect -camera-back emulat
 
 - Take strings from `values/strings.xml` + `values-fa/strings.xml`; use `'English|فارسی'`, wrap in `.*….*` when the
   text is part of a merged node (list items with subtitles), and replace ZWNJ with `.`.
-- Start with `- runFlow: ../subflows/launch.yaml` (launch, permissions, onboarding, crash-dialog) so a flow runs alone.
+- Start with `- runFlow: ../subflows/launch.yaml` (launch, permissions, onboarding, crash-report prompt) so a flow
+  runs alone; leave with `../subflows/go_home.yaml`. Camera: `open_camera.yaml`, `record_take.yaml` (fails unless the
+  take ends in the saved-take sheet or an explicit message), `camera_recover.yaml` (error card → Retry).
 - `optional: true` only for steps that depend on screen size or state (e.g. lenses beyond the visible carousel).
 - Maestro types ASCII only on Android; use English text in `inputText`.
 - Validate: `maestro check-syntax <flow.yaml>`.
