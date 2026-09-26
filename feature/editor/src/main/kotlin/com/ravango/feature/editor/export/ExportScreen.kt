@@ -173,7 +173,7 @@ private fun ExportForm(state: ExportUiState, vm: ExportActions) {
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     SummaryStat(Icons.Rounded.Schedule, timecode(state.durationUs, tenths = false), Modifier.weight(1f))
-                    SummaryStat(Icons.Rounded.SdStorage, "≈ " + formatBytes(state.estimatedBytes), Modifier.weight(1f))
+                    SummaryStat(Icons.Rounded.SdStorage, "≈ " + formatBytes(state.estimatedBytes), Modifier.weight(1f), isolateLtr = false)
                     SummaryStat(Icons.Rounded.Speed, localized("${(state.videoBitrate / 100_000) / 10f}") + " Mbps", Modifier.weight(1f))
                 }
             }
@@ -229,7 +229,7 @@ private fun ExportForm(state: ExportUiState, vm: ExportActions) {
 }
 
 @Composable
-private fun SummaryStat(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, modifier: Modifier = Modifier) {
+private fun SummaryStat(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, modifier: Modifier = Modifier, isolateLtr: Boolean = true) {
     Row(
         modifier.background(Color.White.copy(alpha = 0.06f), RoundedCornerShape(Radius.md)).padding(horizontal = Spacing.sm, vertical = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
@@ -237,7 +237,8 @@ private fun SummaryStat(icon: androidx.compose.ui.graphics.vector.ImageVector, t
     ) {
         Icon(icon, null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(Spacing.xs))
-        Text("\u2066" + text + "\u2069", style = MaterialTheme.typography.labelMedium, color = Color.White, maxLines = 1)
+        // Times and bitrates read left-to-right; sizes follow the reading direction ("≈ ۲۰ مگابایت").
+        Text(if (isolateLtr) "\u2066" + text + "\u2069" else text, style = MaterialTheme.typography.labelMedium, color = Color.White, maxLines = 1)
     }
 }
 
