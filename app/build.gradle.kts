@@ -26,8 +26,8 @@ android {
 
     defaultConfig {
         applicationId = "com.ravango.app"
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.2.0"
         // One APK for every Android 8+ phone: 64-bit and 32-bit ARM. (x86 is emulator/Chromebook-only; Chromebooks
         // run ARM apps through translation.)
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
