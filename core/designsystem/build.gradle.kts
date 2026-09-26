@@ -3,6 +3,7 @@ import com.android.build.api.variant.LibraryAndroidComponentsExtension
 plugins {
     alias(libs.plugins.ravango.android.library)
     alias(libs.plugins.ravango.android.compose)
+    alias(libs.plugins.ravango.android.screenshot)
 }
 
 dependencies {

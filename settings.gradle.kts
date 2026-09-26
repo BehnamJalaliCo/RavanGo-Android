@@ -36,6 +36,7 @@ include(":core:database")
 include(":core:datastore")
 include(":core:data")
 include(":core:media")
+include(":core:testing")
 
 // Engines — heavy, UI-less subsystems. Each can be tested and evolved in isolation.
 include(":engine:render")

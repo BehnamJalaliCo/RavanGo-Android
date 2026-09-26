@@ -21,6 +21,7 @@ dependencies {
     compileOnly(libs.compose.gradlePlugin)
     compileOnly(libs.ksp.gradlePlugin)
     compileOnly(libs.room.gradlePlugin)
+    implementation(libs.roborazzi.gradlePlugin)
 }
 
 gradlePlugin {
@@ -48,6 +49,10 @@ gradlePlugin {
         register("room") {
             id = "ravango.room"
             implementationClass = "RoomConventionPlugin"
+        }
+        register("androidScreenshot") {
+            id = "ravango.android.screenshot"
+            implementationClass = "AndroidScreenshotConventionPlugin"
         }
         register("jvmLibrary") {
             id = "ravango.jvm.library"
