@@ -10,6 +10,7 @@ tags:
     stopApp: true
     permissions:
       all: deny
+- runFlow: ../subflows/dismiss_system_dialogs.yaml
 - extendedWaitUntil:
     visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*|.*New recording.*|.*ضبط جدید.*|We recovered your work|کارهایتان بازیابی شد'
     timeout: 45000

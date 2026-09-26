@@ -9,8 +9,12 @@ appId: com.ravango.app.debug
     permissions:
       all: allow
 - extendedWaitUntil:
-    visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*|.*New recording.*|.*ضبط جدید.*|We recovered your work|کارهایتان بازیابی شد'
+    visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*|.*New recording.*|.*ضبط جدید.*|We recovered your work|کارهایتان بازیابی شد|.*isn.t responding.*|.*keeps stopping.*'
     timeout: 45000
+- runFlow: dismiss_system_dialogs.yaml
+- extendedWaitUntil:
+    visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*|.*New recording.*|.*ضبط جدید.*|We recovered your work|کارهایتان بازیابی شد'
+    timeout: 30000
 - runFlow:
     when:
       visible: 'We recovered your work|کارهایتان بازیابی شد'

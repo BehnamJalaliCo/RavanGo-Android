@@ -54,6 +54,13 @@ adb shell settings put global transition_animation_scale 0 || true
 adb shell settings put global animator_duration_scale 0 || true
 adb shell settings put system screen_off_timeout 1800000 || true
 adb shell svc power stayon true || true
+# Slow emulators make system apps (launcher, System UI) ANR; their "isn't responding" dialogs would cover the app.
+# Hide error dialogs (crashes/ANRs are still logged to logcat + dropbox, which is what the runner checks) and nudge
+# a configuration change so the system re-reads the setting.
+adb shell settings put global hide_error_dialogs 1 || true
+adb shell settings put system font_scale 1.01 || true
+sleep 1
+adb shell settings put system font_scale 1.0 || true
 
 log "Installing $APK"
 adb uninstall "$APP_ID" >/dev/null 2>&1 || true
