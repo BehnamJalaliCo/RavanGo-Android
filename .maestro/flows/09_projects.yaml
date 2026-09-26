@@ -72,17 +72,7 @@ tags:
     timeout: 3000
 - takeScreenshot: projects_search_empty
 - hideKeyboard
-- back
-- waitForAnimationToEnd:
-    timeout: 3000
-- runFlow:
-    when:
-      notVisible: '.*New recording.*|.*ضبط جدید.*'
-    commands:
-      - back
-- extendedWaitUntil:
-    visible: '.*New recording.*|.*ضبط جدید.*'
-    timeout: 15000
+- runFlow: ../subflows/go_home.yaml
 
 # Templates
 - tapOn: 'Templates|قالب.ها'
@@ -91,4 +81,4 @@ tags:
 - takeScreenshot: templates_list
 - scroll
 - takeScreenshot: templates_scrolled
-- back
+- runFlow: ../subflows/go_home.yaml

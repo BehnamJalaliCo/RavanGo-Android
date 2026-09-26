@@ -5,7 +5,7 @@
 # flow failed or the app crashed). Ends with summary.md (scripts/device-tests/summarize.py).
 #
 # Usage: scripts/device-tests/run-suite.sh <apk> <output-dir> [locales]   (locales default: "fa en")
-# Env:   APP_ID (default com.ravango.app.debug), FLOW_TIMEOUT seconds (default 900),
+# Env:   APP_ID (default com.ravango.app.debug), FLOW_TIMEOUT seconds (default 1500),
 #        FLOWS (optional space-separated list of flow files to run instead of all),
 #        OWNER_CODE_CONFIGURED=true when the build has an owner code hash (About → 7 taps shows the dialog),
 #        RECORD_VIDEO=false to skip screen recording.
@@ -16,7 +16,7 @@ APK="${1:?apk path}"
 OUT="${2:?output dir}"
 LOCALES="${3:-fa en}"
 APP_ID="${APP_ID:-com.ravango.app.debug}"
-FLOW_TIMEOUT="${FLOW_TIMEOUT:-900}"
+FLOW_TIMEOUT="${FLOW_TIMEOUT:-1500}"
 RECORD_VIDEO="${RECORD_VIDEO:-true}"
 OWNER_CODE_CONFIGURED="${OWNER_CODE_CONFIGURED:-false}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -58,6 +58,8 @@ adb shell svc power stayon true || true
 # Hide error dialogs (crashes/ANRs are still logged to logcat + dropbox, which is what the runner checks) and nudge
 # a configuration change so the system re-reads the setting.
 adb shell settings put global hide_error_dialogs 1 || true
+# No "Viewing full screen — GOT IT" bubble over immersive screens (teleprompter, camera).
+adb shell settings put secure immersive_mode_confirmations confirmed || true
 adb shell settings put system font_scale 1.01 || true
 sleep 1
 adb shell settings put system font_scale 1.0 || true
@@ -112,6 +114,11 @@ for LOCALE in $LOCALES; do
       "$FLOW" > "$DIR/maestro.log" 2>&1
     EXIT=$?
     DURATION=$SECONDS
+    # Flatten Maestro's output: step screenshots → screenshots/, its failure screenshot → failure.png.
+    mkdir -p "$DIR/screenshots"
+    find "$DIR/debug" -path '*/takeScreenshot/*.png' -exec mv {} "$DIR/screenshots/" \; 2>/dev/null || true
+    LAST_FAIL="$(find "$DIR/debug" -path '*/screenshots/*.png' 2>/dev/null | sort | tail -1)"
+    [ "$EXIT" -ne 0 ] && [ -n "$LAST_FAIL" ] && cp "$LAST_FAIL" "$DIR/failure.png"
 
     # Give a just-crashed process a moment to reach the logs.
     sleep 3

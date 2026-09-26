@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.compose.NavHost
@@ -77,7 +78,8 @@ fun RavanGoApp(
         }
     }
 
-    var showCrashNotice by remember { mutableStateOf(previousCrash != null) }
+    // Saveable: a language change recreates the activity and must not show the notice again.
+    var showCrashNotice by rememberSaveable { mutableStateOf(previousCrash != null) }
     if (showCrashNotice) {
         RgConfirmDialog(
             title = stringResource(R.string.crash_recovered_title),

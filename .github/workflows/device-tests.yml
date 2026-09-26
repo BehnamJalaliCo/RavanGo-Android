@@ -9,8 +9,8 @@ on:
   workflow_dispatch:
     inputs:
       locales:
-        description: "App languages to test (space separated: fa en)"
-        default: "fa en"
+        description: "Optional: override the languages every emulator job tests (e.g. \"fa\"); empty = matrix default"
+        default: ""
       flows:
         description: "Optional: only these flow files (space separated, e.g. .maestro/flows/05_camera_studio.yaml)"
         default: ""
@@ -76,13 +76,16 @@ jobs:
     name: Emulator API ${{ matrix.api }} (${{ matrix.locales }})
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 240
     strategy:
       fail-fast: false
       matrix:
+        # One job per (API, language) so they run in parallel.
         include:
           - api: 34
-            locales: "fa en"
+            locales: "fa"
+          - api: 34
+            locales: "en"
           - api: 28
             locales: "fa"
     steps:
@@ -128,12 +131,12 @@ jobs:
           mkdir -p results
           cat results/result.env 2>/dev/null || echo "RUN_FAILED=1" | tee results/result.env
           cat results/result.env >> "$GITHUB_OUTPUT"
-          echo "## API ${{ matrix.api }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "## API ${{ matrix.api }} (${{ matrix.locales }})" >> "$GITHUB_STEP_SUMMARY"
           cat results/summary.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "No summary (emulator or suite failed to start)." >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: device-results-api${{ matrix.api }}
+          name: device-results-api${{ matrix.api }}-${{ matrix.locales }}
           path: results
           retention-days: 14
       - name: Fail on crashes, ANRs or failed flows

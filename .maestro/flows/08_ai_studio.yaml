@@ -42,14 +42,4 @@ tags:
     env:
       WAIT_MS: 3000
 - takeScreenshot: ai_generate_attempt
-- back
-- waitForAnimationToEnd:
-    timeout: 3000
-- runFlow:
-    when:
-      notVisible: '.*New recording.*|.*ضبط جدید.*'
-    commands:
-      - back
-- extendedWaitUntil:
-    visible: '.*New recording.*|.*ضبط جدید.*'
-    timeout: 15000
+- runFlow: ../subflows/go_home.yaml

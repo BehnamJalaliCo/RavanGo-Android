@@ -23,6 +23,12 @@ tags:
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: settings_language_en
+- runFlow:
+    when:
+      visible: 'We recovered your work|کارهایتان بازیابی شد'
+    commands:
+      - takeScreenshot: crash_notice_after_recreate
+      - tapOn: 'OK|باشه'
 - tapOn: 'فارسی'
 - waitForAnimationToEnd:
     timeout: 5000
@@ -123,9 +129,4 @@ tags:
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: licenses
-- back
-- back
-- back
-- extendedWaitUntil:
-    visible: '.*New recording.*|.*ضبط جدید.*'
-    timeout: 15000
+- runFlow: ../subflows/go_home.yaml

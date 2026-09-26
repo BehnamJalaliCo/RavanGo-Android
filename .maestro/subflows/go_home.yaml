@@ -1,0 +1,28 @@
+# Presses Back until Home is showing (at most 4 times, waiting for each transition), relaunching the app if a
+# Back went one step too far.
+appId: com.ravango.app.debug
+---
+- repeat:
+    times: 4
+    while:
+      notVisible: '.*New recording.*|.*ضبط جدید.*'
+    commands:
+      - extendedWaitUntil:
+          visible: '.*New recording.*|.*ضبط جدید.*'
+          timeout: 3000
+          optional: true
+      - runFlow:
+          when:
+            notVisible: '.*New recording.*|.*ضبط جدید.*'
+          commands:
+            - back
+- runFlow:
+    when:
+      notVisible: '.*New recording.*|.*ضبط جدید.*'
+    commands:
+      - launchApp:
+          appId: com.ravango.app.debug
+          stopApp: false
+- extendedWaitUntil:
+    visible: '.*New recording.*|.*ضبط جدید.*'
+    timeout: 20000

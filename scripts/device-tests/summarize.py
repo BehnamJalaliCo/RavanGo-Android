@@ -84,12 +84,22 @@ def dropbox_entries(text, start_time):
 
 
 def clean(block):
-    """Drops the logcat prefix (date time pid tid level) to keep traces readable."""
-    out = []
-    for l in block[:MAX_TRACE_LINES]:
-        out.append(re.sub(r"^\d\d-\d\d \d\d:\d\d:\d\d\.\d+\s+\d+\s+\d+\s+\w\s+", "", l))
-    if len(block) > MAX_TRACE_LINES:
-        out.append(f"... ({len(block) - MAX_TRACE_LINES} more lines)")
+    """Drops the logcat prefix (date time pid tid level); keeps the head of the trace and every "Caused by"."""
+    lines = [re.sub(r"^\d\d-\d\d \d\d:\d\d:\d\d\.\d+\s+\d+\s+\d+\s+\w\s+", "", l) for l in block]
+    if len(lines) <= MAX_TRACE_LINES:
+        return "\n".join(lines)
+    keep = set(range(25))
+    for i, l in enumerate(lines):
+        if "Caused by" in l:
+            keep.update(range(i, min(i + 12, len(lines))))
+    out, last = [], -1
+    for i in sorted(keep):
+        if i != last + 1:
+            out.append("        ...")
+        out.append(lines[i])
+        last = i
+    if last < len(lines) - 1:
+        out.append(f"        ... ({len(lines) - 1 - last} more lines)")
     return "\n".join(out)
 
 
@@ -103,7 +113,10 @@ def maestro_failure(log):
 
 
 def screenshots(flow_dir):
-    shots = sorted(p.relative_to(flow_dir).as_posix() for p in Path(flow_dir).rglob("*.png") if "/debug/" not in p.as_posix())
+    d = Path(flow_dir)
+    shots = sorted(p.relative_to(d).as_posix() for p in (d / "screenshots").glob("*.png"))
+    if not shots:  # older layout: Maestro's own folders
+        shots = sorted(p.relative_to(d).as_posix() for p in d.rglob("takeScreenshot/*.png"))
     return shots
 
 
@@ -153,8 +166,10 @@ def main(out_dir):
                 sec.append("**App crash (native):**\n```\n" + t + "\n```")
             for t in an:
                 sec.append("**ANR:**\n```\n" + t + "\n```")
+            if (d / "failure.png").exists():
+                sec.append(f"Failure screenshot: `{r['locale']}/{r['flow']}/failure.png`")
             if shots:
-                sec.append("Screenshots: " + ", ".join(f"`{r['locale']}/{r['flow']}/{s}`" for s in shots[-6:]))
+                sec.append("Last step screenshots: " + ", ".join(f"`{r['locale']}/{r['flow']}/{s}`" for s in shots[-6:]))
             if (d / "video").exists():
                 sec.append(f"Video: `{r['locale']}/{r['flow']}/video/`")
             details.append("\n\n".join(sec))
@@ -179,8 +194,8 @@ def main(out_dir):
     if details:
         md += ["## Failures, crashes and ANRs", "", *details, ""]
     md += [
-        "Per flow folder: `maestro.log` (step log), `report.xml` (JUnit), `maestro/` (screenshots from each step), "
-        "`debug/` (Maestro's own failure screenshot + hierarchy), `logcat.txt`, `crash_buffer.txt`, `dropbox_*.txt`, "
+        "Per flow folder: `maestro.log` (step log), `report.xml` (JUnit), "
+        "`screenshots/` (one per step), `failure.png` (screen when a flow failed), `debug/` (Maestro command log + view hierarchy), `logcat.txt`, `crash_buffer.txt`, `dropbox_*.txt`, "
         "`video/` (only for failed/crashed flows).",
         "",
     ]

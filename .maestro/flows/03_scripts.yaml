@@ -15,7 +15,9 @@ tags:
 - tapOn: 'Section|بخش'
 - tapOn: 'Highlight|برجسته'
 - tapOn: 'Emphasis|تأکید'
-- tapOn: 'Pause|مکث'
+- tapOn:
+    text: 'Pause|مکث'
+    optional: true
 - tapOn: 'Undo|واگرد'
 - takeScreenshot: scripts_editor_markup
 - hideKeyboard

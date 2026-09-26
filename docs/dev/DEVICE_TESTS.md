@@ -30,7 +30,7 @@ Persian). Where text is not enough, screens use `Modifier.testTag("…")` (expos
 
 Workflow: `.github/workflows/device-tests.yml` — on pushes to `claude/ravango-video-production-app-4m2l7j` and
 `wip/device-tests` that touch app code or flows, and manually (Actions → Device tests → Run workflow; optional
-inputs: `locales`, `flows`). Matrix: API 34 x86_64 (fa + en) and API 28 x86_64 (fa), emulated front and back cameras.
+inputs: `locales`, `flows`). Matrix (parallel jobs): API 34 x86_64 in Persian, API 34 in English, API 28 x86_64 in Persian; emulated front and back cameras.
 
 - Summary: `curl -L https://github.com/BehnamJalaliCo/RavanGo-Android/releases/download/device-tests/summary.md`
 - Everything (screenshots as JPEG, logcat, Maestro logs, JUnit): `curl -L -o device-tests.zip https://github.com/BehnamJalaliCo/RavanGo-Android/releases/download/device-tests/device-tests.zip`

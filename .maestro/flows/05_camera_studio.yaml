@@ -193,21 +193,22 @@ tags:
       WAIT_MS: 1500
 - takeScreenshot: beauty_look_natural
 - runFlow: ../subflows/dismiss_paywall.yaml
-- extendedWaitUntil:
-    visible: 'Start recording|شروع ضبط|Skin|پوست'
-    timeout: 20000
 - runFlow:
     when:
       visible: 'Soft Glam|گلم ملایم'
     commands:
       - tapOn: 'Soft Glam|گلم ملایم'
       - runFlow: ../subflows/dismiss_paywall.yaml
-- runFlow:
-    when:
-      visible: 'Skin|پوست'
+- takeScreenshot: beauty_panel_final
+# Close the beauty sheet (if the paywall round-trip left it open).
+- repeat:
+    times: 2
+    while:
+      notVisible: 'Start recording|شروع ضبط'
     commands:
-      - takeScreenshot: beauty_panel_final
       - back
+      - waitForAnimationToEnd:
+          timeout: 3000
 - extendedWaitUntil:
     visible: 'Start recording|شروع ضبط'
     timeout: 20000

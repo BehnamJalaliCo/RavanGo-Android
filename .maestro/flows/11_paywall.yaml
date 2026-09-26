@@ -68,5 +68,4 @@ tags:
     visible: 'Restore|بازیابی'
     timeout: 15000
 - takeScreenshot: paywall_from_account
-- back
-- back
+- runFlow: ../subflows/go_home.yaml

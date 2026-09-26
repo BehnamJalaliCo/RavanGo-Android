@@ -15,3 +15,8 @@ appId: com.ravango.app.debug
       visible: ".*isn't responding.*|.*keeps stopping.*|.*has stopped.*"
     commands:
       - tapOn: 'Wait|Close app|Close|OK'
+- runFlow:
+    when:
+      visible: 'GOT IT|Got it'
+    commands:
+      - tapOn: 'GOT IT|Got it'
