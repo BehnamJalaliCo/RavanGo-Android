@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.ravango.android.compose)
     alias(libs.plugins.ravango.hilt)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.aboutlibraries)
 }
 
 /** Resolves a config value: env var RAVANGO_<NAME> → secrets.properties → secrets.defaults.properties. */
@@ -49,6 +50,13 @@ android {
     }
 
     signingConfigs {
+        // Shared debug key (public, non-secret) so debug/CI builds install over each other across machines.
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         create("release") {
             val storeFilePath = secret("releaseStoreFile")
             if (storeFilePath.isNotBlank()) {
@@ -124,6 +132,8 @@ dependencies {
     ksp(libs.androidx.hilt.compiler)
     implementation(libs.androidx.compose.material3)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.aboutlibraries.core)
+    implementation(libs.aboutlibraries.compose.m3)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.ext.junit)

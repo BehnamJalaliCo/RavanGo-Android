@@ -17,7 +17,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.ravango.app.R
 import com.ravango.core.designsystem.component.RgConfirmDialog
+import androidx.navigation.compose.composable
 import com.ravango.core.navigation.HomeRoute
+import com.ravango.core.navigation.LicensesRoute
 import com.ravango.core.navigation.OnboardingRoute
 import com.ravango.core.navigation.ScriptEditorRoute
 import com.ravango.feature.account.accountDestinations
@@ -62,6 +64,7 @@ fun RavanGoApp(
         projectsDestinations(navController)
         accountDestinations(navController)
         paywallDestinations(navController)
+        composable<LicensesRoute> { LicensesScreen(onBack = { navController.popBackStack() }) }
     }
 
     // Text shared from another app opens the script editor pre-filled.

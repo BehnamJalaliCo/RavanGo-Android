@@ -21,3 +21,7 @@ google-services.json
 
 # Misc
 *.log
+
+private/
+.claude/worktrees/
+!app/debug.keystore

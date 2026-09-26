@@ -12,6 +12,20 @@ import androidx.compose.ui.unit.sp
 import com.ravango.core.designsystem.R
 import com.ravango.core.model.PrompterFont
 
+/**
+ * RavanGo brand font: Ravagh (licensed from fontiran.com). Resolved at build time to `R.font.brand_*`; builds without
+ * access to the licensed files fall back to Vazirmatn with the same resource names (see core/designsystem/build.gradle.kts).
+ */
+val BrandFont = FontFamily(
+    Font(R.font.brand_light, FontWeight.Light),
+    Font(R.font.brand_regular, FontWeight.Normal),
+    Font(R.font.brand_medium, FontWeight.Medium),
+    Font(R.font.brand_semibold, FontWeight.SemiBold),
+    Font(R.font.brand_bold, FontWeight.Bold),
+    Font(R.font.brand_extrabold, FontWeight.ExtraBold),
+    Font(R.font.brand_black, FontWeight.Black),
+)
+
 /** Vazirmatn covers Persian and Latin with matching metrics, so mixed-language UI stays balanced. */
 val Vazirmatn = FontFamily(
     Font(R.font.vazirmatn_light, FontWeight.Light),
@@ -34,6 +48,7 @@ val Samim = FontFamily(
 
 /** Maps the persisted font choice to a Compose [FontFamily]. Shared by teleprompter, subtitles and text overlays. */
 fun PrompterFont.toFontFamily(): FontFamily = when (this) {
+    PrompterFont.RAVAGH -> BrandFont
     PrompterFont.VAZIRMATN -> Vazirmatn
     PrompterFont.SAHEL -> Sahel
     PrompterFont.SAMIM -> Samim
@@ -44,6 +59,7 @@ fun PrompterFont.toFontFamily(): FontFamily = when (this) {
 
 /** Font resource ids for code paths that render text outside Compose (e.g. export overlays with android.graphics). */
 fun PrompterFont.fontResIds(): Pair<Int?, Int?> = when (this) {
+    PrompterFont.RAVAGH -> R.font.brand_regular to R.font.brand_bold
     PrompterFont.VAZIRMATN -> R.font.vazirmatn_regular to R.font.vazirmatn_bold
     PrompterFont.SAHEL -> R.font.sahel_regular to R.font.sahel_bold
     PrompterFont.SAMIM -> R.font.samim_regular to R.font.samim_bold
@@ -51,7 +67,7 @@ fun PrompterFont.fontResIds(): Pair<Int?, Int?> = when (this) {
 }
 
 private val base = TextStyle(
-    fontFamily = Vazirmatn,
+    fontFamily = BrandFont,
     platformStyle = PlatformTextStyle(includeFontPadding = false),
     lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.None),
 )
