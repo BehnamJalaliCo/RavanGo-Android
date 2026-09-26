@@ -135,6 +135,100 @@ class VideoModeSelectorTest {
             .containsExactly(FlashMode.OFF, FlashMode.TORCH)
     }
 
+    @Test
+    fun `software-only encoders are capped to 720p30 while hardware encoders keep every mode`() {
+        val sizes = listOf(VideoSize(1920, 1080), VideoSize(1280, 720))
+        val fps = listOf(30 to 30, 60 to 60)
+        val software = VideoModeSelector.buildModes(
+            streamSizes = sizes,
+            fpsRanges = fps,
+            minFrameDurationNs = { 16_666_666 },
+            codecs = setOf(VideoCodec.H264),
+            encoderSupports = { _, _, _, _ -> true },
+            hardwareEncoderSupports = { _, _, _, _ -> false }, // e.g. only OMX.google.h264.encoder (emulator)
+        )
+        assertThat(software.map { "${it.size.label}@${it.fps}" }).containsExactly("720p@30")
+
+        val hardware = VideoModeSelector.buildModes(
+            streamSizes = sizes,
+            fpsRanges = fps,
+            minFrameDurationNs = { 16_666_666 },
+            codecs = setOf(VideoCodec.H264),
+            encoderSupports = { _, _, _, _ -> true },
+            hardwareEncoderSupports = { _, _, _, _ -> true },
+        )
+        assertThat(hardware.map { "${it.size.label}@${it.fps}" }).containsExactly("1080p@30", "1080p@60", "720p@30", "720p@60").inOrder()
+    }
+
+    @Test
+    fun `a codec only available in software is dropped above the cap but kept below it`() {
+        val modes = VideoModeSelector.buildModes(
+            streamSizes = listOf(VideoSize(1920, 1080), VideoSize(1280, 720)),
+            fpsRanges = listOf(30 to 30),
+            minFrameDurationNs = { 0 },
+            codecs = setOf(VideoCodec.H264, VideoCodec.HEVC),
+            encoderSupports = { _, _, _, _ -> true },
+            hardwareEncoderSupports = { codec, _, _, _ -> codec == VideoCodec.H264 },
+        )
+        assertThat(modes.first { it.size.shortSide == 1080 }.codecs).containsExactly(VideoCodec.H264)
+        assertThat(modes.first { it.size.shortSide == 720 }.codecs).containsExactly(VideoCodec.H264, VideoCodec.HEVC)
+    }
+
+    @Test
+    fun `software encoder without a 720p camera stream records 720p from a larger stream`() {
+        val modes = VideoModeSelector.buildModes(
+            streamSizes = listOf(VideoSize(1920, 1080), VideoSize(640, 480)),
+            fpsRanges = listOf(15 to 30, 30 to 30),
+            minFrameDurationNs = { 33_333_333 },
+            codecs = setOf(VideoCodec.H264),
+            encoderSupports = { _, _, _, _ -> true },
+            hardwareEncoderSupports = { _, _, _, _ -> false },
+        )
+        assertThat(modes).containsExactly(VideoMode(VideoSize(1280, 720), 30, setOf(VideoCodec.H264)))
+        assertThat(VideoModeSelector.streamSizeFor(VideoSize(1280, 720), listOf(VideoSize(1920, 1080), VideoSize(640, 480))))
+            .isEqualTo(VideoSize(1920, 1080))
+    }
+
+    @Test
+    fun `software cap never leaves a camera without any mode`() {
+        val modes = VideoModeSelector.buildModes(
+            streamSizes = listOf(VideoSize(3840, 2160), VideoSize(1920, 1080)),
+            fpsRanges = listOf(60 to 60),
+            minFrameDurationNs = { 0 },
+            codecs = setOf(VideoCodec.H264),
+            encoderSupports = { _, _, _, _ -> true },
+            hardwareEncoderSupports = { _, _, _, _ -> false },
+        )
+        // No 30 fps range at all: the lightest mode stays available.
+        assertThat(modes.map { "${it.size.label}@${it.fps}" }).containsExactly("720p@60")
+    }
+
+    @Test
+    fun `software encoder bitrate is capped and hardware bitrate untouched`() {
+        assertThat(VideoModeSelector.encoderBitrate(13_900_000, softwareEncoder = true)).isEqualTo(VideoModeSelector.SOFTWARE_MAX_BITRATE)
+        assertThat(VideoModeSelector.encoderBitrate(3_000_000, softwareEncoder = true)).isEqualTo(3_000_000)
+        assertThat(VideoModeSelector.encoderBitrate(13_900_000, softwareEncoder = false)).isEqualTo(13_900_000)
+    }
+
+    @Test
+    fun `software encoder names are recognised`() {
+        assertThat(EncoderSupport.isSoftwareName("OMX.google.h264.encoder")).isTrue()
+        assertThat(EncoderSupport.isSoftwareName("c2.android.avc.encoder")).isTrue()
+        assertThat(EncoderSupport.isSoftwareName("OMX.qcom.video.encoder.avc")).isFalse()
+        assertThat(EncoderSupport.isSoftwareName("c2.exynos.h264.encoder")).isFalse()
+        assertThat(EncoderSupport.isSoftwareName(null)).isFalse()
+    }
+
+    @Test
+    fun `capped settings step down to the closest lighter mode`() {
+        val caps = caps(listOf(mode(3840, 2160, 30), mode(1920, 1080, 60), mode(1920, 1080, 30), mode(1280, 720, 30)))
+        val capped = VideoModeSelector.capped(CameraSettings(resolution = VideoSize(1920, 1080), frameRate = 60), caps, 720, 30)
+        assertThat(capped.resolution).isEqualTo(VideoSize(1280, 720))
+        assertThat(capped.frameRate).isEqualTo(30)
+        val already = CameraSettings(resolution = VideoSize(1280, 720), frameRate = 30)
+        assertThat(VideoModeSelector.capped(already, caps, 720, 30)).isEqualTo(already)
+    }
+
     private fun mode(w: Int, h: Int, fps: Int) = VideoMode(VideoSize(w, h), fps, setOf(VideoCodec.H264, VideoCodec.HEVC))
 
     private fun caps(modes: List<VideoMode>) = CameraCapabilities(

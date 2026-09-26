@@ -165,6 +165,8 @@
 
     <string name="camera_msg_video_only">میکروفون خاموش است؛ فقط ویدیو ضبط می‌شود</string>
     <string name="camera_msg_nothing_recorded">چیزی ضبط نشد</string>
+    <string name="camera_msg_take_lost_camera">اتصال دوربین پیش از ضبط اولین تصویر قطع شد؛ چیزی برای ذخیره نبود.</string>
+    <string name="camera_msg_take_lost_encoder">رمزگذار ویدیو پیش از ضبط اولین تصویر از کار افتاد؛ چیزی برای ذخیره نبود. دوباره امتحان کنید.</string>
     <plurals name="camera_msg_recovered">
         <item quantity="one">%1$s ضبط نیمه‌کاره بازیابی شد</item>
         <item quantity="other">%1$s ضبط نیمه‌کاره بازیابی شد</item>
@@ -174,7 +176,7 @@
     <string name="camera_warn_stopped_thermal">ضبط به دلیل داغ‌شدن بیش از حد دستگاه متوقف شد. برداشت شما ذخیره شد.</string>
     <string name="camera_warn_low_storage">فضای ذخیره‌سازی تقریباً پر است</string>
     <string name="camera_warn_stopped_storage">ضبط متوقف شد: فضای ذخیره‌سازی پر است. برداشت شما ذخیره شد.</string>
-    <string name="camera_warn_stopped_camera">اتصال دوربین قطع شد. برداشت شما ذخیره شد.</string>
+    <string name="camera_warn_stopped_camera">اتصال دوربین قطع شد؛ برداشت تا همان لحظه ذخیره شد.</string>
     <string name="camera_warn_stopped_encoder">رمزگذار متوقف شد. همه‌چیز تا آن لحظه ذخیره شد.</string>
     <string name="camera_warn_audio_unavailable">میکروفون در دسترس نیست؛ ضبط فقط با ویدیو ادامه دارد</string>
     <string name="camera_warn_audio_format">میکروفون وسط ضبط عوض شد؛ ادامهٔ برداشت بدون صدا ضبط می‌شود</string>

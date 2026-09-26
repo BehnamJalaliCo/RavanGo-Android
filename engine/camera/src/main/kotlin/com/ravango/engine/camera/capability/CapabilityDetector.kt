@@ -12,6 +12,7 @@ import com.ravango.core.model.LensFacing
 import com.ravango.core.model.StabilizationMode
 import com.ravango.core.model.VideoSize
 import com.ravango.core.model.WhiteBalanceMode
+import com.ravango.engine.camera.session.RequestSupport
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -104,14 +105,18 @@ class CapabilityDetector @Inject constructor(
             },
             codecs = codecs,
             encoderSupports = encoders::supports,
+            hardwareEncoderSupports = encoders::supportsInHardware,
         )
 
         val isoRange = if (manualSensor) chars.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)?.let { it.lower..it.upper } else null
         val exposureRange = if (manualSensor) chars.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE)?.let { it.lower..it.upper } else null
 
         val afModes = chars.get(CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES) ?: intArrayOf()
-        val minFocus = chars.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE) ?: 0f
-        val autoFocus = CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_VIDEO in afModes || CameraMetadata.CONTROL_AF_MODE_AUTO in afModes
+        val minFocusReported = chars.get(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE)
+        val minFocus = minFocusReported ?: 0f
+        // A minimum focus distance of 0 means a fixed-focus lens (typical front cameras): only AF_MODE_OFF works there.
+        val autoFocus = (CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_VIDEO in afModes || CameraMetadata.CONTROL_AF_MODE_AUTO in afModes) &&
+            minFocusReported != 0f
         val manualFocus = minFocus > 0f && CameraMetadata.CONTROL_AF_MODE_OFF in afModes
 
         val evRange = chars.get(CameraCharacteristics.CONTROL_AE_COMPENSATION_RANGE)?.let { it.lower..it.upper } ?: 0..0
@@ -155,6 +160,30 @@ class CapabilityDetector @Inject constructor(
         val focal = chars.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)?.toList() ?: emptyList()
         val eq = equivalentFocal(chars)
         val sensorOrientation = chars.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 90
+        val aeLock = chars.get(CameraCharacteristics.CONTROL_AE_LOCK_AVAILABLE) == true
+        val flash = chars.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+        val maxAf = chars.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF) ?: 0
+        val maxAe = chars.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AE) ?: 0
+        val requestSupport = RequestSupport(
+            controlModes = chars.get(CameraCharacteristics.CONTROL_AVAILABLE_MODES)?.toSet().orEmpty(),
+            aeModes = chars.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES)?.toSet().orEmpty(),
+            afModes = afModes.toSet(),
+            awbModes = awbModes.toSet(),
+            sceneModes = if (level != HardwareLevel.LEGACY) sceneModes.toSet() else emptySet(),
+            videoStabilizationModes = eisModes.toSet(),
+            opticalStabilizationModes = oisModes.toSet(),
+            maxAfRegions = maxAf,
+            maxAeRegions = maxAe,
+            manualSensor = manualSensor,
+            manualPostProcessing = manualPost,
+            fpsRanges = fpsRanges,
+            flashAvailable = flash,
+            minFocusDistance = minFocusReported,
+            evRange = evRange,
+            aeLockAvailable = aeLock,
+            zoomRatioRange = if (zoomRatioApi) zoomRange else null,
+            maxDigitalZoom = chars.get(CameraCharacteristics.SCALER_AVAILABLE_MAX_DIGITAL_ZOOM) ?: 1f,
+        )
 
         return CameraCapabilities(
             cameraId = id,
@@ -180,21 +209,28 @@ class CapabilityDetector @Inject constructor(
             exposureCompensationStep = evStep,
             whiteBalanceModes = wbModes,
             manualKelvin = manualKelvin,
-            aeLockAvailable = chars.get(CameraCharacteristics.CONTROL_AE_LOCK_AVAILABLE) == true,
+            aeLockAvailable = aeLock,
             awbLockAvailable = chars.get(CameraCharacteristics.CONTROL_AWB_LOCK_AVAILABLE) == true,
-            flashAvailable = chars.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true,
+            flashAvailable = flash,
             stabilizationModes = stabilization,
             electronicStabilization = CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_ON in eisModes,
             opticalStabilization = ois,
             hdrOptions = hdr,
             tenBitHdrOnDevice = tenBit,
-            maxAfRegions = chars.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF) ?: 0,
-            maxAeRegions = chars.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AE) ?: 0,
+            maxAfRegions = maxAf,
+            maxAeRegions = maxAe,
             zoomRange = zoomRange,
             zoomRatioApi = zoomRatioApi,
             activeArray = activeArea,
             timestampRealtime = chars.get(CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE) == CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME,
-        ).also { RgLog.d(TAG, "camera $id $facing level=$level modes=${modes.size} zoom=$zoomRange logical=$logical") }
+            requestSupport = requestSupport,
+        ).also {
+            RgLog.d(
+                TAG,
+                "camera $id $facing level=$level modes=${modes.size} zoom=$zoomRange logical=$logical " +
+                    "af=${afModes.toList()} minFocus=$minFocusReported awb=${awbModes.toList()} manualSensor=$manualSensor manualPost=$manualPost",
+            )
+        }
     }
 
     companion object {
