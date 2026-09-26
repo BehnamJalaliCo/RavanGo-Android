@@ -129,7 +129,7 @@ internal fun SwitchRow(
     com.ravango.core.designsystem.component.RgListItem(
         title = title,
         subtitle = subtitle,
-        icon = icon,
+        icon = icon, iconTint = iconTone(icon).content, iconBackground = iconTone(icon).container,
         modifier = modifier,
         onClick = if (enabled) ({ onCheckedChange(!checked) }) else null,
         trailing = {
@@ -165,5 +165,25 @@ internal fun LegalSection(title: String, body: String, modifier: Modifier = Modi
         Text(title, style = MaterialTheme.typography.titleMedium, color = RgTheme.colors.textPrimary)
         Spacer(Modifier.height(Spacing.xs))
         Text(body, style = MaterialTheme.typography.bodyMedium, color = RgTheme.colors.textSecondary)
+    }
+}
+
+/**
+ * Category color for a settings/account row icon, so groups read at a glance (iOS-style) instead of a wall of
+ * identical blue bubbles. Unknown icons get a stable tone derived from their name.
+ */
+@Composable
+internal fun iconTone(icon: ImageVector?): com.ravango.core.designsystem.theme.RgTone {
+    val tones = RgTheme.colors.tones
+    val name = icon?.name.orEmpty().substringAfterLast('.')
+    return when (name) {
+        "Edit", "Person", "Description", "Translate", "Key" -> tones.periwinkle
+        "WorkspacePremium", "Notifications", "Star" -> tones.butter
+        "Cloud", "CloudDone", "CloudSync", "Info", "ScreenLockPortrait", "Storage", "Language" -> tones.sky
+        "Settings", "Vibration", "AutoAwesome", "Palette", "DarkMode", "LightMode" -> tones.lilac
+        "PrivacyTip", "Shield", "Memory", "CleaningServices", "Lock" -> tones.mint
+        "Mail", "PhotoLibrary", "VideoSettings", "BugReport" -> tones.peach
+        "Animation", "Favorite" -> tones.blush
+        else -> tones.forSeed(name)
     }
 }

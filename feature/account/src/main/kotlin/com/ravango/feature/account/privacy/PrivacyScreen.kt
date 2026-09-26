@@ -1,5 +1,6 @@
 package com.ravango.feature.account.privacy
 
+import com.ravango.feature.account.common.iconTone
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -172,7 +173,7 @@ internal fun PrivacyContent(
                 RgListItem(
                     stringResource(R.string.account_export_data),
                     subtitle = stringResource(R.string.account_export_data_sub),
-                    icon = Icons.Rounded.Download,
+                    icon = Icons.Rounded.Download, iconTint = iconTone(Icons.Rounded.Download).content, iconBackground = iconTone(Icons.Rounded.Download).container,
                     onClick = if (state.busy) null else onExport,
                 )
                 RgListItem(
@@ -197,7 +198,7 @@ internal fun PrivacyContent(
                     RgListItem(
                         stringResource(R.string.account_privacy_online),
                         subtitle = state.privacyUrl,
-                        icon = Icons.AutoMirrored.Rounded.OpenInNew,
+                        icon = Icons.AutoMirrored.Rounded.OpenInNew, iconTint = iconTone(Icons.AutoMirrored.Rounded.OpenInNew).content, iconBackground = iconTone(Icons.AutoMirrored.Rounded.OpenInNew).container,
                         onClick = onOpenOnline,
                     )
                 }

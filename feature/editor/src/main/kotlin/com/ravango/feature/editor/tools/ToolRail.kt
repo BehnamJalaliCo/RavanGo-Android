@@ -1,5 +1,15 @@
 package com.ravango.feature.editor.tools
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import com.ravango.core.designsystem.motion.rgFadeThrough
+import com.ravango.core.designsystem.theme.Motion
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -121,9 +131,11 @@ fun ToolRail(state: EditorUiState, onTool: (EditorTool) -> Unit, modifier: Modif
 /** The panel for the active tool, animated in above the rail. */
 @Composable
 fun ToolPanelHost(state: EditorUiState, vm: EditorActions, modifier: Modifier = Modifier) {
+    val reduceMotion = RgTheme.reduceMotion
+    val panelColor = RgTheme.colors.surface
     AnimatedContent(
         targetState = state.tool,
-        transitionSpec = { (fadeIn(tween(160)) + expandVertically()) togetherWith (fadeOut(tween(120)) + shrinkVertically()) },
+        transitionSpec = { rgFadeThrough(reduceMotion, clipSize = true) },
         label = "toolPanel",
         modifier = modifier,
     ) { tool ->
@@ -132,7 +144,7 @@ fun ToolPanelHost(state: EditorUiState, vm: EditorActions, modifier: Modifier = 
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = Spacing.sm)
-                    .background(Color(0xFF1B1828), RoundedCornerShape(topStart = Radius.lg, topEnd = Radius.lg))
+                    .background(panelColor, RoundedCornerShape(topStart = Radius.lg, topEnd = Radius.lg))
                     .heightIn(max = 300.dp)
                     .verticalScroll(rememberScrollState())
                     .padding(vertical = Spacing.sm),
@@ -163,22 +175,34 @@ internal fun accent() = RgTheme.colors.accent
 @Composable
 private fun RailItem(icon: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
     val colors = RgTheme.colors
+    // Material-style indicator: the pill springs open from the icon's width when a tool is chosen.
+    val reduceMotion = RgTheme.reduceMotion
+    val pill by animateFloatAsState(if (selected) 1f else 0f, if (reduceMotion) snap() else Motion.spatialBouncy(), label = "railPill")
+    val iconTint by animateColorAsState(if (selected) colors.onAccent else Color.White.copy(alpha = 0.9f), Motion.quick(), label = "railIcon")
     Column(
         Modifier
             .width(68.dp)
             .clip(RoundedCornerShape(Radius.md))
-            .pressable(onClick = onClick)
+            .pressable(shape = RoundedCornerShape(Radius.md), onClick = onClick)
             .padding(vertical = Spacing.xs),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
             Modifier
                 .size(width = 52.dp, height = 32.dp)
-                .clip(RoundedCornerShape(Radius.pill))
-                .background(if (selected) colors.accent else Color.Transparent),
+                .drawBehind {
+                    if (pill <= 0.01f) return@drawBehind
+                    val w = size.width * (0.45f + 0.55f * pill)
+                    drawRoundRect(
+                        colors.accent.copy(alpha = pill.coerceIn(0f, 1f)),
+                        topLeft = Offset((size.width - w) / 2f, 0f),
+                        size = Size(w, size.height),
+                        cornerRadius = CornerRadius(size.height / 2f),
+                    )
+                },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, null, tint = if (selected) colors.onAccent else Color.White.copy(alpha = 0.9f), modifier = Modifier.size(22.dp))
+            Icon(icon, null, tint = iconTint, modifier = Modifier.size(22.dp))
         }
         Spacer(Modifier.height(Spacing.xs))
         Text(

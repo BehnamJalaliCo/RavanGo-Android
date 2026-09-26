@@ -1,5 +1,22 @@
 package com.ravango.feature.ai
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.unit.LayoutDirection
+import com.ravango.core.designsystem.component.softShadow
+import com.ravango.core.designsystem.motion.RgAnimatedCounter
+import com.ravango.core.designsystem.motion.RgEnter
+import com.ravango.core.designsystem.motion.RgExit
+import com.ravango.core.designsystem.motion.rememberCountUp
+import com.ravango.core.designsystem.theme.Elevation
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -115,20 +132,49 @@ fun failureMessage(kind: ErrorKind, code: String?): String = when (code) {
     else -> if (kind == ErrorKind.QUOTA) stringResource(R.string.ai_err_no_credits) else kind.message()
 }
 
-/** Hero header: brand gradient card with provider status and credits. */
+/**
+ * AI gradient: lilac → periwinkle → brand blue. Every stop keeps white text ≥ 4.6:1 (the brand's sky end would not).
+ */
+private val AiGradient = Brush.linearGradient(listOf(Color(0xFF7F45D1), Color(0xFF5160F2), Color(0xFF0066F2)))
+
+/** Hero header: AI gradient card with twinkling sparkles, provider status and an animated credits counter. */
 @Composable
 fun AiHero(state: AiStudioUiState, onGetCredits: () -> Unit, modifier: Modifier = Modifier) {
     val colors = RgTheme.colors
+    val twinkle: State<Float> = if (RgTheme.reduceMotion) {
+        remember { mutableFloatStateOf(0.35f) }
+    } else {
+        rememberInfiniteTransition(label = "twinkle").animateFloat(0f, 1f, infiniteRepeatable(tween(3_200, easing = LinearEasing)), label = "t")
+    }
+    val shape = RoundedCornerShape(Radius.xxl)
     Box(
         modifier
             .fillMaxWidth()
             .padding(horizontal = Spacing.gutter)
-            .clip(RoundedCornerShape(Radius.xl))
-            .background(colors.brandGradient),
+            .softShadow(Elevation.high, shape, Color(0xFF5160F2))
+            .clip(shape)
+            .background(AiGradient)
+            .drawBehind {
+                val rtl = layoutDirection == LayoutDirection.Rtl
+                fun x(f: Float) = size.width * (if (rtl) 1f - f else f)
+                val p = twinkle.value
+                // Three sparkles on the side opposite the text, each twinkling out of phase.
+                listOf(Triple(0.86f, 0.2f, 0f), Triple(0.72f, 0.42f, 0.33f), Triple(0.9f, 0.62f, 0.66f)).forEach { (fx, fy, phase) ->
+                    val a = 0.5f + 0.5f * kotlin.math.sin(((p + phase) * 2f * Math.PI).toFloat())
+                    val r = size.height * (0.07f + 0.03f * a) * (if (fy < 0.3f) 1.4f else 1f)
+                    val c = Offset(x(fx), size.height * fy)
+                    val path = Path().apply {
+                        moveTo(c.x, c.y - r); quadraticTo(c.x, c.y, c.x + r, c.y); quadraticTo(c.x, c.y, c.x, c.y + r)
+                        quadraticTo(c.x, c.y, c.x - r, c.y); quadraticTo(c.x, c.y, c.x, c.y - r); close()
+                    }
+                    drawPath(path, Color.White.copy(alpha = 0.12f + 0.18f * a))
+                }
+                drawCircle(Color.White.copy(alpha = 0.08f), size.height * 0.8f, Offset(x(1.05f), -size.height * 0.2f))
+            },
     ) {
         Column(Modifier.padding(Spacing.xl)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(44.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.22f)), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(44.dp).clip(RoundedCornerShape(Radius.md)).background(Color.White.copy(alpha = 0.2f)).border(1.dp, Color.White.copy(alpha = 0.32f), RoundedCornerShape(Radius.md)), contentAlignment = Alignment.Center) {
                     Icon(Icons.Rounded.AutoAwesome, null, tint = Color.White, modifier = Modifier.size(24.dp))
                 }
                 Spacer(Modifier.width(Spacing.md))
@@ -144,11 +190,18 @@ fun AiHero(state: AiStudioUiState, onGetCredits: () -> Unit, modifier: Modifier 
                 val e = state.entitlements
                 val remaining = e.aiCreditsRemaining.coerceAtLeast(0)
                 val total = e.aiCreditsPerMonth.coerceAtLeast(1)
-                Text(
-                    stringResource(R.string.ai_credits_remaining, formatNumber(remaining), formatNumber(total)),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color.White,
-                )
+                // The number rolls in (odometer) above a label, instead of a sentence with a number buried inside.
+                Row(verticalAlignment = Alignment.Bottom) {
+                    val shown by rememberCountUp(remaining.toLong())
+                    RgAnimatedCounter(shown, style = MaterialTheme.typography.headlineMedium, color = Color.White) { formatNumber(it.toInt()) }
+                    Spacer(Modifier.width(Spacing.sm))
+                    Text(
+                        stringResource(R.string.ai_credits_of_total, formatNumber(total)),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.padding(bottom = 6.dp),
+                    )
+                }
                 Spacer(Modifier.height(Spacing.sm))
                 CreditsBar(remaining.toFloat() / total)
                 if (remaining < total / 4) {
@@ -184,7 +237,7 @@ private fun ProviderStatus(a: AiAvailability) {
 /** Explains missing setup with a fix-it action. */
 @Composable
 fun SetupCard(availability: AiAvailability, onOpenSettings: () -> Unit, onSignIn: () -> Unit, modifier: Modifier = Modifier) {
-    RgCard(modifier.fillMaxWidth().padding(horizontal = Spacing.gutter), color = RgTheme.colors.pastelButter) {
+    RgCard(modifier.fillMaxWidth().padding(horizontal = Spacing.gutter), color = RgTheme.colors.tones.butter.container) {
         Row(verticalAlignment = Alignment.Top) {
             Icon(Icons.Rounded.Lock, null, tint = RgTheme.colors.warning, modifier = Modifier.size(22.dp))
             Spacer(Modifier.width(Spacing.md))
@@ -203,18 +256,18 @@ fun SetupCard(availability: AiAvailability, onOpenSettings: () -> Unit, onSignIn
 
 /** A tile in the tool grid. */
 @Composable
-fun ToolTile(tool: AiTool, tint: Color, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun ToolTile(tool: AiTool, tint: Color, iconTint: Color = RgTheme.colors.accent, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = RgTheme.colors
     Column(
         modifier
             .clip(RoundedCornerShape(Radius.lg))
             .background(colors.surface)
             .border(1.dp, colors.outline, RoundedCornerShape(Radius.lg))
-            .pressable(onClick = onClick)
+            .pressable(shape = RoundedCornerShape(Radius.lg), onClick = onClick)
             .padding(Spacing.lg),
     ) {
         Box(Modifier.size(40.dp).clip(RoundedCornerShape(Radius.sm)).background(tint), contentAlignment = Alignment.Center) {
-            Icon(tool.icon, null, tint = colors.accent, modifier = Modifier.size(22.dp))
+            Icon(tool.icon, null, tint = iconTint, modifier = Modifier.size(22.dp))
         }
         Spacer(Modifier.height(Spacing.md))
         Text(stringResource(tool.title), style = MaterialTheme.typography.titleSmall, color = colors.textPrimary, maxLines = 2)
@@ -339,7 +392,7 @@ fun VideoFeatureRow(label: String, trailing: String? = null) {
 
 @Composable
 fun AnimatedSection(visible: Boolean, content: @Composable () -> Unit) {
-    AnimatedVisibility(visible, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) { content() }
+    AnimatedVisibility(visible, enter = RgEnter.expand(), exit = RgExit.collapse()) { content() }
 }
 
 
@@ -353,7 +406,7 @@ private fun CreditsBar(fraction: Float) {
 
 /** Full-width tile for the last, unpaired tool of a group (keeps the grid free of holes). */
 @Composable
-fun WideToolTile(tool: AiTool, tint: Color, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun WideToolTile(tool: AiTool, tint: Color, iconTint: Color = RgTheme.colors.accent, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val colors = RgTheme.colors
     Row(
         modifier
@@ -361,12 +414,12 @@ fun WideToolTile(tool: AiTool, tint: Color, onClick: () -> Unit, modifier: Modif
             .clip(RoundedCornerShape(Radius.lg))
             .background(colors.surface)
             .border(1.dp, colors.outline, RoundedCornerShape(Radius.lg))
-            .pressable(onClick = onClick)
+            .pressable(shape = RoundedCornerShape(Radius.lg), onClick = onClick)
             .padding(Spacing.lg),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(40.dp).clip(RoundedCornerShape(Radius.sm)).background(tint), contentAlignment = Alignment.Center) {
-            Icon(tool.icon, null, tint = colors.accent, modifier = Modifier.size(22.dp))
+            Icon(tool.icon, null, tint = iconTint, modifier = Modifier.size(22.dp))
         }
         Spacer(Modifier.width(Spacing.md))
         Column(Modifier.weight(1f)) {

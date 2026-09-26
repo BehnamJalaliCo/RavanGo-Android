@@ -9,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import com.ravango.core.model.ThemeMode
 
 val LocalReduceMotion = staticCompositionLocalOf { false }
@@ -133,4 +135,11 @@ object RgTheme {
         @Composable @ReadOnlyComposable get() = LocalRgColors.current
     val reduceMotion: Boolean
         @Composable @ReadOnlyComposable get() = LocalReduceMotion.current
+
+    /**
+     * Separator for inline metadata built in code ("12 words · 2 min"). Persian layouts get the Persian comma: in the
+     * brand font "·" is drawn exactly like the Persian zero "۰", so next to a number it changes the number.
+     */
+    val metaSeparator: String
+        @Composable @ReadOnlyComposable get() = if (LocalLayoutDirection.current == LayoutDirection.Rtl) "، " else " · "
 }

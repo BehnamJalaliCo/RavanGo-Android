@@ -1,6 +1,8 @@
 package com.ravango.feature.onboarding
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -16,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +43,8 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import com.ravango.core.designsystem.component.RavanGoLogo
+import com.ravango.core.designsystem.component.RavanGoLogoStyle
 import com.ravango.core.designsystem.theme.Palette
 import com.ravango.core.designsystem.theme.Radius
 import com.ravango.core.designsystem.theme.RgTheme
@@ -67,49 +72,68 @@ private inline fun DrawScope.directional(rtl: Boolean, block: DrawScope.() -> Un
 
 // region Language
 
-/** Two greeting bubbles gently bobbing — hello in both languages. */
+/**
+ * Welcome: the official stacked logo on a glowing brand halo, with "سلام" and "Hello" bubbles orbiting it as
+ * satellites. The logo springs in once; the halo breathes and the bubbles bob (frozen with reduce motion).
+ */
 @Composable
 internal fun LanguageIllustration(modifier: Modifier = Modifier) {
-    val t = rememberLoop(5_000)
+    val t = rememberLoop(6_000)
     val colors = RgTheme.colors
+    val reduceMotion = RgTheme.reduceMotion
+    val logoIn = remember { Animatable(if (reduceMotion) 1f else 0f) }
+    LaunchedEffect(Unit) { logoIn.animateTo(1f, spring(dampingRatio = 0.62f, stiffness = 260f)) }
     BoxWithConstraints(modifier) {
         val pw = constraints.maxWidth.toFloat()
         val ph = constraints.maxHeight.toFloat()
         Canvas(Modifier.matchParentSize()) {
             val p = t.value
             val c = center
-            val r = size.minDimension * 0.38f
-            drawCircle(Brush.radialGradient(listOf(Palette.Lavender300.copy(alpha = 0.55f), Color.Transparent), c, r * 1.35f), r * 1.35f, c)
-            // Orbit dots.
+            val r = size.minDimension * 0.36f
+            val breathe = 1f + 0.04f * wave(p)
+            // Brand halo: sky glow, a soft periwinkle ring and orbiting pastel dots.
+            drawCircle(Brush.radialGradient(listOf(Palette.LogoSky.copy(alpha = if (colors.isDark) 0.35f else 0.28f), Color.Transparent), c, r * 1.5f * breathe), r * 1.5f * breathe, c)
+            drawCircle(if (colors.isDark) Color.White.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.75f), r, c)
+            drawCircle(Palette.Periwinkle300.copy(alpha = 0.55f), r, c, style = Stroke(1.dp.toPx()))
+            drawCircle(Palette.Periwinkle300.copy(alpha = 0.3f), r * 1.28f, c, style = Stroke(1.dp.toPx()))
             repeat(6) { i ->
                 val a = (p + i / 6f) * 2f * PI.toFloat()
-                val o = Offset(c.x + r * kotlin.math.cos(a), c.y + r * 0.55f * sin(a))
-                drawCircle(listOf(Palette.Rose300, Palette.Mint300, Palette.Sky300)[i % 3].copy(alpha = 0.85f), 4.dp.toPx() + 2.dp.toPx() * ((i % 2)), o)
+                val o = Offset(c.x + r * 1.28f * kotlin.math.cos(a), c.y + r * 1.28f * sin(a))
+                drawCircle(listOf(Palette.LogoSky, Palette.Lilac300, Palette.Mint300)[i % 3].copy(alpha = 0.9f), 3.dp.toPx() + 1.5.dp.toPx() * (i % 2), o)
             }
-            drawCircle(Color.White.copy(alpha = 0.6f), r * 0.98f, c, style = Stroke(1.dp.toPx()))
         }
+        RavanGoLogo(
+            style = RavanGoLogoStyle.STACKED,
+            height = (maxHeight * 0.3f).coerceAtMost(96.dp),
+            modifier = Modifier.align(Alignment.Center).graphicsLayer {
+                val v = logoIn.value
+                alpha = v.coerceIn(0f, 1f)
+                scaleX = 0.8f + 0.2f * v
+                scaleY = 0.8f + 0.2f * v
+            },
+        )
         Bubble(
             text = "سلام",
-            background = Brush.linearGradient(listOf(Palette.Lavender500, Palette.Rose400)),
+            background = Brush.linearGradient(listOf(Palette.Blue500, Palette.Periwinkle500)),
             textColor = Color.White,
             modifier = Modifier
                 .align(Alignment.Center)
                 .graphicsLayer {
-                    translationX = -pw * 0.17f
-                    translationY = -ph * 0.13f + wave(t.value) * 6.dp.toPx()
-                    rotationZ = -4f
+                    translationX = -pw * 0.3f
+                    translationY = -ph * 0.3f + wave(t.value) * 5.dp.toPx()
+                    rotationZ = -6f
                 },
         )
         Bubble(
             text = "Hello",
             background = Brush.linearGradient(listOf(Color.White, colors.pastelSky)),
-            textColor = Palette.Ink800,
+            textColor = Palette.Ink,
             modifier = Modifier
                 .align(Alignment.Center)
                 .graphicsLayer {
-                    translationX = pw * 0.17f
-                    translationY = ph * 0.13f + wave(t.value + 0.5f) * 6.dp.toPx()
-                    rotationZ = 4f
+                    translationX = pw * 0.3f
+                    translationY = ph * 0.3f + wave(t.value + 0.5f) * 5.dp.toPx()
+                    rotationZ = 5f
                 },
         )
     }
@@ -117,16 +141,16 @@ internal fun LanguageIllustration(modifier: Modifier = Modifier) {
 
 @Composable
 private fun Bubble(text: String, background: Brush, textColor: Color, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(Radius.xl)
+    val shape = RoundedCornerShape(Radius.lg)
     Box(
         modifier
-            .shadow(16.dp, shape, ambientColor = Palette.Lavender500.copy(alpha = 0.3f), spotColor = Palette.Lavender500.copy(alpha = 0.3f))
+            .shadow(12.dp, shape, ambientColor = Palette.Blue500.copy(alpha = 0.3f), spotColor = Palette.Blue500.copy(alpha = 0.3f))
             .clip(shape)
             .background(background)
             .border(1.dp, Color.White.copy(alpha = 0.5f), shape)
-            .padding(horizontal = 26.dp, vertical = 14.dp),
+            .padding(horizontal = 18.dp, vertical = 8.dp),
     ) {
-        Text(text, style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold), color = textColor)
+        Text(text, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold), color = textColor)
     }
 }
 
@@ -157,7 +181,7 @@ internal fun PrompterIllustration(modifier: Modifier = Modifier) {
             val head = Offset(frame.center.x, frame.top + fh * 0.60f)
             drawCircle(Brush.radialGradient(listOf(Palette.Peach300, Palette.Rose300), head, headR), headR, head)
             drawRoundRect(
-                Brush.verticalGradient(listOf(Palette.Lavender400, Palette.Lavender600), head.y + headR, frame.bottom),
+                Brush.verticalGradient(listOf(Palette.Blue400, Palette.Blue600), head.y + headR, frame.bottom),
                 Offset(head.x - headR * 2.1f, head.y + headR * 1.2f),
                 Size(headR * 4.2f, frame.bottom - head.y - headR * 1.2f),
                 CornerRadius(headR * 1.8f),
@@ -171,7 +195,7 @@ internal fun PrompterIllustration(modifier: Modifier = Modifier) {
             val cycle = spacing * widths.size
             val scroll = (p * cycle * 2f) % cycle
             val eyeY = area.top + area.height * 0.38f
-            drawRoundRect(Palette.Lavender400.copy(alpha = 0.22f), Offset(frame.left + 4.dp.toPx(), eyeY - spacing * 0.55f), Size(fw - 8.dp.toPx(), spacing * 1.1f), CornerRadius(6.dp.toPx()))
+            drawRoundRect(Palette.LogoSky.copy(alpha = 0.24f), Offset(frame.left + 4.dp.toPx(), eyeY - spacing * 0.55f), Size(fw - 8.dp.toPx(), spacing * 1.1f), CornerRadius(6.dp.toPx()))
             clipRect(area.left, area.top, area.right, area.bottom) {
                 for (i in 0 until widths.size * 2) {
                     val y = area.top + i * spacing - scroll
@@ -210,7 +234,7 @@ internal fun PrompterIllustration(modifier: Modifier = Modifier) {
                 repeat(6) { i ->
                     val lw = card.width * (if (i % 3 == 2) 0.45f else 0.72f)
                     drawRoundRect(
-                        if (i == 0) Palette.Lavender500 else Palette.Ink200,
+                        if (i == 0) Palette.Blue500 else Palette.Ink200,
                         Offset(card.left + card.width * 0.14f, card.top + card.height * 0.14f + i * card.height * 0.13f),
                         Size(lw, 4.dp.toPx()),
                         CornerRadius(2.dp.toPx()),
@@ -226,7 +250,7 @@ internal fun PrompterIllustration(modifier: Modifier = Modifier) {
                 val a = sin(k * PI.toFloat())
                 val lw = 26.dp.toPx() * (1f - 0.45f * k)
                 drawRoundRect(
-                    Brush.horizontalGradient(listOf(Palette.Lavender400, Palette.Rose400), x, x + lw),
+                    Brush.horizontalGradient(listOf(Palette.LogoSky, Palette.Blue600), x, x + lw),
                     Offset(x, y),
                     Size(lw, 4.dp.toPx()),
                     CornerRadius(2.dp.toPx()),
@@ -259,6 +283,8 @@ private fun DrawScope.sparkle(center: Offset, radius: Float, color: Color, alpha
 internal fun BeautyEditIllustration(modifier: Modifier = Modifier) {
     val t = rememberLoop(5_200)
     val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    // The timeline card follows the theme (a white card glared in dark mode).
+    val panelColor = if (RgTheme.colors.isDark) Palette.Ink800 else Color.White.copy(alpha = 0.92f)
     Canvas(modifier) {
         val p = t.value
         directional(rtl) {
@@ -291,7 +317,7 @@ internal fun BeautyEditIllustration(modifier: Modifier = Modifier) {
             // Timeline panel.
             val panel = Rect(Offset(w * 0.08f, h * 0.66f), Size(w * 0.84f, h * 0.28f))
             drawRoundRect(Color.Black.copy(alpha = 0.08f), panel.topLeft + Offset(0f, 6.dp.toPx()), panel.size, CornerRadius(18.dp.toPx()))
-            drawRoundRect(Color.White.copy(alpha = 0.92f), panel.topLeft, panel.size, CornerRadius(18.dp.toPx()))
+            drawRoundRect(panelColor, panel.topLeft, panel.size, CornerRadius(18.dp.toPx()))
             val trackH = panel.height * 0.2f
             val tracks = listOf(
                 listOf(0.02f to 0.30f, 0.34f to 0.26f, 0.63f to 0.33f) to listOf(Palette.Lavender300, Palette.Rose300, Palette.Peach300),
@@ -311,12 +337,12 @@ internal fun BeautyEditIllustration(modifier: Modifier = Modifier) {
             }
             // Playhead.
             val px = left + inner * ((p * 1.5f) % 1f)
-            drawLine(Palette.Lavender600, Offset(px, panel.top + 6.dp.toPx()), Offset(px, panel.bottom - 6.dp.toPx()), 2.dp.toPx(), StrokeCap.Round)
-            drawCircle(Palette.Lavender600, 4.dp.toPx(), Offset(px, panel.top + 6.dp.toPx()))
+            drawLine(Palette.Blue600, Offset(px, panel.top + 6.dp.toPx()), Offset(px, panel.bottom - 6.dp.toPx()), 2.dp.toPx(), StrokeCap.Round)
+            drawCircle(Palette.Blue600, 4.dp.toPx(), Offset(px, panel.top + 6.dp.toPx()))
             // AI badge.
             val badge = Offset(panel.right - 6.dp.toPx(), panel.top - 4.dp.toPx())
             val badgeR = 18.dp.toPx()
-            drawCircle(Brush.linearGradient(listOf(Palette.Lavender500, Palette.Rose400, Palette.Peach400), badge - Offset(badgeR, badgeR), badge + Offset(badgeR, badgeR)), badgeR, badge)
+            drawCircle(Brush.linearGradient(listOf(Palette.LogoSky, Palette.Blue600, Palette.Periwinkle500), badge - Offset(badgeR, badgeR), badge + Offset(badgeR, badgeR)), badgeR, badge)
             val pulse = (wave(p * 2f) + 1f) / 2f
             sparkle(badge, badgeR * (0.5f + 0.1f * pulse), Color.White, 1f)
             sparkle(badge + Offset(badgeR * 0.55f, -badgeR * 0.55f), badgeR * 0.22f, Color.White, 0.6f + 0.4f * pulse)

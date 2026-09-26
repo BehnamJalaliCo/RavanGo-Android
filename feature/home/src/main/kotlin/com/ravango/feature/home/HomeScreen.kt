@@ -811,7 +811,7 @@ private fun RecentScripts(scripts: List<Script>, wpm: Int, onNavigate: (Any) -> 
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
-                            Text("$wordsText · $readText", style = MaterialTheme.typography.bodySmall, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(wordsText + RgTheme.metaSeparator + readText, style = MaterialTheme.typography.bodySmall, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         Spacer(Modifier.width(Spacing.sm))
                         // Quiet secondary action: the card itself opens the script.

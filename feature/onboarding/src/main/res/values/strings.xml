@@ -24,7 +24,7 @@
 
     <string name="onboarding_section_sharing">Help improve RavanGo (optional)</string>
     <string name="onboarding_analytics_title">Anonymous usage statistics</string>
-    <string name="onboarding_analytics_body">Which features are used — never your content.</string>
+    <string name="onboarding_analytics_body">Which features are used, never your content.</string>
     <string name="onboarding_crash_title">Crash reports</string>
     <string name="onboarding_crash_body">Technical details when something breaks, so we can fix it.</string>
 
@@ -34,7 +34,7 @@
     <string name="onboarding_theme_dark">Dark</string>
 
     <string name="onboarding_section_focus">What do you create?</string>
-    <string name="onboarding_focus_hint">Pick any that fit — we\'ll suggest the right templates first.</string>
+    <string name="onboarding_focus_hint">Pick any that fit and we\'ll suggest the right templates first.</string>
     <string name="onboarding_focus_reels">Reels &amp; Shorts</string>
     <string name="onboarding_focus_youtube">YouTube</string>
     <string name="onboarding_focus_podcast">Podcast</string>

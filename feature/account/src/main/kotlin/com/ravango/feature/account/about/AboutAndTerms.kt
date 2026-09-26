@@ -1,5 +1,6 @@
 package com.ravango.feature.account.about
 
+import com.ravango.feature.account.common.iconTone
 import com.ravango.core.designsystem.component.RavanGoLogo
 import com.ravango.core.designsystem.component.RavanGoLogoStyle
 import android.content.Intent
@@ -123,7 +124,7 @@ internal fun TermsContent(url: String, onBack: () -> Unit, onOpenOnline: () -> U
             termsSections.forEach { (title, body) -> LegalSection(stringResource(title), stringResource(body)) }
             if (url.isNotBlank()) {
                 RgGroup {
-                    RgListItem(stringResource(R.string.account_terms_online), subtitle = url, icon = Icons.AutoMirrored.Rounded.OpenInNew, onClick = onOpenOnline)
+                    RgListItem(stringResource(R.string.account_terms_online), subtitle = url, icon = Icons.AutoMirrored.Rounded.OpenInNew, iconTint = iconTone(Icons.AutoMirrored.Rounded.OpenInNew).content, iconBackground = iconTone(Icons.AutoMirrored.Rounded.OpenInNew).container, onClick = onOpenOnline)
                 }
             }
         }
@@ -254,22 +255,22 @@ internal fun AboutContent(
                     RgListItem(
                         stringResource(R.string.account_contact_support),
                         subtitle = supportEmail,
-                        icon = Icons.Rounded.Mail,
+                        icon = Icons.Rounded.Mail, iconTint = iconTone(Icons.Rounded.Mail).content, iconBackground = iconTone(Icons.Rounded.Mail).container,
                         onClick = onContactSupport,
                     )
                 }
-                RgListItem(stringResource(R.string.account_privacy), icon = Icons.Rounded.PrivacyTip, onClick = onPrivacy)
-                RgListItem(stringResource(R.string.account_terms), icon = Icons.Rounded.Gavel, onClick = onTerms)
+                RgListItem(stringResource(R.string.account_privacy), icon = Icons.Rounded.PrivacyTip, iconTint = iconTone(Icons.Rounded.PrivacyTip).content, iconBackground = iconTone(Icons.Rounded.PrivacyTip).container, onClick = onPrivacy)
+                RgListItem(stringResource(R.string.account_terms), icon = Icons.Rounded.Gavel, iconTint = iconTone(Icons.Rounded.Gavel).content, iconBackground = iconTone(Icons.Rounded.Gavel).container, onClick = onTerms)
                 RgListItem(
                     stringResource(R.string.account_licenses),
                     subtitle = stringResource(R.string.account_licenses_sub),
-                    icon = Icons.Rounded.Description,
+                    icon = Icons.Rounded.Description, iconTint = iconTone(Icons.Rounded.Description).content, iconBackground = iconTone(Icons.Rounded.Description).container,
                     onClick = onLicenses,
                 )
             }
             RgGroup(title = stringResource(R.string.account_fonts_title)) {
-                RgListItem(stringResource(R.string.account_font_ravagh), subtitle = stringResource(R.string.account_font_ravagh_sub), icon = Icons.Rounded.Verified)
-                RgListItem(stringResource(R.string.account_font_ofl), subtitle = stringResource(R.string.account_font_ofl_sub), icon = Icons.Rounded.FontDownload)
+                RgListItem(stringResource(R.string.account_font_ravagh), subtitle = stringResource(R.string.account_font_ravagh_sub), icon = Icons.Rounded.Verified, iconTint = iconTone(Icons.Rounded.Verified).content, iconBackground = iconTone(Icons.Rounded.Verified).container)
+                RgListItem(stringResource(R.string.account_font_ofl), subtitle = stringResource(R.string.account_font_ofl_sub), icon = Icons.Rounded.FontDownload, iconTint = iconTone(Icons.Rounded.FontDownload).content, iconBackground = iconTone(Icons.Rounded.FontDownload).container)
             }
             LegalSection(stringResource(R.string.account_about_privacy_title), stringResource(R.string.account_about_privacy_body))
             Text(

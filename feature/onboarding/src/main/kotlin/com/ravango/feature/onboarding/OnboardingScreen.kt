@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -65,7 +66,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -117,11 +120,13 @@ fun OnboardingDestination(onFinished: () -> Unit, viewModel: OnboardingViewModel
 }
 
 /** Pastel background pairs per page; interpolated while swiping. */
-private fun pageColors(colors: RgColors, page: Int): Pair<Color, Color> = when (page) {
-    0 -> colors.pastelLavender to colors.pastelSky
-    1 -> colors.pastelRose to colors.pastelLavender
-    2 -> colors.pastelPeach to colors.pastelRose
-    else -> colors.pastelMint to colors.pastelSky
+private fun pageColors(colors: RgColors, page: Int): Pair<Color, Color> = with(colors.tones) {
+    when (page) {
+        0 -> sky.container to periwinkle.container
+        1 -> periwinkle.container to sky.container
+        2 -> lilac.container to blush.container
+        else -> mint.container to sky.container
+    }
 }
 
 @Composable
@@ -242,7 +247,11 @@ private fun BottomBar(pager: PagerState, isLast: Boolean, finishing: Boolean, on
     }
 }
 
-/** Dots that stretch into a gradient pill for the current page, following the finger while swiping. */
+/**
+ * Page dots that follow the finger: while swiping, the active pill stretches out of one dot and into the next and its
+ * color blends between them. Everything is computed in the draw phase from the pager position (no recomposition per
+ * frame). Mirrors in RTL.
+ */
 @Composable
 private fun PageIndicator(pager: PagerState) {
     val colors = RgTheme.colors
@@ -251,20 +260,34 @@ private fun PageIndicator(pager: PagerState) {
         (pager.currentPage + 1).toString().localizeDigits(),
         ONBOARDING_PAGE_COUNT.toString().localizeDigits(),
     )
-    Row(
-        Modifier.semantics { contentDescription = description },
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val inactive = colors.outlineStrong
+    val active = colors.accent
+    val dot = 8.dp
+    val stretch = 20.dp
+    val gap = 8.dp
+    val count = ONBOARDING_PAGE_COUNT
+    Canvas(
+        Modifier
+            .semantics { contentDescription = description }
+            .size(width = dot * count + gap * (count - 1) + stretch, height = dot),
     ) {
-        repeat(ONBOARDING_PAGE_COUNT) { i ->
-            val selected = pager.currentPage == i
-            val width by animateDpAsState(if (selected) 28.dp else 8.dp, Motion.bouncy(), label = "dot")
-            Box(
-                Modifier
-                    .size(width = width, height = 8.dp)
-                    .clip(CircleShape)
-                    .background(if (selected) colors.brandGradient else Brush.linearGradient(listOf(colors.outlineStrong, colors.outlineStrong))),
+        val position = (pager.currentPage + pager.currentPageOffsetFraction).coerceIn(0f, (count - 1).toFloat())
+        val d = dot.toPx()
+        val g = gap.toPx()
+        val extra = stretch.toPx()
+        var x = 0f
+        repeat(count) { i ->
+            val weight = (1f - kotlin.math.abs(position - i)).coerceIn(0f, 1f)
+            val w = d + extra * weight
+            val left = if (rtl) size.width - x - w else x
+            drawRoundRect(
+                color = lerp(inactive, active, weight),
+                topLeft = Offset(left, 0f),
+                size = androidx.compose.ui.geometry.Size(w, d),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(d / 2),
             )
+            x += w + g
         }
     }
 }
@@ -291,7 +314,7 @@ private fun LanguagePage(selected: AppLanguage, onSelect: (AppLanguage) -> Unit,
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Spacing.gutter),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        LanguageIllustration(Modifier.fillMaxWidth().widthIn(max = 420.dp).aspectRatio(1.35f).parallax(offset, 0.45f))
+        LanguageIllustration(Modifier.fillMaxWidth().widthIn(max = 420.dp).aspectRatio(1.25f).parallax(offset, 0.45f))
         Spacer(Modifier.height(Spacing.lg))
         Column(Modifier.textParallax(offset), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(stringResource(R.string.onboarding_welcome_title), style = MaterialTheme.typography.displaySmall, color = RgTheme.colors.textPrimary, textAlign = TextAlign.Center)
@@ -386,9 +409,9 @@ private fun PrivacyPage(
         Column(Modifier.widthIn(max = 560.dp), verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
             GlassSurface(Modifier.fillMaxWidth()) {
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                    PromiseRow(Icons.Rounded.PhoneAndroid, colors.pastelMint, colors.success, stringResource(R.string.onboarding_promise_device_title), stringResource(R.string.onboarding_promise_device_body))
-                    PromiseRow(Icons.Rounded.CloudOff, colors.pastelSky, Palette.Sky400, stringResource(R.string.onboarding_promise_consent_title), stringResource(R.string.onboarding_promise_consent_body))
-                    PromiseRow(Icons.Rounded.Tune, colors.pastelLavender, colors.accent, stringResource(R.string.onboarding_promise_control_title), stringResource(R.string.onboarding_promise_control_body))
+                    PromiseRow(Icons.Rounded.PhoneAndroid, colors.tones.mint.container, colors.tones.mint.content, stringResource(R.string.onboarding_promise_device_title), stringResource(R.string.onboarding_promise_device_body))
+                    PromiseRow(Icons.Rounded.CloudOff, colors.tones.sky.container, colors.tones.sky.content, stringResource(R.string.onboarding_promise_consent_title), stringResource(R.string.onboarding_promise_consent_body))
+                    PromiseRow(Icons.Rounded.Tune, colors.tones.periwinkle.container, colors.tones.periwinkle.content, stringResource(R.string.onboarding_promise_control_title), stringResource(R.string.onboarding_promise_control_body))
                 }
             }
 

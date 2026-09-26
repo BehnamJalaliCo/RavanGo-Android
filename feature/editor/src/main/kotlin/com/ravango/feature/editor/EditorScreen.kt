@@ -1,5 +1,9 @@
 package com.ravango.feature.editor
 
+import com.ravango.core.designsystem.motion.RgEnter
+import com.ravango.core.designsystem.motion.RgExit
+import com.ravango.core.designsystem.motion.SharedKeys
+import com.ravango.core.designsystem.motion.rgSharedBounds
 import android.view.KeyEvent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -171,7 +175,14 @@ internal fun EditorContent(
     snackbarHostState: SnackbarHostState? = null,
 ) {
     val vm = actions
-    Box(Modifier.fillMaxSize().background(Color(0xFF0E0C16))) {
+    // Opened from a project card: the card grows into the whole editor (container transform).
+    val sharedKey = state.projectId.takeIf { it.isNotEmpty() }
+    Box(
+        Modifier
+            .fillMaxSize()
+            .then(if (sharedKey != null) Modifier.rgSharedBounds(SharedKeys.project(sharedKey), RoundedCornerShape(Radius.lg)) else Modifier)
+            .background(RgTheme.colors.background),
+    ) {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
             EditorTopBar(state, onBack = onBack, vm = vm)
             when {
@@ -249,7 +260,7 @@ internal fun EditorContent(
             }
         }
         snackbarHostState?.let { SnackbarHost(it, Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 96.dp)) }
-        AnimatedVisibility(state.busy != null, enter = fadeIn(), exit = fadeOut()) {
+        AnimatedVisibility(state.busy != null, enter = RgEnter.fade(), exit = RgExit.fade()) {
             BusyOverlay(state, vm::cancelBusy)
         }
     }

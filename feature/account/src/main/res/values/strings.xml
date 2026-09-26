@@ -36,7 +36,7 @@
     <string name="account_delete">Delete account</string>
     <string name="account_delete_subtitle">Permanently erase your account and cloud data</string>
     <string name="account_delete_title">Delete your account?</string>
-    <string name="account_delete_message">This permanently deletes your account, everything synced to the cloud and your backed-up videos. It can\'t be undone. Active subscriptions are not cancelled automatically — cancel them in the store first.</string>
+    <string name="account_delete_message">This permanently deletes your account, everything synced to the cloud and your backed-up videos. It can\'t be undone. Active subscriptions are not cancelled automatically; cancel them in the store first.</string>
     <string name="account_delete_confirm">Delete forever</string>
     <string name="account_delete_word">DELETE</string>
     <string name="account_delete_type_prompt">Type %1$s to confirm</string>
@@ -60,7 +60,7 @@
     <string name="account_err_invalid_phone">Please enter a valid mobile number, e.g. 0912 345 6789.</string>
     <string name="account_err_weak_password">Use at least 8 characters with letters and numbers.</string>
     <string name="account_err_user_exists">An account with this email already exists. Sign in instead.</string>
-    <string name="account_err_email_not_confirmed">Please confirm your email first — check your inbox.</string>
+    <string name="account_err_email_not_confirmed">Please confirm your email first. Check your inbox.</string>
     <string name="account_err_provider_disabled">This sign-in method is currently unavailable. Try another method.</string>
     <string name="account_err_session_expired">Your session expired. Please sign in again.</string>
     <string name="account_err_not_signed_in">You\'re not signed in.</string>
@@ -73,7 +73,7 @@
     <string name="account_benefit_devices">Scripts and settings on all your devices</string>
     <string name="account_benefit_backup">Safe cloud backup of your work</string>
     <string name="account_benefit_purchases">Keep your Pro plan when you change phones</string>
-    <string name="account_benefit_optional">Optional — RavanGo works fully without an account</string>
+    <string name="account_benefit_optional">Optional: RavanGo works fully without an account</string>
     <string name="account_tab_email_code">Email code</string>
     <string name="account_tab_password">Password</string>
     <string name="account_tab_phone">Phone</string>
@@ -148,8 +148,8 @@
     <string name="account_settings_notifications">Notifications</string>
     <string name="account_notifications">Export &amp; upload notifications</string>
     <string name="account_notifications_on">On</string>
-    <string name="account_notifications_off">Off — tap to allow</string>
-    <string name="account_notifications_blocked">Blocked — allow them in system settings</string>
+    <string name="account_notifications_off">Off. Tap to allow</string>
+    <string name="account_notifications_blocked">Blocked. Allow them in system settings</string>
     <string name="account_allow">Allow</string>
     <string name="account_settings_storage">Storage</string>
     <string name="account_media_storage">Recordings &amp; media</string>
@@ -170,7 +170,7 @@
     <string name="account_cloud_never_synced">Not synced yet</string>
     <string name="account_cloud_pending">%1$s changes waiting to upload</string>
     <string name="account_cloud_syncing">Syncing…</string>
-    <string name="account_cloud_offline">Offline — will sync when you\'re back online</string>
+    <string name="account_cloud_offline">Offline. Will sync when you\'re back online</string>
     <string name="account_cloud_error">Sync paused</string>
     <string name="account_cloud_up_to_date">Everything is up to date</string>
     <string name="account_cloud_waiting_wifi">Waiting for Wi-Fi. Turn off \"Wi-Fi only\" to sync on mobile data.</string>
@@ -178,7 +178,7 @@
     <string name="account_cloud_sync_section">Sync</string>
     <string name="account_cloud_sync_toggle">Cloud sync</string>
     <string name="account_cloud_sync_sub">Keep your work in sync across your devices</string>
-    <string name="account_cloud_sync_requires_sign_in">Requires an account — tap to sign in</string>
+    <string name="account_cloud_sync_requires_sign_in">Requires an account. Tap to sign in</string>
     <string name="account_cloud_wifi_only">Wi-Fi only</string>
     <string name="account_cloud_wifi_only_sub">Save mobile data; sync and uploads wait for Wi-Fi</string>
     <string name="account_cloud_what_syncs">What syncs</string>
@@ -261,11 +261,11 @@
     <string name="account_app_name">RavanGo</string>
     <string name="account_app_initial">R</string>
     <string name="account_version">Version %1$s</string>
-    <string name="account_about_tagline">Teleprompter, pro camera, beauty, editor and AI — one calm studio in your pocket.</string>
+    <string name="account_about_tagline">Teleprompter, pro camera, beauty, editor and AI: one calm studio in your pocket.</string>
     <string name="account_licenses">Open-source licenses</string>
     <string name="account_licenses_sub">Libraries and fonts used in RavanGo</string>
     <string name="account_fonts_title">Fonts</string>
-    <string name="account_font_ravagh">Ravagh — brand typeface</string>
+    <string name="account_font_ravagh">Ravagh (brand typeface)</string>
     <string name="account_font_ravagh_sub">Licensed from fontiran.com, licence no. 136710. Used under the publisher\'s licence; not redistributable.</string>
     <string name="account_font_ofl">Vazirmatn · Sahel · Samim</string>
     <string name="account_font_ofl_sub">By Saber Rastikerdar and contributors, under the SIL Open Font License 1.1.</string>

@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.ravango.core.designsystem.component.ProBadge
+import com.ravango.core.designsystem.theme.RgTheme
 import com.ravango.core.designsystem.component.RgButtonSize
 import com.ravango.core.designsystem.component.RgOutlineButton
 import com.ravango.core.designsystem.component.RgPrimaryButton
@@ -111,7 +112,7 @@ fun AiPanel(state: EditorUiState, vm: EditorActions) {
                     Modifier.fillMaxWidth().pressable { ai.highlightClipId?.let { vm.jumpToSource(it, h.range.startUs) } }.padding(vertical = 6.dp),
                 ) {
                     Text(h.title, style = MaterialTheme.typography.bodyMedium, color = Color.White)
-                    Text(timecode(h.range.startUs) + " · " + h.reason, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f))
+                    Text(timecode(h.range.startUs) + RgTheme.metaSeparator + h.reason, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f))
                 }
             }
         }
@@ -130,7 +131,7 @@ fun AiPanel(state: EditorUiState, vm: EditorActions) {
                 Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(s.title, style = MaterialTheme.typography.bodyMedium, color = Color.White)
-                        Text(s.hook + " · " + timecode(s.durationUs, tenths = false), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f), maxLines = 2)
+                        Text(s.hook + RgTheme.metaSeparator + timecode(s.durationUs, tenths = false), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f), maxLines = 2)
                     }
                     if (i in ai.createdShorts) Icon(Icons.Rounded.Check, stringResource(R.string.editor_ai_short_created), tint = accent())
                     else RgTextButton(stringResource(R.string.editor_ai_create_project), onClick = { vm.createShort(i) }, enabled = !busy)

@@ -12,11 +12,11 @@
 
     <string name="home_sync_syncing">Syncing</string>
     <string name="home_sync_idle">Synced</string>
-    <string name="home_sync_offline">Offline — changes will sync later</string>
+    <string name="home_sync_offline">Offline. Changes will sync later</string>
     <string name="home_sync_error">Sync problem</string>
 
     <string name="home_new_recording">New recording</string>
-    <string name="home_new_recording_body">Teleprompter, beauty and pro controls — all in one tap.</string>
+    <string name="home_new_recording_body">Teleprompter, beauty and pro controls, all in one tap.</string>
     <string name="home_audio_only">Audio only</string>
     <string name="home_record">Record</string>
 
