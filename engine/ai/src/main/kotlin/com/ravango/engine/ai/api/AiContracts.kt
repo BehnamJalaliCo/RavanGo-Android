@@ -55,6 +55,8 @@ data class AiAvailability(
     val consentRequired: Boolean,
     /** Human-readable reason when not configured (e.g. which service/key is missing). */
     val detail: String? = null,
+    /** Machine-readable reason when not configured, for localized UI copy (additive). */
+    val issue: AiSetupIssue? = null,
 )
 
 interface AiTextService {
@@ -83,7 +85,14 @@ data class Transcript(
     val text: String get() = segments.joinToString(" ") { it.text.trim() }
 }
 
-data class SpeechAvailability(val configured: Boolean, val provider: SpeechProviderId, val consentRequired: Boolean, val detail: String? = null)
+data class SpeechAvailability(
+    val configured: Boolean,
+    val provider: SpeechProviderId,
+    val consentRequired: Boolean,
+    val detail: String? = null,
+    /** Machine-readable reason when not configured (additive). */
+    val issue: AiSetupIssue? = null,
+)
 
 interface SpeechToTextService {
     val availability: StateFlow<SpeechAvailability>

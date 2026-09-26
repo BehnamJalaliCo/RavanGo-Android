@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_studio_title">استودیوی هوش مصنوعی</string>
+    <string name="ai_studio_subtitle">سریع‌تر بنویس، بهتر کن و منتشر کن</string>
+    <string name="ai_hero_title">همراه خلاق تو</string>
+    <string name="ai_hero_body">ایده‌ات را در چند ثانیه به متنی آمادهٔ تله‌پرامپتر تبدیل کن، کلماتت را صیقل بده و قلاب، عنوان و کپشن بگیر.</string>
+    <string name="ai_credits_remaining">%1$s از %2$s اعتبار این ماه باقی مانده</string>
+    <string name="ai_credits_short">%1$s اعتبار</string>
+    <string name="ai_own_key_no_credits">با کلید API خودت کار می‌کنی؛ از اعتبار روان‌گو کم نمی‌شود</string>
+    <string name="ai_get_more_credits">اعتبار بیشتر</string>
+
+    <string name="ai_provider_gateway">هوش مصنوعی روان‌گو</string>
+    <string name="ai_provider_anthropic">Anthropic (کلید شخصی)</string>
+    <string name="ai_provider_openai_compatible">سرویس دلخواه (کلید شخصی)</string>
+    <string name="ai_status_ready">آماده</string>
+    <string name="ai_status_setup">نیاز به تنظیم</string>
+    <string name="ai_status_consent">نیاز به اجازهٔ شما</string>
+
+    <string name="ai_issue_gateway">در این نسخه سرور هوش مصنوعی روان‌گو تنظیم نشده است. در تنظیمات «Anthropic» یا یک سرویس دلخواه را با کلید خودت انتخاب کن.</string>
+    <string name="ai_issue_sign_in">برای استفاده از هوش مصنوعی روان‌گو و اعتبار ماهانه‌ات وارد حسابت شو.</string>
+    <string name="ai_issue_key">برای استفاده از این سرویس، کلید API را در تنظیمات وارد کن.</string>
+    <string name="ai_issue_endpoint">نشانی و مدل سرویس دلخواهت را در تنظیمات وارد کن.</string>
+    <string name="ai_issue_generic">هوش مصنوعی هنوز تنظیم نشده است.</string>
+    <string name="ai_open_settings">باز کردن تنظیمات</string>
+    <string name="ai_sign_in">ورود به حساب</string>
+
+    <string name="ai_group_write">نوشتن</string>
+    <string name="ai_group_improve">بهبود متن</string>
+    <string name="ai_group_publish">انتشار</string>
+    <string name="ai_group_translate">ترجمه</string>
+
+    <string name="ai_tool_script">متن از روی موضوع</string>
+    <string name="ai_tool_script_desc">متن کامل با قلاب، بخش‌بندی و دعوت به اقدام</string>
+    <string name="ai_tool_ideas">ایدهٔ ویدیو</string>
+    <string name="ai_tool_ideas_desc">زاویه‌های تازه برای ویدیوی بعدی</string>
+    <string name="ai_tool_bullets">نکته‌ها ← متن</string>
+    <string name="ai_tool_bullets_desc">یادداشت‌ها را به متن گفتاری تبدیل کن</string>
+    <string name="ai_tool_rewrite">بازنویسی</string>
+    <string name="ai_tool_rewrite_desc">روشن‌تر و جذاب‌تر</string>
+    <string name="ai_tool_shorten">کوتاه‌تر کن</string>
+    <string name="ai_tool_shorten_desc">پیام بماند، اضافه‌ها بروند</string>
+    <string name="ai_tool_lengthen">بلندتر کن</string>
+    <string name="ai_tool_lengthen_desc">عمق و مثال بیشتر</string>
+    <string name="ai_tool_tone">تغییر لحن</string>
+    <string name="ai_tool_tone_desc">همان محتوا، صدای تازه</string>
+    <string name="ai_tool_grammar">ویرایش و درست‌نویسی</string>
+    <string name="ai_tool_grammar_desc">املا، نشانه‌گذاری و نیم‌فاصله</string>
+    <string name="ai_tool_conversational">رسمی ← محاوره‌ای</string>
+    <string name="ai_tool_conversational_desc">طبیعی جلوی دوربین</string>
+    <string name="ai_tool_summarize">خلاصه‌سازی</string>
+    <string name="ai_tool_summarize_desc">نکته‌های اصلی در چند خط</string>
+    <string name="ai_tool_hooks">قلاب شروع</string>
+    <string name="ai_tool_hooks_desc">مخاطب را در ۳ ثانیه نگه دار</string>
+    <string name="ai_tool_cta">دعوت به اقدام</string>
+    <string name="ai_tool_cta_desc">پایانی با قدم بعدی روشن</string>
+    <string name="ai_tool_titles">عنوان</string>
+    <string name="ai_tool_titles_desc">جذاب و دقیق</string>
+    <string name="ai_tool_caption">کپشن</string>
+    <string name="ai_tool_caption_desc">متن پست با هشتگ</string>
+    <string name="ai_tool_description">توضیحات ویدیو</string>
+    <string name="ai_tool_description_desc">آماده برای یوتیوب</string>
+    <string name="ai_tool_translate">ترجمه</string>
+    <string name="ai_tool_translate_desc">فارسی ↔ انگلیسی با حفظ نشانه‌ها</string>
+
+    <string name="ai_input_topic">موضوع</string>
+    <string name="ai_input_topic_hint">مثلاً: سه عادتی که بهره‌وری‌ام را دو برابر کرد</string>
+    <string name="ai_input_text">متن تو</string>
+    <string name="ai_input_text_hint">متنی را که می‌خواهی رویش کار شود بنویس یا بچسبان</string>
+    <string name="ai_input_bullets">یادداشت‌هایت</string>
+    <string name="ai_input_bullets_hint">هر نکته در یک خط</string>
+    <string name="ai_input_from_script">از متن: %1$s</string>
+    <string name="ai_input_clear">پاک کردن</string>
+
+    <string name="ai_options">تنظیمات</string>
+    <string name="ai_option_platform">پلتفرم</string>
+    <string name="ai_option_tone">لحن</string>
+    <string name="ai_option_audience">مخاطب</string>
+    <string name="ai_option_audience_hint">مثلاً: فریلنسرهای تازه‌کار</string>
+    <string name="ai_option_duration">مدت</string>
+    <string name="ai_option_duration_value">%1$s · حدود %2$s کلمه</string>
+    <string name="ai_option_target_length">طول هدف</string>
+    <string name="ai_option_language">زبان خروجی</string>
+    <string name="ai_option_translate_to">ترجمه به</string>
+    <string name="ai_option_variants">تعداد پیشنهادها</string>
+    <string name="ai_option_extra">توضیح تکمیلی (اختیاری)</string>
+    <string name="ai_option_extra_hint">مثلاً: به حراج تابستانه اشاره کن</string>
+    <string name="ai_lang_fa">فارسی</string>
+    <string name="ai_lang_en">انگلیسی</string>
+
+    <string name="ai_platform_instagram">اینستاگرام</string>
+    <string name="ai_platform_youtube">یوتیوب</string>
+    <string name="ai_platform_shorts">شورتز</string>
+    <string name="ai_platform_tiktok">تیک‌تاک</string>
+    <string name="ai_platform_linkedin">لینکدین</string>
+    <string name="ai_platform_telegram">تلگرام</string>
+    <string name="ai_platform_podcast">پادکست</string>
+    <string name="ai_platform_general">عمومی</string>
+
+    <string name="ai_tone_friendly">صمیمی</string>
+    <string name="ai_tone_professional">حرفه‌ای</string>
+    <string name="ai_tone_energetic">پرانرژی</string>
+    <string name="ai_tone_humorous">طنز</string>
+    <string name="ai_tone_inspirational">الهام‌بخش</string>
+    <string name="ai_tone_calm">آرام</string>
+    <string name="ai_tone_persuasive">متقاعدکننده</string>
+    <string name="ai_tone_educational">آموزشی</string>
+
+    <string name="ai_generate">بساز</string>
+    <string name="ai_regenerate">دوباره بساز</string>
+    <string name="ai_stop">توقف</string>
+    <string name="ai_generating">در حال نوشتن…</string>
+    <string name="ai_stopped">متوقف شد؛ نتیجهٔ ناقص</string>
+    <string name="ai_result">نتیجه</string>
+    <string name="ai_credits_used">%1$s اعتبار مصرف شد</string>
+    <string name="ai_pick_variants">موردهایی را که دوست داری انتخاب کن</string>
+    <string name="ai_selected_count">%1$s مورد انتخاب شده</string>
+    <string name="ai_copied">کپی شد</string>
+    <string name="ai_share_title">اشتراک‌گذاری متن</string>
+    <string name="ai_save_new">ذخیره به‌عنوان متن جدید</string>
+    <string name="ai_replace_script">جایگزینی متن اصلی</string>
+    <string name="ai_open_prompter">باز کردن در تله‌پرامپتر</string>
+    <string name="ai_saved">در متن‌هایت ذخیره شد</string>
+    <string name="ai_replaced">متن به‌روز شد</string>
+    <string name="ai_save_failed">ذخیرهٔ متن ممکن نشد</string>
+    <string name="ai_default_script_title">متن هوش مصنوعی</string>
+
+    <string name="ai_history">در همین جلسه</string>
+    <string name="ai_history_empty">نتیجه‌های تو اینجا نمایش داده می‌شوند</string>
+
+    <string name="ai_err_refused">هوش مصنوعی این درخواست را انجام نداد. موضوع را جور دیگری بنویس.</string>
+    <string name="ai_err_no_credits">اعتبار هوش مصنوعی این ماهت تمام شده است.</string>
+    <string name="ai_err_rate_limited">هوش مصنوعی الان سرش شلوغ است. چند لحظه بعد دوباره امتحان کن.</string>
+    <string name="ai_err_overloaded">سرویس هوش مصنوعی پرترافیک است. کمی بعد دوباره تلاش کن.</string>
+    <string name="ai_err_invalid_key">کلید API پذیرفته نشد. آن را در تنظیمات بررسی کن.</string>
+    <string name="ai_err_empty">پاسخی دریافت نشد. دوباره امتحان کن.</string>
+    <string name="ai_err_service">سرویس هوش مصنوعی در این نشانی در دسترس نیست.</string>
+
+    <string name="ai_consent_title">متن برای سرویس هوش مصنوعی فرستاده شود؟</string>
+    <string name="ai_consent_gateway">برای ساختن متن، آنچه اینجا وارد می‌کنی (موضوع، متن و تنظیمات) به سرور هوش مصنوعی روان‌گو فرستاده می‌شود و از آنجا به مدل Claude شرکت Anthropic می‌رسد. هیچ اطلاعات دیگری از گوشی‌ات فرستاده نمی‌شود. داده‌ها طبق سیاست‌های این سرویس‌دهنده‌ها پردازش می‌شوند. هر وقت بخواهی می‌توانی این اجازه را در تنظیمات لغو کنی.</string>
+    <string name="ai_consent_anthropic">برای ساختن متن، آنچه اینجا وارد می‌کنی (موضوع، متن و تنظیمات) با کلید API خودت مستقیم به Claude شرکت Anthropic فرستاده می‌شود. هیچ اطلاعات دیگری از گوشی‌ات فرستاده نمی‌شود. داده‌ها طبق سیاست Anthropic پردازش می‌شوند. هر وقت بخواهی می‌توانی این اجازه را در تنظیمات لغو کنی.</string>
+    <string name="ai_consent_custom">برای ساختن متن، آنچه اینجا وارد می‌کنی (موضوع، متن و تنظیمات) با کلید خودت به سرویسی که تنظیم کرده‌ای فرستاده می‌شود. هیچ اطلاعات دیگری از گوشی‌ات فرستاده نمی‌شود. داده‌ها طبق سیاست همان سرویس‌دهنده پردازش می‌شوند. هر وقت بخواهی می‌توانی این اجازه را در تنظیمات لغو کنی.</string>
+    <string name="ai_consent_accept">موافقم، ادامه بده</string>
+    <string name="ai_consent_decline">فعلاً نه</string>
+
+    <string name="ai_video_title">ابزارهای ویدیو</string>
+    <string name="ai_video_body">زیرنویس خودکار، حذف سکوت و کلمه‌های اضافه، لحظه‌های برتر، پیشنهاد شورتز و تمیز کردن صدا روی کلیپ‌هایت در ویرایشگر انجام می‌شوند. برای استفاده یک پروژه را باز کن.</string>
+    <string name="ai_video_captions">زیرنویس خودکار</string>
+    <string name="ai_video_cuts">حذف سکوت و کلمه‌های اضافه</string>
+    <string name="ai_video_highlights">لحظه‌های برتر و شورتز</string>
+    <string name="ai_video_cleanup">تمیز کردن صدا</string>
+    <string name="ai_video_eye">تماس چشمی</string>
+    <string name="ai_video_eye_unavailable">نیازمند مدل تصحیح نگاه روی سرور</string>
+    <string name="ai_video_open_projects">باز کردن پروژه‌ها</string>
+    <string name="ai_back_to_tools">بازگشت به ابزارها</string>
+</resources>
