@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Library -->
+    <string name="scripts_title">Scripts</string>
+    <string name="scripts_pick_title">Choose a script</string>
+    <string name="scripts_count">%1$s scripts</string>
+    <string name="scripts_new">New script</string>
+    <string name="scripts_untitled">Untitled script</string>
+    <string name="scripts_copy_suffix">(copy)</string>
+    <string name="scripts_search_hint">Search titles and text</string>
+    <string name="scripts_search_empty_title">No matches</string>
+    <string name="scripts_search_empty_message">Nothing matches “%1$s”. Try fewer or different words.</string>
+    <string name="scripts_empty_title">Your first script starts here</string>
+    <string name="scripts_empty_message">Write, paste or import a script, then read it with the teleprompter or record straight away.</string>
+    <string name="scripts_empty_favorites_title">No favorites yet</string>
+    <string name="scripts_empty_favorites_message">Tap the star on a script, or swipe it to the side, to keep it here.</string>
+    <string name="scripts_empty_folder_title">This folder is empty</string>
+    <string name="scripts_empty_folder_message">Long-press a script and choose “Move to folder”, or create a new script while this folder is selected.</string>
+    <string name="scripts_filter_all">All</string>
+    <string name="scripts_filter_favorites">Favorites</string>
+    <string name="scripts_sort">Sort</string>
+    <string name="scripts_sort_updated">Recently edited</string>
+    <string name="scripts_sort_created">Newest first</string>
+    <string name="scripts_sort_title">Title (A–Z)</string>
+    <string name="scripts_sort_opened">Recently opened</string>
+    <string name="scripts_card_meta">%1$s words · %2$s at %3$s wpm · %4$s</string>
+    <string name="scripts_favorite">Add to favorites</string>
+    <string name="scripts_unfavorite">Remove from favorites</string>
+    <string name="scripts_deleted">Script deleted</string>
+    <string name="scripts_duplicated">Copy created</string>
+    <string name="scripts_action_prompter">Open in teleprompter</string>
+    <string name="scripts_action_record">Record with camera</string>
+    <string name="scripts_action_move">Move to folder</string>
+    <string name="scripts_no_folder">No folder</string>
+
+    <!-- Folders -->
+    <string name="scripts_folder_new">New folder</string>
+    <string name="scripts_folder_rename">Rename folder</string>
+    <string name="scripts_folder_name">Folder name</string>
+    <string name="scripts_folder_color">Color</string>
+    <string name="scripts_folder_create">Create</string>
+    <string name="scripts_folder_delete">Delete folder</string>
+    <string name="scripts_folder_delete_title">Delete “%1$s”?</string>
+    <string name="scripts_folder_delete_hint">Scripts inside are kept and moved out of the folder.</string>
+
+    <!-- Create / import -->
+    <string name="scripts_create_blank">Write a new script</string>
+    <string name="scripts_create_blank_hint">Start from an empty page</string>
+    <string name="scripts_create_import">Import a file</string>
+    <string name="scripts_create_import_hint">Word (.docx), text, Markdown, subtitles (.srt, .vtt), RTF or HTML</string>
+    <string name="scripts_create_paste">Paste from clipboard</string>
+    <string name="scripts_create_paste_hint">Create a script from the text you copied</string>
+    <string name="scripts_clipboard_empty">The clipboard has no text to paste.</string>
+    <string name="scripts_import_pdf">PDF files can’t be imported reliably. Please save the document as Word (.docx) or plain text (.txt) and import that instead.</string>
+    <string name="scripts_import_unsupported">This file type isn’t supported. Use .docx, .txt, .md, .srt, .vtt, .rtf or .html.</string>
+    <string name="scripts_import_empty">No text was found in this file.</string>
+    <string name="scripts_import_too_large">This file is too large to import (maximum 10 MB).</string>
+    <string name="scripts_import_failed">The file couldn’t be read. It may be damaged or no longer available.</string>
+
+    <!-- Editor -->
+    <string name="scripts_editor_title">Edit script</string>
+    <string name="scripts_editor_new_title">New script</string>
+    <string name="scripts_editor_title_hint">Title</string>
+    <string name="scripts_editor_body_hint">Write your script here…\n\nTips: “## ” starts a section, ==text== highlights, **text** emphasises, [pause] adds a pause and [[note]] is a note only you see.</string>
+    <string name="scripts_editor_stats">%1$s words · ≈ %2$s at %3$s wpm</string>
+    <string name="scripts_editor_saving">Saving…</string>
+    <string name="scripts_editor_saved">Saved</string>
+    <string name="scripts_editor_save_failed">Couldn’t save — your text is kept here; we’ll retry</string>
+    <string name="scripts_editor_edit_mode">Edit</string>
+    <string name="scripts_editor_preview_mode">Preview</string>
+    <string name="scripts_editor_preview_empty">Nothing to preview yet.</string>
+    <string name="scripts_editor_not_found_title">Script not found</string>
+    <string name="scripts_editor_not_found_message">This script was deleted or is not available on this device.</string>
+    <string name="scripts_editor_empty_action">Write something first.</string>
+    <string name="scripts_editor_direction_auto">Auto</string>
+    <string name="scripts_editor_direction_rtl">RTL</string>
+    <string name="scripts_editor_direction_ltr">LTR</string>
+    <string name="scripts_editor_ai">AI assist</string>
+    <string name="scripts_editor_tool_section">Section</string>
+    <string name="scripts_editor_tool_highlight">Highlight</string>
+    <string name="scripts_editor_tool_emphasis">Emphasis</string>
+    <string name="scripts_editor_tool_pause">Pause</string>
+    <string name="scripts_editor_tool_note">Note</string>
+    <string name="scripts_editor_section_placeholder">Section title</string>
+    <string name="scripts_editor_text_placeholder">text</string>
+    <string name="scripts_editor_note_placeholder">note to self</string>
+    <string name="scripts_editor_open_prompter">Teleprompter</string>
+    <string name="scripts_editor_record">Record</string>
+    <string name="scripts_editor_prompter_settings">Prompter settings for this script</string>
+    <string name="scripts_editor_floating">Floating prompter</string>
+    <string name="scripts_editor_ai_studio">Open in AI Studio</string>
+    <string name="scripts_editor_overlay_title">Allow display over other apps</string>
+    <string name="scripts_editor_overlay_message">To show your script on top of Instagram, TikTok or any camera app, RavanGo needs the “Display over other apps” permission. The window only appears while you keep the floating prompter open.</string>
+
+    <!-- AI assist -->
+    <string name="scripts_ai_title">AI assist</string>
+    <string name="scripts_ai_scope_selection">Works on the selected text.</string>
+    <string name="scripts_ai_scope_all">Works on the whole script. Select text first to change just a part.</string>
+    <string name="scripts_ai_rewrite">Rewrite</string>
+    <string name="scripts_ai_shorten">Shorten</string>
+    <string name="scripts_ai_lengthen">Lengthen</string>
+    <string name="scripts_ai_change_tone">Change tone</string>
+    <string name="scripts_ai_fix_grammar">Fix grammar</string>
+    <string name="scripts_ai_translate">Translate فارسی ↔ English</string>
+    <string name="scripts_ai_conversational">Make conversational</string>
+    <string name="scripts_ai_bullets_to_script">Bullets → script</string>
+    <string name="scripts_ai_hooks">Hooks</string>
+    <string name="scripts_ai_cta">Call to action</string>
+    <string name="scripts_ai_tone_label">Tone (for “Change tone”)</string>
+    <string name="scripts_ai_tone_friendly">Friendly</string>
+    <string name="scripts_ai_tone_professional">Professional</string>
+    <string name="scripts_ai_tone_energetic">Energetic</string>
+    <string name="scripts_ai_tone_humorous">Humorous</string>
+    <string name="scripts_ai_tone_inspirational">Inspirational</string>
+    <string name="scripts_ai_tone_calm">Calm</string>
+    <string name="scripts_ai_tone_persuasive">Persuasive</string>
+    <string name="scripts_ai_tone_educational">Educational</string>
+    <string name="scripts_ai_thinking">Writing…</string>
+    <string name="scripts_ai_stop">Stop</string>
+    <string name="scripts_ai_replace_selection">Replace selection</string>
+    <string name="scripts_ai_replace_all">Replace script</string>
+    <string name="scripts_ai_insert_below">Insert below</string>
+    <string name="scripts_ai_discard">Discard</string>
+    <string name="scripts_ai_disclaimer">Your text is sent to the configured AI service only when you run a tool. Review results before using them.</string>
+    <string name="scripts_ai_not_configured_title">AI service not set up</string>
+    <string name="scripts_ai_not_configured_message">AI assist needs a connected AI service (the RavanGo AI gateway or your own API key). Set it up in Settings.</string>
+    <string name="scripts_ai_consent_title">Your permission is needed</string>
+    <string name="scripts_ai_consent_message">To use AI assist, allow RavanGo to send the text you choose to the AI service. You can turn this on in Settings and switch it off any time.</string>
+    <string name="scripts_ai_open_settings">Open settings</string>
+    <string name="scripts_ai_open_studio">AI Studio</string>
+</resources>

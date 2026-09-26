@@ -19,6 +19,12 @@ data class PrompterSnapshot(
     /** Character offset at the reading line (for "resume from here"). */
     val readingCharOffset: Int = 0,
     val currentSectionIndex: Int = -1,
+    /** Live speed (settings value adjusted by [PrompterController.nudgeSpeed]). */
+    val wordsPerMinute: Int = TeleprompterSettings().wordsPerMinute,
+    /** Total reading time of the script at [wordsPerMinute] (notes excluded, pauses included). */
+    val totalMs: Long = 0,
+    /** True while the user holds/drags the text (scrolling is suspended, not paused). */
+    val held: Boolean = false,
 )
 
 /** A `## Section` marker in a script. */

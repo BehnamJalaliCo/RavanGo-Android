@@ -1,25 +1,26 @@
 package com.ravango.feature.teleprompter
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
-import com.ravango.core.designsystem.component.RgScreen
+import com.ravango.core.navigation.CameraRoute
+import com.ravango.core.navigation.PaywallRoute
 import com.ravango.core.navigation.TeleprompterRoute
 import com.ravango.core.navigation.TeleprompterSettingsRoute
+import com.ravango.feature.teleprompter.player.PrompterRoute
+import com.ravango.feature.teleprompter.settings.PrompterSettingsRoute
 
 /** Registers this feature's destinations. Navigation to other features uses routes from :core:navigation. */
 fun NavGraphBuilder.teleprompterDestinations(navController: NavHostController) {
-    composable<TeleprompterRoute> { StubScreen("TeleprompterRoute") { navController.popBackStack() } }
-    composable<TeleprompterSettingsRoute> { StubScreen("TeleprompterSettingsRoute") { navController.popBackStack() } }
-}
-
-@Composable
-private fun StubScreen(name: String, onBack: () -> Unit) {
-    RgScreen(title = name, onBack = onBack) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(name) } }
+    composable<TeleprompterRoute> {
+        PrompterRoute(
+            onBack = { navController.popBackStack() },
+            onOpenSettings = { id -> navController.navigate(TeleprompterSettingsRoute(scriptId = id)) },
+            onRecord = { id -> navController.navigate(CameraRoute(scriptId = id)) },
+            onRequirePro = { feature -> navController.navigate(PaywallRoute(source = "teleprompter", feature = feature.name)) },
+        )
+    }
+    composable<TeleprompterSettingsRoute> {
+        PrompterSettingsRoute(onBack = { navController.popBackStack() })
+    }
 }
