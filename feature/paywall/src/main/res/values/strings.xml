@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="paywall_title">RavanGo Pro</string>
+    <string name="paywall_close">Close</string>
+    <string name="paywall_restore">Restore</string>
+    <string name="paywall_hero_default">Create like a pro studio</string>
+    <string name="paywall_hero_subtitle">Everything you need to film, polish and publish — no watermark, no limits.</string>
+    <string name="paywall_hero_subtitle_feature">Unlock this and every other Pro tool, on all your videos.</string>
+
+    <!-- Headlines adapted to the feature that opened the paywall. -->
+    <string name="paywall_feature_record_4k">Record in stunning 4K</string>
+    <string name="paywall_feature_record_high_fps">Silky-smooth 60 fps recording</string>
+    <string name="paywall_feature_record_hevc">Smaller files with HEVC</string>
+    <string name="paywall_feature_manual_camera">Full manual camera control</string>
+    <string name="paywall_feature_advanced_beauty">Advanced beauty, naturally</string>
+    <string name="paywall_feature_face_reshape">Subtle face reshaping</string>
+    <string name="paywall_feature_makeup">Studio makeup looks</string>
+    <string name="paywall_feature_floating_prompter">Prompt over any app</string>
+    <string name="paywall_feature_multi_layer">Multi-layer editing</string>
+    <string name="paywall_feature_pip">Picture-in-picture</string>
+    <string name="paywall_feature_advanced_color">Advanced color grading</string>
+    <string name="paywall_feature_reverse">Reverse your clips</string>
+    <string name="paywall_feature_noise_reduction">Crystal-clear voice</string>
+    <string name="paywall_feature_export_4k">Export in 4K</string>
+    <string name="paywall_feature_export_60fps">Export at 60 fps</string>
+    <string name="paywall_feature_no_watermark">Export without watermark</string>
+    <string name="paywall_feature_auto_captions">Automatic captions</string>
+    <string name="paywall_feature_ai_video">AI video tools</string>
+    <string name="paywall_feature_project_sync">Your projects on every device</string>
+    <string name="paywall_feature_media_backup">Back up your videos</string>
+    <string name="paywall_feature_unlimited_presets">Unlimited presets</string>
+
+    <!-- Benefits -->
+    <string name="paywall_benefits_title">Everything in Pro</string>
+    <string name="paywall_benefit_capture">4K · 60 fps · HEVC recording with full manual control</string>
+    <string name="paywall_benefit_beauty">Advanced beauty, reshape and makeup</string>
+    <string name="paywall_benefit_prompter">Floating prompter over other apps</string>
+    <string name="paywall_benefit_editor">Multi-layer, PiP, color grading and reverse</string>
+    <string name="paywall_benefit_audio">Noise reduction for clear voice</string>
+    <string name="paywall_benefit_export">4K / 60 fps export without watermark</string>
+    <string name="paywall_benefit_ai">Auto captions, AI video tools and %1$s AI credits a month</string>
+    <string name="paywall_benefit_cloud">Project sync and %1$s of video backup</string>
+    <string name="paywall_benefit_presets">Unlimited custom presets</string>
+
+    <!-- Plans -->
+    <string name="paywall_plans_title">Choose your plan</string>
+    <string name="paywall_plan_yearly">Yearly</string>
+    <string name="paywall_plan_monthly">Monthly</string>
+    <string name="paywall_plan_lifetime">Lifetime</string>
+    <string name="paywall_per_year">%1$s / year</string>
+    <string name="paywall_per_month">%1$s / month</string>
+    <string name="paywall_per_month_equivalent">Just %1$s / month</string>
+    <string name="paywall_one_time">%1$s once</string>
+    <string name="paywall_lifetime_note">Pay once. All Pro features forever, %1$s AI credits a month, %2$s backup.</string>
+    <string name="paywall_monthly_note">Flexible. Cancel anytime.</string>
+    <string name="paywall_save_badge">Save %1$s%%</string>
+    <string name="paywall_trial_badge">%1$s days free</string>
+    <string name="paywall_best_value">Best value</string>
+
+    <!-- CTA -->
+    <string name="paywall_cta_trial">Start %1$s-day free trial</string>
+    <string name="paywall_cta_subscribe">Continue</string>
+    <string name="paywall_cta_lifetime">Get Lifetime</string>
+    <string name="paywall_terms_trial">%1$s days free, then %2$s per year. You won\'t be charged if you cancel before the trial ends. Cancel anytime in %3$s.</string>
+    <string name="paywall_terms_yearly">%1$s per year, renews automatically. Cancel anytime in %2$s.</string>
+    <string name="paywall_terms_monthly">%1$s per month, renews automatically. Cancel anytime in %2$s.</string>
+    <string name="paywall_terms_lifetime">One-time payment of %1$s. No subscription.</string>
+    <string name="paywall_continue_free">Continue with Free</string>
+    <string name="paywall_terms">Terms</string>
+    <string name="paywall_privacy">Privacy</string>
+
+    <!-- Credits -->
+    <string name="paywall_credits_title">AI credit packs</string>
+    <string name="paywall_credits_subtitle">For any plan. Credits never expire and are used after your monthly allowance.</string>
+    <string name="paywall_credits_amount">%1$s credits</string>
+    <string name="paywall_credits_balance">You have %1$s AI credits</string>
+    <string name="paywall_buy">Buy</string>
+
+    <!-- Already paid -->
+    <string name="paywall_already_pro_title">You\'re Pro</string>
+    <string name="paywall_already_lifetime_title">You own RavanGo Lifetime</string>
+    <string name="paywall_already_trial">Your free trial is active.</string>
+    <string name="paywall_already_body">Every Pro feature is unlocked. Thank you for supporting RavanGo!</string>
+    <string name="paywall_manage">Manage subscription</string>
+
+    <!-- States -->
+    <string name="paywall_loading">Loading prices…</string>
+    <string name="paywall_unavailable_title">Purchases unavailable</string>
+    <string name="paywall_unavailable_store">Purchases are available in the Google Play version of RavanGo. Payments through %1$s require its billing SDK (Poolakey / Myket IAB), which this build doesn\'t include yet. Pro features granted to your account still work here.</string>
+    <string name="paywall_unavailable_play">Google Play billing isn\'t available on this device. Make sure the Play Store is installed, updated and signed in.</string>
+    <string name="paywall_unavailable_service">Couldn\'t reach %1$s. Check your connection and try again.</string>
+    <string name="paywall_products_missing">Plans couldn\'t be loaded from %1$s.</string>
+    <string name="paywall_retry">Try again</string>
+
+    <!-- Messages -->
+    <string name="paywall_msg_pro">Welcome to Pro! Everything is unlocked.</string>
+    <string name="paywall_msg_lifetime">Lifetime unlocked. Enjoy RavanGo forever!</string>
+    <string name="paywall_msg_credits">%1$s AI credits added.</string>
+    <string name="paywall_msg_pending">Payment pending. Pro unlocks as soon as the payment completes.</string>
+    <string name="paywall_msg_cancelled">Purchase cancelled. No charge was made.</string>
+    <string name="paywall_msg_owned">You already own this. It has been restored.</string>
+    <string name="paywall_msg_failed">The purchase couldn\'t be completed. You were not charged.</string>
+    <string name="paywall_msg_failed_network">Network problem during purchase. Please try again.</string>
+    <string name="paywall_msg_restored_paid">Purchases restored. Your plan is active.</string>
+    <string name="paywall_msg_restored_none">No previous purchases were found for this account.</string>
+</resources>
