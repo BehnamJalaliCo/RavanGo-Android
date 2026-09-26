@@ -30,8 +30,8 @@ class StudioLogicTest {
         assertThat(evLabel(-3, 1f / 6f)).isEqualTo("-0.5 EV")
         assertThat(shutterLabel(16_666_667)).isEqualTo("1/60")
         assertThat(shutterLabel(500_000_000)).isEqualTo("0.5\"")
-        assertThat(zoomLabel(0.6f)).isEqualTo("0.6×")
-        assertThat(zoomLabel(2f)).isEqualTo("2×")
+        assertThat(zoomLabel(0.6f)).isEqualTo(ltr("0.6×")) // LTR isolate keeps "0.6×" in order inside Persian UI
+        assertThat(zoomLabel(2f)).isEqualTo(ltr("2×"))
     }
 
     @Test

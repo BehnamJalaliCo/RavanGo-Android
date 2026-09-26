@@ -17,6 +17,11 @@ object FaceLandmarkIndex {
     const val RIGHT_EYE_INNER = 133
     const val LEFT_EYE_OUTER = 263
     const val LEFT_EYE_INNER = 362
+    /** Inner lip midpoints (the mouth opening) and the mouth corners. */
+    const val UPPER_LIP_INNER = 13
+    const val LOWER_LIP_INNER = 14
+    const val MOUTH_RIGHT = 61
+    const val MOUTH_LEFT = 291
 
     const val RIGHT_IRIS_CENTER = 468
     val RIGHT_IRIS_RING = intArrayOf(469, 470, 471, 472)

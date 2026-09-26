@@ -11,6 +11,8 @@ import com.ravango.core.model.LensFacing
 import com.ravango.core.model.ManualControls
 import com.ravango.core.model.Script
 import com.ravango.core.model.TeleprompterSettings
+import com.ravango.engine.beauty.effects.EffectsState
+import com.ravango.engine.beauty.effects.EffectsStatus
 import com.ravango.engine.camera.CameraState
 import com.ravango.engine.camera.CameraWarning
 import com.ravango.engine.camera.FocusState
@@ -25,7 +27,7 @@ import com.ravango.engine.camera.capability.LensOption
 enum class StudioMode { VIDEO, AUDIO }
 
 /** Bottom sheets / panels that can be open (one at a time). */
-enum class StudioSheet { NONE, RESOLUTION, ASPECT, SETTINGS, AUDIO, BEAUTY }
+enum class StudioSheet { NONE, RESOLUTION, ASPECT, SETTINGS, AUDIO, BEAUTY, EFFECTS }
 
 sealed interface PostRecordState {
     data object Saving : PostRecordState
@@ -40,6 +42,7 @@ sealed interface StudioMessage {
     data object MicUnavailableVideoOnly : StudioMessage
     data class Recovered(val count: Int) : StudioMessage
     data object NothingRecorded : StudioMessage
+    data object BackgroundPhotoFailed : StudioMessage
 }
 
 data class PrompterUi(
@@ -80,8 +83,17 @@ data class CameraUiState(
     val sheet: StudioSheet = StudioSheet.NONE,
     val proControlsOpen: Boolean = false,
     val comparing: Boolean = false,
+    /** Lenses, live filter and background effect currently applied. */
+    val effects: EffectsState = EffectsState(),
+    val effectsStatus: EffectsStatus = EffectsStatus(),
+    /** The Snapchat-style lens carousel around the shutter is open. */
+    val lensTrayOpen: Boolean = false,
+    val hasBackgroundImage: Boolean = false,
+    /** Number of faces tracked right now (0 while no face effect needs tracking). */
+    val facesTracked: Int = 0,
 ) {
     val isRecording: Boolean get() = recording.isActive
     val videoCaptureMode: CaptureMode get() = if (settings.captureMode == CaptureMode.AUDIO_ONLY) CaptureMode.VIDEO_WITH_AUDIO else settings.captureMode
     val needsMic: Boolean get() = mode == StudioMode.AUDIO || settings.captureMode == CaptureMode.VIDEO_WITH_AUDIO
+    val isStreaming: Boolean get() = cameraState is CameraState.Streaming
 }

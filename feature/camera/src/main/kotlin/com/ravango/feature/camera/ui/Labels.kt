@@ -46,8 +46,11 @@ internal fun aspectLabel(aspect: AspectRatioSpec): String = aspect.label.localiz
 internal fun zoomLabel(ratio: Float): String {
     val rounded = (ratio * 10f).roundToInt() / 10f
     val text = if (abs(rounded - rounded.roundToInt()) < 0.05f) rounded.roundToInt().toString() else String.format(Locale.US, "%.1f", rounded)
-    return "$text×".localizeDigits()
+    return ltr("$text×".localizeDigits())
 }
+
+/** Wraps [text] in a left-to-right isolate so "0.6×" / "1080p" keep their order inside Persian UI. */
+internal fun ltr(text: String): String = "\u2066$text\u2069"
 
 /** Standard shutter speeds (ns) for the manual shutter slider. */
 internal val SHUTTER_STOPS_NS: List<Long> = listOf(8000, 4000, 2000, 1000, 500, 250, 125, 100, 60, 50, 30, 25, 15, 8, 4)

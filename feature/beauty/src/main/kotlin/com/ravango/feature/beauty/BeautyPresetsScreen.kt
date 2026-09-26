@@ -99,7 +99,18 @@ internal fun BeautyPresetsRoute(
             }
         }
     }
-    BeautyPresetsScreen(ui = ui, namer = namer, onBack = onBack, snackbar = snackbar, viewModel = viewModel, onRequirePro = onRequirePro)
+    BeautyPresetsContent(
+        ui = ui,
+        namer = namer,
+        onBack = onBack,
+        snackbar = snackbar,
+        onRequirePro = onRequirePro,
+        onApply = viewModel::applyPreset,
+        onSaveCurrent = viewModel::saveCurrentAsPreset,
+        onRename = viewModel::renamePreset,
+        onDuplicate = viewModel::duplicatePreset,
+        onDelete = viewModel::deletePreset,
+    )
 }
 
 private sealed interface PresetDialog {
@@ -109,14 +120,19 @@ private sealed interface PresetDialog {
     data class Delete(val presetId: String) : PresetDialog
 }
 
+/** Stateless presets manager (the route wires the view model; screenshot tests pass sample data). */
 @Composable
-private fun BeautyPresetsScreen(
+internal fun BeautyPresetsContent(
     ui: BeautyUiState,
     namer: (BeautyPreset) -> String,
     onBack: () -> Unit,
     snackbar: androidx.compose.material3.SnackbarHostState,
-    viewModel: BeautyViewModel,
     onRequirePro: (ProFeature) -> Unit,
+    onApply: (BeautyPreset) -> Unit,
+    onSaveCurrent: (String) -> Unit,
+    onRename: (BeautyPreset, String) -> Unit,
+    onDuplicate: (BeautyPreset, String) -> Unit,
+    onDelete: (BeautyPreset) -> Unit,
 ) {
     var dialogKey by rememberSaveable { mutableStateOf<String?>(null) }
     val dialog = remember(dialogKey) { decodeDialog(dialogKey) }
@@ -193,7 +209,7 @@ private fun BeautyPresetsScreen(
                         active = p.id == ui.activePresetId,
                         locked = ui.isPresetLocked(p),
                         locale = locale,
-                        onApply = { viewModel.applyPreset(p) },
+                        onApply = { onApply(p) },
                         onRename = { dialogKey = "$DIALOG_RENAME${p.id}" },
                         onDuplicate = { startCreate("$DIALOG_DUPLICATE${p.id}") },
                         onDelete = { dialogKey = "$DIALOG_DELETE${p.id}" },
@@ -210,7 +226,7 @@ private fun BeautyPresetsScreen(
                     active = p.id == ui.activePresetId,
                     locked = ui.isPresetLocked(p),
                     locale = locale,
-                    onApply = { viewModel.applyPreset(p) },
+                    onApply = { onApply(p) },
                     onRename = null,
                     onDuplicate = { startCreate("$DIALOG_DUPLICATE${p.id}") },
                     onDelete = null,
@@ -235,20 +251,20 @@ private fun BeautyPresetsScreen(
         dialog == PresetDialog.SaveCurrent -> PresetNameDialog(
             title = stringResource(R.string.beauty_save_preset),
             initial = "",
-            onConfirm = { dialogKey = null; viewModel.saveCurrentAsPreset(it) },
+            onConfirm = { dialogKey = null; onSaveCurrent(it) },
             onDismiss = { dialogKey = null },
         )
         target == null -> Unit
         dialog is PresetDialog.Rename -> PresetNameDialog(
             title = stringResource(UiR.string.action_rename),
             initial = namer(target),
-            onConfirm = { dialogKey = null; viewModel.renamePreset(target, it) },
+            onConfirm = { dialogKey = null; onRename(target, it) },
             onDismiss = { dialogKey = null },
         )
         dialog is PresetDialog.Duplicate -> PresetNameDialog(
             title = stringResource(UiR.string.action_duplicate),
             initial = stringResource(R.string.beauty_preset_copy_suffix, namer(target)).take(MAX_PRESET_NAME),
-            onConfirm = { dialogKey = null; viewModel.duplicatePreset(target, it) },
+            onConfirm = { dialogKey = null; onDuplicate(target, it) },
             onDismiss = { dialogKey = null },
         )
         dialog is PresetDialog.Delete -> RgConfirmDialog(
@@ -256,7 +272,7 @@ private fun BeautyPresetsScreen(
             message = stringResource(R.string.beauty_delete_preset_message, namer(target)),
             confirmText = stringResource(UiR.string.action_delete),
             dismissText = stringResource(UiR.string.action_cancel),
-            onConfirm = { dialogKey = null; viewModel.deletePreset(target) },
+            onConfirm = { dialogKey = null; onDelete(target) },
             onDismiss = { dialogKey = null },
             destructive = true,
         )

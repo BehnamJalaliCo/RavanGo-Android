@@ -1,5 +1,7 @@
 package com.ravango.engine.beauty.gl
 
+import com.ravango.engine.beauty.effects.EffectsShaders
+
 /**
  * GLSL ES 1.00 sources for the beauty pipeline (GLES 2 compatible, also valid on GLES 3 contexts).
  *
@@ -173,7 +175,7 @@ internal object BeautyShaders {
         uniform float uUseFaceMask;
         uniform int uIrisCount;
         uniform TC vec4 uIris[4];
-
+    """ + EffectsShaders.FILTER_BLOCK + """
         float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
 
         void main() {
@@ -273,6 +275,8 @@ internal object BeautyShaders {
                 b += texture2D(uTexture, vTexCoord + vec2(-uTexel.x, uTexel.y)).rgb;
                 col += (orig - b * 0.25) * sharpen;
             }
+            // Live filter merged into this pass when it is the last full-frame write (uniform-guarded).
+            col = applyFilter(clamp(col, 0.0, 1.0), vTexCoord);
             gl_FragColor = vec4(clamp(col, 0.0, 1.0), src.a);
         }
     """

@@ -29,6 +29,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -47,6 +50,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -70,6 +74,8 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -87,6 +93,7 @@ import com.ravango.core.designsystem.component.RgSwitch
 import com.ravango.core.designsystem.component.pressable
 import com.ravango.core.designsystem.theme.HapticEvent
 import com.ravango.core.designsystem.theme.Motion
+import com.ravango.core.designsystem.theme.Palette
 import com.ravango.core.designsystem.theme.Radius
 import com.ravango.core.designsystem.theme.RgTheme
 import com.ravango.core.designsystem.theme.Spacing
@@ -121,11 +128,33 @@ private val OnGlass = Color.White
 private val OnGlassMuted = Color.White.copy(alpha = 0.65f)
 private val ChipIdle = Color.White.copy(alpha = 0.08f)
 
+/** Every intent of the beauty panel (defaults are no-ops for previews and screenshot tests). */
+@Immutable
+internal class BeautyPanelActions(
+    val onToggle: (Boolean) -> Unit = {},
+    val onCompare: (Boolean) -> Unit = {},
+    val onResetAll: () -> Unit = {},
+    val onOpenPresets: () -> Unit = {},
+    val onSelectTab: (BeautyTab) -> Unit = {},
+    val onSelectItem: (BeautyItem) -> Unit = {},
+    /** Returns false when the item is locked (the panel then asks for Pro). */
+    val onValue: (BeautyItem, Int) -> Boolean = { _, _ -> true },
+    val onReset: (BeautyItem) -> Unit = {},
+    val onMakeupColor: (MakeupFeature, Long) -> Unit = { _, _ -> },
+    val onEyeColor: (Long) -> Unit = {},
+    val onUnlock: (BeautyItem) -> Unit = {},
+    val onApplyLook: (MakeupLook) -> Unit = {},
+    val onClearMakeup: () -> Unit = {},
+    val onApplyPreset: (BeautyPreset) -> Unit = {},
+    val onSavePreset: () -> Unit = {},
+)
+
 @Composable
 internal fun BeautyPanelImpl(modifier: Modifier, onOpenPresets: () -> Unit, onRequirePro: (ProFeature) -> Unit) {
     val viewModel: BeautyViewModel = hiltViewModel()
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
     val requirePro by rememberUpdatedState(onRequirePro)
+    val openPresets by rememberUpdatedState(onOpenPresets)
     var toast by remember { mutableStateOf<String?>(null) }
     var showSaveDialog by rememberSaveable { mutableStateOf(false) }
 
@@ -153,19 +182,61 @@ internal fun BeautyPanelImpl(modifier: Modifier, onOpenPresets: () -> Unit, onRe
         }
     }
 
+    val canSaveMore by rememberUpdatedState(ui.canSaveMorePresets)
+    val actions = remember(viewModel) {
+        BeautyPanelActions(
+            onToggle = viewModel::setEnabled,
+            onCompare = viewModel::setComparing,
+            onResetAll = viewModel::resetAll,
+            onOpenPresets = { openPresets() },
+            onSelectTab = viewModel::selectTab,
+            onSelectItem = viewModel::select,
+            onValue = { item, v -> viewModel.setValue(item, v).also { ok -> if (!ok) viewModel.requirePro(item) } },
+            onReset = viewModel::reset,
+            onMakeupColor = viewModel::setMakeupColor,
+            onEyeColor = viewModel::setEyeColor,
+            onUnlock = viewModel::requirePro,
+            onApplyLook = viewModel::applyLook,
+            onClearMakeup = viewModel::clearMakeup,
+            onApplyPreset = viewModel::applyPreset,
+            onSavePreset = { if (canSaveMore) showSaveDialog = true else requirePro(ProFeature.UNLIMITED_PRESETS) },
+        )
+    }
+    BeautyPanelContent(ui = ui, toast = toast, actions = actions, modifier = modifier)
+
+    if (showSaveDialog) {
+        PresetNameDialog(
+            title = stringResource(R.string.beauty_save_preset),
+            initial = "",
+            onConfirm = { name ->
+                showSaveDialog = false
+                viewModel.saveCurrentAsPreset(name)
+            },
+            onDismiss = { showSaveDialog = false },
+        )
+    }
+}
+
+/**
+ * Stateless beauty panel (dark glass bottom panel): header (on/off, status, reset, presets, compare), tab row and
+ * the active tab. Rendered by the camera sheet and by screenshot tests.
+ */
+@Composable
+internal fun BeautyPanelContent(ui: BeautyUiState, toast: String?, actions: BeautyPanelActions, modifier: Modifier = Modifier) {
+    val presetNames = rememberPresetNamer()
     GlassSurface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(topStart = Radius.xl, topEnd = Radius.xl),
-        contentPadding = PaddingValues(top = Spacing.md, bottom = Spacing.lg),
+        contentPadding = PaddingValues(top = Spacing.sm, bottom = Spacing.lg),
         tint = PanelTint,
     ) {
         Column(Modifier.fillMaxWidth()) {
             PanelHeader(
                 ui = ui,
-                onToggle = viewModel::setEnabled,
-                onCompare = viewModel::setComparing,
-                onResetAll = viewModel::resetAll,
-                onOpenPresets = onOpenPresets,
+                onToggle = actions.onToggle,
+                onCompare = actions.onCompare,
+                onResetAll = actions.onResetAll,
+                onOpenPresets = actions.onOpenPresets,
             )
             AnimatedVisibility(visible = toast != null, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
                 Text(
@@ -180,8 +251,8 @@ internal fun BeautyPanelImpl(modifier: Modifier, onOpenPresets: () -> Unit, onRe
                 )
             }
             Spacer(Modifier.height(Spacing.sm))
-            TabRow(selected = ui.tab, onSelect = viewModel::selectTab)
-            Spacer(Modifier.height(Spacing.md))
+            TabRow(selected = ui.tab, onSelect = actions.onSelectTab)
+            Spacer(Modifier.height(Spacing.lg))
             val dim by animateFloatAsState(if (ui.state.enabled) 1f else 0.55f, Motion.quick(), label = "enabled")
             AnimatedContent(
                 targetState = ui.tab,
@@ -189,35 +260,19 @@ internal fun BeautyPanelImpl(modifier: Modifier, onOpenPresets: () -> Unit, onRe
                 label = "tab",
                 modifier = Modifier.alpha(dim),
             ) { tab ->
-                if (tab == BeautyTab.LOOKS) {
-                    LooksTab(ui = ui, onApply = viewModel::applyLook, onClear = viewModel::clearMakeup)
-                } else if (tab == BeautyTab.PRESETS) {
-                    PresetsTab(
+                when (tab) {
+                    BeautyTab.LOOKS -> LooksTab(ui = ui, onApply = actions.onApplyLook, onClear = actions.onClearMakeup)
+                    BeautyTab.PRESETS -> PresetsTab(
                         ui = ui,
                         nameOf = presetNames,
-                        onApply = viewModel::applyPreset,
-                        onSave = {
-                            if (ui.canSaveMorePresets) showSaveDialog = true else requirePro(ProFeature.UNLIMITED_PRESETS)
-                        },
-                        onManage = onOpenPresets,
+                        onApply = actions.onApplyPreset,
+                        onSave = actions.onSavePreset,
+                        onManage = actions.onOpenPresets,
                     )
-                } else {
-                    FeatureTab(ui = ui, tab = tab, viewModel = viewModel)
+                    else -> FeatureTab(ui = ui, tab = tab, actions = actions)
                 }
             }
         }
-    }
-
-    if (showSaveDialog) {
-        PresetNameDialog(
-            title = stringResource(R.string.beauty_save_preset),
-            initial = "",
-            onConfirm = { name ->
-                showSaveDialog = false
-                viewModel.saveCurrentAsPreset(name)
-            },
-            onDismiss = { showSaveDialog = false },
-        )
     }
 }
 
@@ -249,19 +304,19 @@ private fun PanelHeader(
             contentDescription = stringResource(R.string.beauty_reset_all),
             onClick = onResetAll,
             glass = true,
-            size = 36.dp,
-            iconSize = 18.dp,
+            size = 44.dp,
+            iconSize = 20.dp,
         )
-        Spacer(Modifier.width(Spacing.xs))
+        Spacer(Modifier.width(Spacing.sm))
         RgIconButton(
             icon = Icons.Rounded.Tune,
             contentDescription = stringResource(R.string.beauty_manage_presets),
             onClick = onOpenPresets,
             glass = true,
-            size = 36.dp,
-            iconSize = 18.dp,
+            size = 44.dp,
+            iconSize = 20.dp,
         )
-        Spacer(Modifier.width(Spacing.xs))
+        Spacer(Modifier.width(Spacing.sm))
         CompareButton(comparing = ui.comparing, enabled = ui.state.enabled, onCompare = onCompare)
     }
 }
@@ -275,7 +330,7 @@ private fun CompareButton(comparing: Boolean, enabled: Boolean, onCompare: (Bool
     val label = stringResource(R.string.beauty_compare)
     Box(
         Modifier
-            .size(36.dp)
+            .size(44.dp)
             .alpha(if (enabled) 1f else 0.4f)
             .clip(CircleShape)
             .background(bg)
@@ -297,7 +352,7 @@ private fun CompareButton(comparing: Boolean, enabled: Boolean, onCompare: (Bool
             },
         contentAlignment = Alignment.Center,
     ) {
-        Icon(Icons.Rounded.Compare, null, tint = Color.White, modifier = Modifier.size(18.dp))
+        Icon(Icons.Rounded.Compare, null, tint = Color.White, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -325,7 +380,7 @@ private fun QualityIndicator(status: BeautyStatus, enabled: Boolean) {
     }
     val text = quality ?: faces
     val tracked = quality == null && status.faceCount > 0
-    val tint by animateColorAsState(if (tracked) RgTheme.colors.pastelMint else OnGlassMuted, Motion.quick(), label = "track")
+    val tint by animateColorAsState(if (tracked) Palette.Mint400 else OnGlassMuted, Motion.quick(), label = "track")
     AnimatedVisibility(visible = text != null, enter = fadeIn(), exit = fadeOut()) {
         Row(
             Modifier
@@ -360,22 +415,26 @@ private fun QualityIndicator(status: BeautyStatus, enabled: Boolean) {
 
 @Composable
 private fun TabRow(selected: BeautyTab, onSelect: (BeautyTab) -> Unit) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.lg),
+    val listState = rememberLazyListState()
+    // Keep the selected tab in view (e.g. when the panel reopens on a tab at the far end).
+    LaunchedEffect(selected) { listState.animateScrollToItem(selected.ordinal.coerceAtLeast(0).let { (it - 1).coerceAtLeast(0) }) }
+    LazyRow(
+        state = listState,
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = Spacing.lg),
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        BeautyTab.entries.forEach { tab ->
+        items(BeautyTab.entries, key = { it.name }) { tab ->
             val isSelected = tab == selected
             val bg by animateColorAsState(if (isSelected) Color.White else Color.Transparent, Motion.quick(), label = "tab")
             Box(
                 Modifier
+                    .height(40.dp)
                     .clip(RoundedCornerShape(Radius.pill))
                     .background(bg)
                     .pressable(haptic = HapticEvent.SNAP) { onSelect(tab) }
-                    .padding(horizontal = 14.dp, vertical = 7.dp),
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     stringResource(tab.label),
@@ -389,7 +448,7 @@ private fun TabRow(selected: BeautyTab, onSelect: (BeautyTab) -> Unit) {
 }
 
 @Composable
-private fun FeatureTab(ui: BeautyUiState, tab: BeautyTab, viewModel: BeautyViewModel) {
+private fun FeatureTab(ui: BeautyUiState, tab: BeautyTab, actions: BeautyPanelActions) {
     val items = remember(tab) { BeautyCatalog.items(tab) }
     val selected = ui.selected?.takeIf { it in items } ?: items.firstOrNull() ?: return
     val faceMissing = ui.status.tracking && !ui.status.faceDetected
@@ -410,7 +469,7 @@ private fun FeatureTab(ui: BeautyUiState, tab: BeautyTab, viewModel: BeautyViewM
                         shade = shadeOf(ui, item),
                         locked = ui.isLocked(item),
                         faceMissing = faceMissing && item.requiresFace,
-                        onClick = { viewModel.select(item) },
+                        onClick = { actions.onSelectItem(item) },
                     )
                 }
             }
@@ -428,16 +487,16 @@ private fun FeatureTab(ui: BeautyUiState, tab: BeautyTab, viewModel: BeautyViewM
                 locked = ui.isLocked(item),
                 faceMissing = faceMissing && item.requiresFace,
                 trackingUnavailable = item.requiresFace && ui.status.suspendedReason == BeautySuspendReason.TRACKING_UNAVAILABLE,
-                onValue = { v -> if (!viewModel.setValue(item, v)) viewModel.requirePro(item) },
-                onReset = { viewModel.reset(item) },
+                onValue = { v -> actions.onValue(item, v) },
+                onReset = { actions.onReset(item) },
                 onColor = { c ->
                     when (item) {
-                        is BeautyItem.Makeup -> viewModel.setMakeupColor(item.feature, c)
-                        BeautyItem.EyeColor -> viewModel.setEyeColor(c)
+                        is BeautyItem.Makeup -> actions.onMakeupColor(item.feature, c)
+                        BeautyItem.EyeColor -> actions.onEyeColor(c)
                         is BeautyItem.Beauty -> Unit
                     }
                 },
-                onUnlock = { viewModel.requirePro(item) },
+                onUnlock = { actions.onUnlock(item) },
             )
         }
     }
@@ -475,6 +534,8 @@ private fun FeatureChip(
         label = "ring",
     )
     val scale by animateFloatAsState(if (selected) 1.08f else 1f, Motion.quick(), label = "chipScale")
+    // The amount ring fills in the reading direction (clockwise in LTR, counter-clockwise in RTL).
+    val direction = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1f else 1f
     val fill = when {
         shade != null && active -> Color(shade)
         selected -> accent.copy(alpha = 0.9f)
@@ -508,7 +569,7 @@ private fun FeatureChip(
                             drawArc(
                                 color = if (selected) Color.White else mint,
                                 startAngle = -90f,
-                                sweepAngle = 360f * fraction,
+                                sweepAngle = 360f * fraction * direction,
                                 useCenter = false,
                                 topLeft = Offset(inset, inset),
                                 size = Size(size.width - stroke, size.height - stroke),
@@ -557,7 +618,7 @@ private fun FeatureDetail(
     val neutral = BeautyCatalog.neutral(item)
     val sweetSpot = BeautyCatalog.recommended(item)
     Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.lg)) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 36.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 44.dp)) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(BeautyCatalog.label(item)), style = MaterialTheme.typography.titleSmall, color = OnGlass)
                 val warning = when {
@@ -588,8 +649,8 @@ private fun FeatureDetail(
                 contentDescription = stringResource(R.string.beauty_reset),
                 onClick = onReset,
                 glass = true,
-                size = 32.dp,
-                iconSize = 16.dp,
+                size = 40.dp,
+                iconSize = 18.dp,
                 enabled = !locked && value != neutral,
             )
         }
