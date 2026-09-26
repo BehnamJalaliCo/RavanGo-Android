@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.ravango.core.designsystem.theme.RavanGoTheme
 import org.robolectric.RuntimeEnvironment
+import java.util.Locale
 
 /** Screenshot variants every screen is reviewed in. */
 enum class ScreenVariant(val suffix: String, val dark: Boolean, val persian: Boolean) {
@@ -33,6 +34,8 @@ fun captureScreen(
     val night = if (variant.dark) "night" else "notnight"
     // Qualifier order per Android rules: locale, size, night mode, density.
     RuntimeEnvironment.setQualifiers("$locale-$qualifiers-$night-$DENSITY")
+    // Formatters (Persian digits, dates, "٫") read Locale.getDefault(), which resource qualifiers don't touch.
+    Locale.setDefault(Locale.forLanguageTag(locale))
     captureRoboImage(filePath = "build/outputs/roborazzi/$name-${variant.suffix}.png") {
         // reduceMotion stops infinite animations (gradient blobs, shimmer) so Compose goes idle and capture is fast.
         RavanGoTheme(darkTheme = variant.dark, reduceMotion = true) {

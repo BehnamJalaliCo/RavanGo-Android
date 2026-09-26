@@ -37,7 +37,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SheetState
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -173,6 +172,8 @@ fun RgListItem(
     icon: ImageVector? = null,
     iconTint: Color = RgTheme.colors.accent,
     iconBackground: Color = RgTheme.colors.accentSoft,
+    /** Title color; pass [RgColors.danger][com.ravango.core.designsystem.theme.RgColors.danger] for destructive rows. */
+    titleColor: Color = RgTheme.colors.textPrimary,
     onClick: (() -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = if (onClick != null) ({ Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = RgTheme.colors.textTertiary, modifier = Modifier.size(Dimens.iconMedium)) }) else null,
 ) {
@@ -193,7 +194,7 @@ fun RgListItem(
             Spacer(Modifier.width(Spacing.md))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, color = RgTheme.colors.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(title, style = MaterialTheme.typography.titleSmall, color = titleColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = RgTheme.colors.textSecondary, maxLines = 3, overflow = TextOverflow.Ellipsis)
         }
         if (trailing != null) {
@@ -267,18 +268,22 @@ fun EmptyState(
     }
 }
 
-/** Bottom sheet with RavanGo styling. */
+/**
+ * Bottom sheet with RavanGo styling. Opens fully expanded by default; pass [skipPartiallyExpanded] = false for tall,
+ * scrollable content that should peek first. Callers need no experimental Material opt-in.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RgBottomSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
-    sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    skipPartiallyExpanded: Boolean = true,
     dark: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = RgTheme.colors
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = skipPartiallyExpanded)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         modifier = modifier,
@@ -351,11 +356,35 @@ fun ShimmerBox(modifier: Modifier = Modifier, shape: androidx.compose.ui.graphic
     )
 }
 
+/**
+ * Indeterminate progress ring. With "reduce motion" on it renders as a still three-quarter arc, so nothing spins
+ * forever (and screenshot captures can settle).
+ */
+@Composable
+fun RgSpinner(
+    modifier: Modifier = Modifier,
+    color: Color = RgTheme.colors.accent,
+    strokeWidth: androidx.compose.ui.unit.Dp = 3.dp,
+    trackColor: Color = Color.Transparent,
+) {
+    if (RgTheme.reduceMotion) {
+        androidx.compose.material3.CircularProgressIndicator(
+            progress = { 0.75f },
+            modifier = modifier,
+            color = color,
+            strokeWidth = strokeWidth,
+            trackColor = trackColor,
+        )
+    } else {
+        androidx.compose.material3.CircularProgressIndicator(modifier = modifier, color = color, strokeWidth = strokeWidth, trackColor = trackColor)
+    }
+}
+
 /** Full-screen centered loading state. */
 @Composable
 fun LoadingState(modifier: Modifier = Modifier, message: String? = null) {
     Column(modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        androidx.compose.material3.CircularProgressIndicator(color = RgTheme.colors.accent, strokeWidth = 3.dp)
+        RgSpinner(color = RgTheme.colors.accent, strokeWidth = 3.dp)
         if (message != null) {
             Spacer(Modifier.height(Spacing.md))
             Text(message, style = MaterialTheme.typography.bodyMedium, color = RgTheme.colors.textSecondary)

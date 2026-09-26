@@ -1,5 +1,6 @@
 package com.ravango.feature.editor.timeline
 
+import com.ravango.core.designsystem.component.RgSpinner
 import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -30,7 +31,6 @@ import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.SwapHoriz
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -196,7 +196,7 @@ private fun ClipItem(
             if (p.clip.speed != 1f) Badge(localized(trimFloat(p.clip.speed)) + "×")
             if (p.clip.reversed) {
                 Spacer(Modifier.width(3.dp))
-                if (reversing) CircularProgressIndicator(Modifier.size(12.dp), strokeWidth = 1.5.dp, color = Color.White)
+                if (reversing) RgSpinner(Modifier.size(12.dp), strokeWidth = 1.5.dp, color = Color.White)
                 else Icon(Icons.Rounded.Replay, null, tint = Color.White, modifier = Modifier.size(14.dp))
             }
             if (p.clip.muted) {

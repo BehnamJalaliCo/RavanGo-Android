@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -105,7 +104,7 @@ fun RgPrimaryButton(
     ) {
         AnimatedContent(loading, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "loading") { isLoading ->
             if (isLoading) {
-                CircularProgressIndicator(Modifier.size(size.iconSize + 2.dp), color = content, strokeWidth = 2.5.dp)
+                RgSpinner(Modifier.size(size.iconSize + 2.dp), color = content, strokeWidth = 2.5.dp)
             } else {
                 ButtonContent(text, icon, content, size)
             }

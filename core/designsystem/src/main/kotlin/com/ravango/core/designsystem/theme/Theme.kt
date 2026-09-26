@@ -114,10 +114,17 @@ fun RavanGoTheme(
     }
 }
 
-/** Always-dark theme for capture surfaces (camera, teleprompter) regardless of the app theme. */
+/**
+ * Always-dark theme for capture surfaces (camera, teleprompter, editor) regardless of the app theme. Haptics and
+ * reduce-motion are inherited from the enclosing [RavanGoTheme] so the user's accessibility settings carry over.
+ */
 @Composable
-fun StudioTheme(hapticsEnabled: Boolean = true, content: @Composable () -> Unit) {
-    RavanGoTheme(darkTheme = true, hapticsEnabled = hapticsEnabled, content = content)
+fun StudioTheme(
+    hapticsEnabled: Boolean = LocalHapticsEnabled.current,
+    reduceMotion: Boolean = LocalReduceMotion.current,
+    content: @Composable () -> Unit,
+) {
+    RavanGoTheme(darkTheme = true, hapticsEnabled = hapticsEnabled, reduceMotion = reduceMotion, content = content)
 }
 
 /** Accessor: `RgTheme.colors.accent`. */

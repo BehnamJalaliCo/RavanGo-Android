@@ -1,5 +1,6 @@
 package com.ravango.feature.home
 
+import com.ravango.core.designsystem.component.RgSpinner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -778,7 +779,7 @@ private fun ImportingOverlay(visible: Boolean) {
         Box(Modifier.fillMaxSize().background(RgTheme.colors.scrim).pointerInput(Unit) { detectTapGestures { } }, contentAlignment = Alignment.Center) {
             GlassSurface {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    androidx.compose.material3.CircularProgressIndicator(Modifier.size(22.dp), color = RgTheme.colors.accent, strokeWidth = 2.5.dp)
+                    RgSpinner(Modifier.size(22.dp), color = RgTheme.colors.accent, strokeWidth = 2.5.dp)
                     Spacer(Modifier.width(Spacing.md))
                     Text(stringResource(R.string.home_importing), style = MaterialTheme.typography.titleSmall, color = RgTheme.colors.textPrimary)
                 }

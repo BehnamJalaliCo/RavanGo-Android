@@ -1,5 +1,6 @@
 package com.ravango.feature.editor.preview
 
+import com.ravango.core.designsystem.component.RgSpinner
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -20,7 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -112,7 +112,7 @@ fun PreviewPane(
                 }
             }
             if (building) {
-                CircularProgressIndicator(Modifier.align(Alignment.TopEnd).padding(10.dp).size(18.dp), strokeWidth = 2.dp, color = Color.White)
+                RgSpinner(Modifier.align(Alignment.TopEnd).padding(10.dp).size(18.dp), strokeWidth = 2.dp, color = Color.White)
             }
             if (error) {
                 Text(

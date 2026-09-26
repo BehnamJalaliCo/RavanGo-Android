@@ -1,5 +1,6 @@
 package com.ravango.feature.editor.ui
 
+import com.ravango.core.designsystem.component.RgSpinner
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -82,7 +83,7 @@ fun ToolAction(
                     .border(1.dp, Color.White.copy(alpha = if (selected) 0f else 0.1f), CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                if (busy) androidx.compose.material3.CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = colors.accent)
+                if (busy) RgSpinner(Modifier.size(20.dp), strokeWidth = 2.dp, color = colors.accent)
                 else Icon(icon, null, tint = if (selected) colors.onAccent else Color.White, modifier = Modifier.size(22.dp))
             }
             if (pro) ProBadge(Modifier.align(Alignment.TopEnd))
