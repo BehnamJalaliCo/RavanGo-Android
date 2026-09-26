@@ -138,6 +138,9 @@ internal class CameraRenderer(private val callbacks: Callbacks) {
     /** Read from other threads for tap-to-focus. */
     val mapping = AtomicReference<FrameMapping?>(null)
 
+    /** When true the preview shows the frame *before* the processor chain; the encoder still gets the processed frame. */
+    @Volatile var previewBypass: Boolean = false
+
     /** Scales the frame budget reported to processors (thermal pressure asks them to be cheaper). */
     @Volatile var budgetScale: Float = 1f
 
@@ -342,7 +345,8 @@ internal class CameraRenderer(private val callbacks: Callbacks) {
             oes.bindTexture("uTexture", 0, oesTexture, GLES11Ext.GL_TEXTURE_EXTERNAL_OES)
             FullScreenQuad.draw(oes)
 
-            var frame = GlTextureFrame(frameFbo.textureId, frameFbo.width, frameFbo.height, ts, g.mirror)
+            val input = GlTextureFrame(frameFbo.textureId, frameFbo.width, frameFbo.height, ts, g.mirror)
+            var frame = input
             val budget = (1_000_000_000.0 / g.fps.coerceAtLeast(1) * budgetScale).toLong()
             var processTotal = 0L
             var i = 0
@@ -365,8 +369,7 @@ internal class CameraRenderer(private val callbacks: Callbacks) {
                 frame = out
                 i++
             }
-            GlFramebuffer.unbind()
-            GLES20.glDisable(GLES20.GL_BLEND)
+            restoreGlState()
 
             val encoding = encoderEgl != EGL14.EGL_NO_SURFACE
             if (encoding) drawToEncoder(e, frame, ts)
@@ -376,7 +379,7 @@ internal class CameraRenderer(private val callbacks: Callbacks) {
                     droppedPreview++
                     skippedLastPreview = true
                 } else {
-                    drawPreview(e, frame)
+                    drawPreview(e, if (previewBypass) input else frame)
                     skippedLastPreview = false
                 }
             }
@@ -388,6 +391,19 @@ internal class CameraRenderer(private val callbacks: Callbacks) {
             lastFrameCostNs = System.nanoTime() - start
             publishStatsIfDue(g)
         }
+    }
+
+    /** Processors may leave arbitrary GL state behind; reset everything our own draws rely on. */
+    private fun restoreGlState() {
+        GlFramebuffer.unbind()
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
+        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0)
+        if ((egl?.glVersion ?: 2) >= 3) android.opengl.GLES30.glBindVertexArray(0)
+        GLES20.glDisable(GLES20.GL_BLEND)
+        GLES20.glDisable(GLES20.GL_DEPTH_TEST)
+        GLES20.glDisable(GLES20.GL_SCISSOR_TEST)
+        GLES20.glDisable(GLES20.GL_CULL_FACE)
+        GLES20.glColorMask(true, true, true, true)
     }
 
     private fun drawToEncoder(e: EglCore, frame: GlTextureFrame, ts: Long) {

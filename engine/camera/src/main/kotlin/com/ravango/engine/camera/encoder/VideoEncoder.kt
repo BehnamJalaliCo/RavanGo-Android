@@ -115,8 +115,8 @@ internal class VideoEncoder private constructor(
             format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, config.iFrameIntervalSec)
             format.setInteger(MediaFormat.KEY_PRIORITY, 0) // realtime
             val caps = runCatching { info.getCapabilitiesForType(config.codec.mimeType) }.getOrNull()
-            if (options.bitrateMode && caps != null) {
-                val encoderCaps = caps.encoderCapabilities
+            val encoderCaps: MediaCodecInfo.EncoderCapabilities? = caps?.encoderCapabilities
+            if (options.bitrateMode && encoderCaps != null) {
                 when {
                     encoderCaps.isBitrateModeSupported(MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR) ->
                         format.setInteger(MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR)

@@ -192,6 +192,7 @@ class Camera2Engine @Inject constructor(
     private var previewTarget: PreviewTarget? = null
     @Volatile private var processors: List<GlFrameProcessor> = emptyList()
     @Volatile private var deviceOrientation = 0
+    @Volatile private var previewBypass = false
 
     // --- recording (guarded by recordingMutex) ---
     @Volatile private var recorder: VideoRecorder? = null
@@ -461,6 +462,7 @@ class Camera2Engine @Inject constructor(
         renderer = r
         r.setDeviceOrientation(deviceOrientation)
         r.setFrameProcessors(processors)
+        r.previewBypass = previewBypass
         synchronized(previewLock) { previewTarget }?.let { r.setPreviewSurface(it.surface, it.width, it.height) }
         return r
     }
@@ -582,6 +584,11 @@ class Camera2Engine @Inject constructor(
         val snapped = FrameGeometry.snap(degrees)
         deviceOrientation = snapped
         renderer?.setDeviceOrientation(snapped)
+    }
+
+    override fun setPreviewBypass(bypass: Boolean) {
+        previewBypass = bypass
+        renderer?.previewBypass = bypass
     }
 
     override fun setFrameProcessors(processors: List<GlFrameProcessor>) {
@@ -808,6 +815,11 @@ class Camera2Engine @Inject constructor(
         } catch (e: CancellationException) {
             _recording.value = RecordingStatus()
             throw e
+        } catch (e: SecurityException) {
+            // e.g. AudioPermissionException: RECORD_AUDIO / BLUETOOTH_CONNECT missing.
+            RgLog.w(TAG, "startRecording: permission missing", e)
+            _recording.value = RecordingStatus()
+            Outcome.Failure(ErrorKind.PERMISSION, e.message, e)
         } catch (e: Exception) {
             RgLog.e(TAG, "startRecording failed", e)
             _recording.value = RecordingStatus()

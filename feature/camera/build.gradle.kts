@@ -10,4 +10,5 @@ dependencies {
     implementation(project(":engine:beauty"))
     implementation(project(":engine:teleprompter"))
     implementation(project(":feature:beauty"))
+    implementation(libs.androidx.core.ktx)
 }

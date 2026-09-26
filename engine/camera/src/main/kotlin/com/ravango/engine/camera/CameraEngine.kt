@@ -191,6 +191,12 @@ interface CameraEngine {
     /** GPU stages applied to both preview and recording (e.g. the beauty processor). */
     fun setFrameProcessors(processors: List<GlFrameProcessor>)
 
+    /**
+     * Before/after for effects: when true the preview shows the frame before the processor chain while the encoder
+     * keeps receiving the processed frame (bind it to `BeautyEngine.previewBypass`).
+     */
+    fun setPreviewBypass(bypass: Boolean)
+
     fun selectLens(option: LensOption)
     fun setZoom(ratio: Float)
 
