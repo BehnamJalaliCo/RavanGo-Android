@@ -79,6 +79,7 @@
     <string name="scripts_editor_direction_rtl">RTL</string>
     <string name="scripts_editor_direction_ltr">LTR</string>
     <string name="scripts_editor_ai">AI assist</string>
+    <string name="scripts_editor_ai_short">AI</string>
     <string name="scripts_editor_tool_section">Section</string>
     <string name="scripts_editor_tool_highlight">Highlight</string>
     <string name="scripts_editor_tool_emphasis">Emphasis</string>

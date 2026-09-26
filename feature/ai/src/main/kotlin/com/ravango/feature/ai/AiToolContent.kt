@@ -40,6 +40,9 @@ import androidx.compose.material.icons.rounded.Subscriptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.ravango.core.designsystem.component.ShimmerBox
+import com.ravango.core.designsystem.theme.Radius
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -257,7 +260,7 @@ private fun OptionsCard(
                     if (tool.durationMode == AiTool.DurationMode.OPTIONAL) {
                         Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.lg), verticalAlignment = Alignment.CenterVertically) {
                             Text(stringResource(R.string.ai_option_target_length), style = MaterialTheme.typography.labelLarge, color = RgTheme.colors.textSecondary, modifier = Modifier.weight(1f))
-                            DirectionSafeSwitch(o.useDuration, { on -> update { it.copy(useDuration = on) } })
+                            RgSwitch(o.useDuration, { on -> update { it.copy(useDuration = on) } })
                         }
                     }
                     AnimatedSection(o.useDuration) {
@@ -339,7 +342,7 @@ private fun ResultSection(
                 Text(stringResource(R.string.ai_generating), style = MaterialTheme.typography.labelLarge, color = RgTheme.colors.accent)
                 Spacer(Modifier.height(Spacing.md))
                 repeat(3) { i ->
-                    SkeletonLine(Modifier.fillMaxWidth(if (i == 2) 0.6f else 1f).height(14.dp))
+                    ShimmerBox(Modifier.fillMaxWidth(if (i == 2) 0.6f else 1f).height(14.dp), RoundedCornerShape(Radius.pill))
                     Spacer(Modifier.height(Spacing.sm))
                 }
             }
@@ -434,14 +437,3 @@ private fun Tone.labelRes(): Int = when (this) {
     Tone.EDUCATIONAL -> R.string.ai_tone_educational
 }
 
-/**
- * [RgSwitch] rendered in a left-to-right context and mirrored visually in RTL. Works around the design-system
- * switch pushing its thumb outside the track when checked in RTL, and stays correct once that is fixed.
- */
-@Composable
-internal fun DirectionSafeSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-        RgSwitch(checked, onCheckedChange, modifier.graphicsLayer { if (rtl) scaleX = -1f }, enabled)
-    }
-}

@@ -156,7 +156,7 @@ fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit, modi
             ProBadge()
             Spacer(Modifier.width(Spacing.sm))
         }
-        DirectionSafeSwitch(checked = checked, onCheckedChange = onChange, enabled = enabled)
+        RgSwitch(checked = checked, onCheckedChange = onChange, enabled = enabled)
     }
 }
 
@@ -208,17 +208,6 @@ val SwatchColors: List<Long> = listOf(
 fun Long.toComposeColor(): Color = Color((this and 0xFFFFFFFFL).toInt())
 fun Color.toArgbLong(): Long = (android.graphics.Color.argb((alpha * 255).roundToInt(), (red * 255).roundToInt(), (green * 255).roundToInt(), (blue * 255).roundToInt()).toLong() and 0xFFFFFFFFL)
 
-/**
- * [RgSwitch] rendered in a left-to-right context and mirrored visually in RTL. Works around the design-system
- * switch pushing its thumb outside the track when checked in RTL, and stays correct once that is fixed.
- */
-@Composable
-internal fun DirectionSafeSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-        RgSwitch(checked, onCheckedChange, modifier.graphicsLayer { if (rtl) scaleX = -1f }, enabled)
-    }
-}
 
 /** "start – end" time range, kept left-to-right inside RTL text. */
 fun timeRange(startUs: Long, endUs: Long, separator: String = " – "): String = "\u2066" + timecode(startUs) + separator + timecode(endUs) + "\u2069"

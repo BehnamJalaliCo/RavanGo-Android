@@ -13,6 +13,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -595,20 +596,25 @@ private fun Stepper(
     onIncrement: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier
-            .height(56.dp)
-            .clip(RoundedCornerShape(Radius.pill))
-            .background(Color.White.copy(alpha = 0.07f))
-            .padding(horizontal = Spacing.xs),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RgIconButton(decrement.first, decrement.second, onDecrement, size = 48.dp, iconSize = 20.dp, container = Color.Transparent, tint = Color.White)
-        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(value, color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1)
-            Text(label, color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    // Narrow phones get 40dp buttons so the value and its unit stay readable.
+    BoxWithConstraints(modifier) {
+        val button = if (maxWidth < 170.dp) 40.dp else 48.dp
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .clip(RoundedCornerShape(Radius.pill))
+                .background(Color.White.copy(alpha = 0.07f))
+                .padding(horizontal = Spacing.xs),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            RgIconButton(decrement.first, decrement.second, onDecrement, size = button, iconSize = 20.dp, container = Color.Transparent, tint = Color.White)
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(value, color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1)
+                Text(label, color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            RgIconButton(increment.first, increment.second, onIncrement, size = button, iconSize = 20.dp, container = Color.Transparent, tint = Color.White)
         }
-        RgIconButton(increment.first, increment.second, onIncrement, size = 48.dp, iconSize = 20.dp, container = Color.Transparent, tint = Color.White)
     }
 }
 
@@ -627,10 +633,10 @@ private fun ResumeOffer(modifier: Modifier, onResume: () -> Unit, onFromStart: (
                 Spacer(Modifier.height(Spacing.sm))
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     RgSecondaryButton(
-                        stringResource(R.string.prompter_from_beginning), onFromStart, size = RgButtonSize.MEDIUM, modifier = Modifier.weight(1f),
+                        stringResource(R.string.prompter_from_beginning), onFromStart, size = RgButtonSize.LARGE, modifier = Modifier.weight(1f),
                         containerColor = Color.White.copy(alpha = 0.1f), contentColor = Color.White,
                     )
-                    RgPrimaryButton(stringResource(R.string.prompter_resume), onResume, size = RgButtonSize.MEDIUM, modifier = Modifier.weight(1f))
+                    RgPrimaryButton(stringResource(R.string.prompter_resume), onResume, size = RgButtonSize.LARGE, modifier = Modifier.weight(1f))
                 }
             }
         }

@@ -79,6 +79,7 @@
     <string name="scripts_editor_direction_rtl">راست‌چین</string>
     <string name="scripts_editor_direction_ltr">چپ‌چین</string>
     <string name="scripts_editor_ai">دستیار هوشمند</string>
+    <string name="scripts_editor_ai_short">هوشمند</string>
     <string name="scripts_editor_tool_section">بخش</string>
     <string name="scripts_editor_tool_highlight">برجسته</string>
     <string name="scripts_editor_tool_emphasis">تأکید</string>

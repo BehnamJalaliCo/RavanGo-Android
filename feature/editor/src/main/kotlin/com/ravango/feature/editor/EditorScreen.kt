@@ -207,7 +207,7 @@ internal fun EditorContent(
                         onGestureEnd = vm::endGesture,
                         modifier = Modifier.fillMaxSize(),
                     )
-                        TimePill(playhead, state.document.durationUs, Modifier.align(Alignment.BottomStart).padding(Spacing.md))
+                        TimePill(playhead, state.document.durationUs, Modifier.align(Alignment.BottomCenter).padding(Spacing.md))
                     }
                     Transport(
                         isPlaying = isPlaying,
@@ -280,8 +280,7 @@ private fun EditorTopBar(state: EditorUiState, onBack: () -> Unit, vm: EditorAct
         RgPrimaryButton(
             stringResource(R.string.editor_export),
             vm::openExport,
-            size = RgButtonSize.SMALL,
-            modifier = Modifier.height(40.dp),
+            size = RgButtonSize.MEDIUM,
             enabled = !state.loading && state.document.mainTrack.isNotEmpty() && state.busy == null,
         )
     }

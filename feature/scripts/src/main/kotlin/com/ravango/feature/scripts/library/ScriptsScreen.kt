@@ -30,6 +30,7 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.text.style.TextAlign
 import com.ravango.core.designsystem.theme.Palette
+import com.ravango.core.designsystem.theme.Dimens
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.automirrored.rounded.Notes
@@ -40,7 +41,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDirection
-import com.ravango.feature.scripts.common.SkeletonBlock
+import com.ravango.core.designsystem.component.ShimmerBox
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -508,7 +509,7 @@ private fun FilterChip(
     ) {
         Row(
             Modifier
-                .height(36.dp)
+                .height(Dimens.controlSmall)
                 .clip(shape)
                 .background(if (selected) colors.accent else colors.surface)
                 .then(if (!selected) Modifier.border(1.dp, colors.outline, shape) else Modifier)
@@ -715,12 +716,12 @@ private fun ScriptCardSkeleton(modifier: Modifier = Modifier) {
             .padding(Spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        SkeletonBlock(Modifier.fillMaxWidth(0.55f).height(18.dp))
-        SkeletonBlock(Modifier.fillMaxWidth().height(12.dp))
-        SkeletonBlock(Modifier.fillMaxWidth(0.8f).height(12.dp))
+        ShimmerBox(Modifier.fillMaxWidth(0.55f).height(18.dp), RoundedCornerShape(Radius.xs))
+        ShimmerBox(Modifier.fillMaxWidth().height(12.dp), RoundedCornerShape(Radius.xs))
+        ShimmerBox(Modifier.fillMaxWidth(0.8f).height(12.dp), RoundedCornerShape(Radius.xs))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            SkeletonBlock(Modifier.size(width = 64.dp, height = 24.dp), RoundedCornerShape(Radius.pill))
-            SkeletonBlock(Modifier.size(width = 72.dp, height = 24.dp), RoundedCornerShape(Radius.pill))
+            ShimmerBox(Modifier.size(width = 64.dp, height = 24.dp), RoundedCornerShape(Radius.pill))
+            ShimmerBox(Modifier.size(width = 72.dp, height = 24.dp), RoundedCornerShape(Radius.pill))
         }
     }
 }

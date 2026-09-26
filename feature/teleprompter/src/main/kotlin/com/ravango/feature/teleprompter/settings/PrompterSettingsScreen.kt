@@ -476,7 +476,7 @@ private fun ToggleRow(title: String, subtitle: String?, checked: Boolean, onChan
         title = title,
         subtitle = subtitle,
         onClick = { onChange(!checked) },
-        trailing = { DirectionSafeSwitch(checked, onChange) },
+        trailing = { RgSwitch(checked, onChange) },
     )
 }
 
@@ -570,14 +570,3 @@ private fun percent(fraction: Float): String = "${(fraction * 100).roundToInt()}
     if (Locale.getDefault().language == "fa") it.localizeDigits() else it.replace("٪", "%")
 }
 
-/**
- * [RgSwitch] rendered in a left-to-right context and mirrored visually in RTL. Works around the design-system
- * switch pushing its thumb outside the track when checked in RTL, and stays correct once that is fixed.
- */
-@Composable
-internal fun DirectionSafeSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-        RgSwitch(checked, onCheckedChange, modifier.graphicsLayer { if (rtl) scaleX = -1f }, enabled)
-    }
-}

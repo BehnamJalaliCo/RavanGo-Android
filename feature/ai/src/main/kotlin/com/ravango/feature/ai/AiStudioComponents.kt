@@ -342,18 +342,6 @@ fun AnimatedSection(visible: Boolean, content: @Composable () -> Unit) {
     AnimatedVisibility(visible, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) { content() }
 }
 
-/** Loading placeholder line: pulses gently, still under reduced motion (the shared shimmer ignores that setting). */
-@Composable
-fun SkeletonLine(modifier: Modifier = Modifier) {
-    val alpha = if (RgTheme.reduceMotion) {
-        1f
-    } else {
-        val transition = rememberInfiniteTransition(label = "skeleton")
-        val a by transition.animateFloat(0.5f, 1f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "alpha")
-        a
-    }
-    Box(modifier.graphicsLayer { this.alpha = alpha }.clip(RoundedCornerShape(Radius.pill)).background(RgTheme.colors.surfaceMuted))
-}
 
 /** White-on-gradient meter (the shared progress bar's gradient fill disappears on the brand gradient). */
 @Composable

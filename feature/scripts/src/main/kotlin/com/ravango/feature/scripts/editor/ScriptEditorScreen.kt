@@ -47,6 +47,7 @@ import androidx.compose.material.icons.rounded.PauseCircle
 import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.automirrored.rounded.StickyNote2
 import androidx.compose.material.icons.rounded.Title
+import androidx.compose.material.icons.rounded.Slideshow
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material.icons.rounded.Visibility
@@ -496,10 +497,10 @@ private fun MarkupToolbar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            // Equal-width AI and teleprompter buttons around the record button keep the bar balanced on any width.
-            RgSecondaryButton(stringResource(R.string.scripts_editor_ai), onAi, icon = Icons.Rounded.AutoAwesome, size = RgButtonSize.MEDIUM, modifier = Modifier.weight(1f))
+            // Compact AI button, record, then the primary teleprompter action taking the remaining width (48dp row).
+            RgSecondaryButton(stringResource(R.string.scripts_editor_ai_short), onAi, icon = Icons.Rounded.AutoAwesome, size = RgButtonSize.LARGE)
             RgIconButton(Icons.Rounded.Videocam, stringResource(R.string.scripts_editor_record), onRecord, size = 48.dp, tint = colors.record, container = colors.pastelRose)
-            RgPrimaryButton(stringResource(R.string.scripts_editor_open_prompter), onPrompter, size = RgButtonSize.MEDIUM, modifier = Modifier.weight(1f))
+            RgPrimaryButton(stringResource(R.string.scripts_editor_open_prompter), onPrompter, icon = Icons.Rounded.Slideshow, size = RgButtonSize.LARGE, modifier = Modifier.weight(1f))
         }
     }
 }
