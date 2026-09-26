@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_page_indicator">مرحلهٔ %1$s از %2$s</string>
+    <string name="onboarding_get_started">شروع کنیم</string>
+
+    <string name="onboarding_welcome_title">به روان‌گو خوش آمدید</string>
+    <string name="onboarding_language_body">زبان برنامه را انتخاب کنید. هر وقت خواستید می‌توانید آن را از تنظیمات تغییر دهید.</string>
+    <string name="onboarding_language_persian_hint">فارسی · راست‌به‌چپ</string>
+    <string name="onboarding_language_english_hint">انگلیسی · چپ‌به‌راست</string>
+
+    <string name="onboarding_prompter_title">روان بخوانید، رو به لنز</string>
+    <string name="onboarding_prompter_body">تله‌پرامپتری نرم درست زیر دوربین، هم‌پای سرعت صحبت شما پیش می‌رود تا از اولین کلمه تا آخرین کلمه نگاهتان به لنز باشد.</string>
+
+    <string name="onboarding_beauty_title">بهترین خودتان باشید، در چند دقیقه تدوین کنید</string>
+    <string name="onboarding_beauty_body">زیباسازی طبیعی و هم‌زمان هنگام ضبط، تایم‌لاینی ساده و هوش مصنوعی‌ای که در نوشتن، زیرنویس و کوتاه‌کردن ویدیو کمکتان می‌کند.</string>
+
+    <string name="onboarding_privacy_title">ویدیوهایتان مال خودتان است</string>
+    <string name="onboarding_promise_device_title">ضبط‌ها روی دستگاه خودتان می‌مانند</string>
+    <string name="onboarding_promise_device_body">هر چه ضبط و ویرایش می‌کنید روی گوشی ذخیره می‌شود. تا پشتیبان‌گیری ابری را روشن نکنید، چیزی آپلود نمی‌شود.</string>
+    <string name="onboarding_promise_consent_title">هوش مصنوعی و فضای ابری فقط با اجازهٔ شما</string>
+    <string name="onboarding_promise_consent_body">متن یا صدا فقط وقتی به سرویس هوش مصنوعی فرستاده می‌شود که از قابلیتی استفاده کنید و موافقت کرده باشید.</string>
+    <string name="onboarding_promise_control_title">اختیار با شماست</string>
+    <string name="onboarding_promise_control_body">هر کدام از این انتخاب‌ها را بعداً می‌توانید در تنظیمات تغییر دهید.</string>
+
+    <string name="onboarding_section_sharing">کمک به بهتر شدن روان‌گو (اختیاری)</string>
+    <string name="onboarding_analytics_title">آمار ناشناس استفاده</string>
+    <string name="onboarding_analytics_body">اینکه از کدام قابلیت‌ها استفاده می‌شود؛ هرگز محتوای شما.</string>
+    <string name="onboarding_crash_title">گزارش خطا</string>
+    <string name="onboarding_crash_body">جزئیات فنی هنگام بروز مشکل، تا بتوانیم برطرفش کنیم.</string>
+
+    <string name="onboarding_section_theme">ظاهر برنامه</string>
+    <string name="onboarding_theme_system">مطابق سیستم</string>
+    <string name="onboarding_theme_light">روشن</string>
+    <string name="onboarding_theme_dark">تیره</string>
+
+    <string name="onboarding_section_focus">چه محتوایی می‌سازید؟</string>
+    <string name="onboarding_focus_hint">هر کدام که به کارتان می‌آید انتخاب کنید؛ قالب‌های مناسب را اول پیشنهاد می‌دهیم.</string>
+    <string name="onboarding_focus_reels">ریلز و شورتز</string>
+    <string name="onboarding_focus_youtube">یوتیوب</string>
+    <string name="onboarding_focus_podcast">پادکست</string>
+    <string name="onboarding_focus_business">کسب‌وکار</string>
+    <string name="onboarding_focus_education">آموزش</string>
+    <string name="onboarding_focus_vlog">ولاگ</string>
+</resources>

@@ -7,4 +7,5 @@ dependencies {
     implementation(project(":core:media"))
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
+    implementation(libs.androidx.activity.compose)
 }

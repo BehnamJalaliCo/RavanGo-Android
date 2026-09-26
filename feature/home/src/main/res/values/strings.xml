@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_app_name">RavanGo</string>
+    <string name="home_greeting_morning">Good morning</string>
+    <string name="home_greeting_afternoon">Good afternoon</string>
+    <string name="home_greeting_evening">Good evening</string>
+    <string name="home_greeting_night">Creating late tonight?</string>
+    <string name="home_account">Account</string>
+    <string name="home_go_pro">Go Pro</string>
+    <string name="home_plan_pro">PRO</string>
+    <string name="home_plan_lifetime">LIFETIME</string>
+
+    <string name="home_sync_syncing">Syncing</string>
+    <string name="home_sync_idle">Synced</string>
+    <string name="home_sync_offline">Offline — changes will sync later</string>
+    <string name="home_sync_error">Sync problem</string>
+
+    <string name="home_new_recording">New recording</string>
+    <string name="home_new_recording_body">Teleprompter, beauty and pro controls — all in one tap.</string>
+    <string name="home_audio_only">Audio only</string>
+    <string name="home_record">Record</string>
+
+    <string name="home_action_teleprompter">Prompter</string>
+    <string name="home_action_scripts">Scripts</string>
+    <string name="home_action_ai">AI Studio</string>
+    <string name="home_action_editor">Editor</string>
+    <string name="home_action_projects">Projects</string>
+    <string name="home_action_drafts">Drafts</string>
+    <string name="home_action_templates">Templates</string>
+    <string name="home_action_cloud">Cloud</string>
+
+    <string name="home_continue_label">Continue where you left off</string>
+    <string name="home_continue_edited">Edited %1$s</string>
+    <string name="home_continue_action">Continue editing</string>
+
+    <string name="home_welcome_title">Let\'s make your first video</string>
+    <string name="home_welcome_body">Write what you want to say, then record it with the teleprompter right under your camera.</string>
+    <string name="home_welcome_write">Write your first script</string>
+    <string name="home_welcome_record">Record your first video</string>
+
+    <string name="home_recent_projects">Recent projects</string>
+    <string name="home_recent_scripts">Recent scripts</string>
+    <string name="home_templates">Start from a template</string>
+    <string name="home_see_all">See all</string>
+    <string name="home_untitled_script">Untitled script</string>
+    <string name="home_play_prompter">Open in teleprompter</string>
+
+    <string name="home_status_recorded">Recorded</string>
+    <string name="home_status_editing">Editing</string>
+    <string name="home_status_exported">Exported</string>
+
+    <plurals name="home_words">
+        <item quantity="one">%1$s word</item>
+        <item quantity="other">%1$s words</item>
+    </plurals>
+    <plurals name="home_read_minutes">
+        <item quantity="one">~%1$s min read</item>
+        <item quantity="other">~%1$s min read</item>
+    </plurals>
+    <string name="home_read_under_minute">under a minute</string>
+</resources>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="projects_title">Projects</string>
+    <string name="projects_tab_all">All</string>
+    <string name="projects_tab_drafts">Drafts</string>
+    <string name="projects_tab_exported">Exported</string>
+    <string name="projects_sort_recent">Recent</string>
+    <string name="projects_sort_name">Name</string>
+    <string name="projects_search_hint">Search projects</string>
+    <string name="projects_storage_used">Media %1$s</string>
+    <string name="projects_import">Import</string>
+    <string name="projects_select_all">Select all</string>
+    <plurals name="projects_selected">
+        <item quantity="one">%1$s selected</item>
+        <item quantity="other">%1$s selected</item>
+    </plurals>
+
+    <string name="projects_status_recorded">Recorded</string>
+    <string name="projects_status_editing">Editing</string>
+    <string name="projects_status_exported">Exported</string>
+
+    <string name="projects_open_in_editor">Open in editor</string>
+    <string name="projects_share_export">Share last export</string>
+    <string name="projects_share_not_exported">Export this project first</string>
+    <string name="projects_share_unavailable">The exported file is no longer available.</string>
+    <string name="projects_copy_suffix">(copy)</string>
+    <string name="projects_duplicated">“%1$s” created</string>
+    <string name="projects_rename_title">Rename project</string>
+    <string name="projects_rename_hint">Project name</string>
+
+    <plurals name="projects_delete_title">
+        <item quantity="one">Delete this project?</item>
+        <item quantity="other">Delete %1$s projects?</item>
+    </plurals>
+    <string name="projects_delete_message">Recordings made in RavanGo are removed from the device. Media you imported from your gallery stays untouched.</string>
+    <plurals name="projects_deleted">
+        <item quantity="one">Project deleted</item>
+        <item quantity="other">%1$s projects deleted</item>
+    </plurals>
+
+    <string name="projects_empty_title">No projects yet</string>
+    <string name="projects_empty_message">Record a video or import clips from your gallery to start your first project.</string>
+    <string name="projects_empty_search_title">Nothing found</string>
+    <string name="projects_empty_search_message">Try a different name.</string>
+    <string name="projects_empty_drafts_title">No drafts</string>
+    <string name="projects_empty_drafts_message">Projects you are editing appear here, saved automatically.</string>
+    <string name="projects_empty_exported_title">Nothing exported yet</string>
+    <string name="projects_empty_exported_message">Finished videos you export will show up here, ready to share.</string>
+
+    <string name="projects_templates_title">Templates</string>
+    <string name="projects_templates_subtitle">Start faster with a proven structure</string>
+    <string name="projects_templates_intro">Each template sets the right frame, a script outline and caption style. Pick one and start recording in seconds.</string>
+</resources>
