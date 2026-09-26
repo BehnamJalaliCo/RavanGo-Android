@@ -32,6 +32,8 @@ browser = "1.9.0"
 # Media / Vision
 media3 = "1.8.0"
 mlkitFace = "16.1.7"
+# Beauty engine: MediaPipe Face Landmarker (478-point face mesh, blendshapes, pose)
+mediapipeTasks = "1.0.0"
 
 # Kotlin
 coroutines = "1.10.2"
@@ -164,6 +166,9 @@ kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", ve
 compose-gradlePlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 ksp-gradlePlugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
 room-gradlePlugin = { module = "androidx.room:room-gradle-plugin", version.ref = "room" }
+
+# Beauty engine (face mesh tracking)
+mediapipe-tasks-vision = { module = "com.google.mediapipe:tasks-vision", version.ref = "mediapipeTasks" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

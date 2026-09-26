@@ -12,6 +12,7 @@ import com.ravango.core.model.ProFeature
 import com.ravango.core.model.service.EntitlementProvider
 import com.ravango.engine.beauty.BeautyEngine
 import com.ravango.engine.beauty.BeautyStatus
+import com.ravango.engine.beauty.EyeColorSetting
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -45,7 +46,17 @@ data class BeautyUiState(
     val presets: BeautyPresets = BeautyPresets(),
     val activePresetId: String? = null,
     val comparing: Boolean = false,
+    val eyeColor: EyeColorSetting = EyeColorSetting(),
 ) {
+    /** Current value of any item, including the eye colour which lives outside [BeautyState]. */
+    fun valueOf(item: BeautyItem): Int =
+        if (item == BeautyItem.EyeColor) eyeColor.intensity else BeautyCatalog.value(state, item)
+
+    /** The curated look the current makeup matches exactly, if any. */
+    val activeLook: MakeupLook? get() = MakeupLook.activeIn(state)
+
+    val hasMakeup: Boolean get() = MakeupLook.hasMakeup(state)
+
     fun isLocked(item: BeautyItem): Boolean = BeautyCatalog.requiredPro(item)?.let { !entitlements.has(it) } ?: false
 
     fun isPresetLocked(preset: BeautyPreset): Boolean = BeautyCatalog.missingEntitlement(preset.state, entitlements::has) != null
@@ -63,6 +74,7 @@ sealed interface BeautyEvent {
     data class PresetApplied(val preset: BeautyPreset) : BeautyEvent
     data object PresetDeleted : BeautyEvent
     data object PresetRenamed : BeautyEvent
+    data class LookApplied(val look: MakeupLook) : BeautyEvent
     data object SaveFailed : BeautyEvent
 }
 
@@ -103,15 +115,18 @@ class BeautyViewModel @Inject constructor(
             emit(BeautyPresets(loaded = true))
         }
 
+    private val engineState = combine(engine.state, engine.eyeColor) { state, eye -> state to eye }
+
     val uiState: StateFlow<BeautyUiState> = combine(
-        engine.state,
+        engineState,
         engine.status,
         entitlementProvider.entitlements,
         presets,
         local,
-    ) { state, status, entitlements, presets, ui ->
+    ) { (state, eyeColor), status, entitlements, presets, ui ->
         val selected = ui.selectedByTab[ui.tab] ?: BeautyCatalog.items(ui.tab).firstOrNull()
         BeautyUiState(
+            eyeColor = eyeColor,
             state = state,
             status = status,
             entitlements = entitlements,
@@ -124,7 +139,12 @@ class BeautyViewModel @Inject constructor(
     }.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000),
-        BeautyUiState(state = engine.state.value, status = engine.status.value, entitlements = entitlementProvider.entitlements.value),
+        BeautyUiState(
+            state = engine.state.value,
+            status = engine.status.value,
+            entitlements = entitlementProvider.entitlements.value,
+            eyeColor = engine.eyeColor.value,
+        ),
     )
 
     fun selectTab(tab: BeautyTab) = local.update { it.copy(tab = tab) }
@@ -139,6 +159,11 @@ class BeautyViewModel @Inject constructor(
     /** Applies a slider value. Returns false (and applies nothing) when the item needs Pro. */
     fun setValue(item: BeautyItem, value: Int): Boolean {
         if (isLocked(item)) return false
+        if (item == BeautyItem.EyeColor) {
+            engine.setEyeColor(engine.eyeColor.value.copy(intensity = value.coerceIn(0, 100)))
+            if (value > 0 && !engine.state.value.enabled) engine.setState(engine.state.value.copy(enabled = true))
+            return true
+        }
         cancelTransition()
         val current = engine.state.value
         if (BeautyCatalog.value(current, item) == value && current.enabled) return true
@@ -158,7 +183,42 @@ class BeautyViewModel @Inject constructor(
         local.update { it.copy(activePresetId = null) }
     }
 
+    fun setEyeColor(color: Long) {
+        if (isLocked(BeautyItem.EyeColor)) {
+            requirePro(BeautyItem.EyeColor)
+            return
+        }
+        val current = engine.eyeColor.value
+        engine.setEyeColor(EyeColorSetting(intensity = if (current.intensity == 0) DEFAULT_EYE_COLOR_INTENSITY else current.intensity, color = color))
+        if (!engine.state.value.enabled) engine.setState(engine.state.value.copy(enabled = true))
+    }
+
+    /** One-tap curated makeup look; tapping the active look again removes it. */
+    fun applyLook(look: MakeupLook) {
+        if (!entitlementProvider.has(ProFeature.MAKEUP)) {
+            events.trySend(BeautyEvent.RequirePro(ProFeature.MAKEUP))
+            return
+        }
+        val current = engine.state.value
+        if (look.matches(current)) {
+            clearMakeup()
+            return
+        }
+        animateTo(look.applyTo(current))
+        local.update { it.copy(activePresetId = null) }
+        events.trySend(BeautyEvent.LookApplied(look))
+    }
+
+    fun clearMakeup() {
+        animateTo(MakeupLook.cleared(engine.state.value))
+        local.update { it.copy(activePresetId = null) }
+    }
+
     fun reset(item: BeautyItem) {
+        if (item == BeautyItem.EyeColor) {
+            engine.setEyeColor(engine.eyeColor.value.copy(intensity = 0))
+            return
+        }
         cancelTransition()
         engine.setState(BeautyCatalog.withValue(engine.state.value, item, BeautyCatalog.neutral(item)))
         local.update { it.copy(activePresetId = null) }
@@ -167,6 +227,7 @@ class BeautyViewModel @Inject constructor(
     /** Restores the default natural look (free features only). */
     fun resetAll() {
         animateTo(BeautyState())
+        if (engine.eyeColor.value.active) engine.setEyeColor(engine.eyeColor.value.copy(intensity = 0))
         local.update { it.copy(activePresetId = null) }
     }
 
@@ -284,5 +345,6 @@ class BeautyViewModel @Inject constructor(
         const val TAG = "BeautyVM"
         const val TRANSITION_STEPS = 20
         const val TRANSITION_FRAME_MS = 16L
+        const val DEFAULT_EYE_COLOR_INTENSITY = 50
     }
 }

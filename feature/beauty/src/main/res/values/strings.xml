@@ -101,4 +101,24 @@
         <item quantity="one">%1$s adjustment</item>
         <item quantity="other">%1$s adjustments</item>
     </plurals>
+
+    <!-- Looks, eye colour and Face Retouch hints -->
+    <string name="beauty_tab_looks">Looks</string>
+    <string name="beauty_eye_color">Eye color</string>
+    <string name="beauty_hint_whitening_eyes">Also brightens the whites of the eyes</string>
+    <string name="beauty_hint_sharpen_eyes">Also adds a little definition to the eyes</string>
+    <string name="beauty_hint_teeth">Only visible teeth are whitened</string>
+    <string name="beauty_hint_eye_color">Recolors the iris; pupils and catch-lights stay natural</string>
+    <string name="beauty_face_tracked">Face tracked</string>
+    <string name="beauty_faces_tracked">%1$s faces</string>
+    <string name="beauty_looking_for_face">Looking for a face…</string>
+    <string name="beauty_look_none">None</string>
+    <string name="beauty_look_natural">Natural</string>
+    <string name="beauty_look_soft_glam">Soft Glam</string>
+    <string name="beauty_look_bold_lips">Bold Lips</string>
+    <string name="beauty_look_smokey_eyes">Smokey Eyes</string>
+    <string name="beauty_look_k_beauty">K-Beauty</string>
+    <string name="beauty_look_bronzed">Bronzed</string>
+    <string name="beauty_look_hint">Tap a look to apply it in one go</string>
+    <string name="beauty_look_hint_edit">Fine-tune each layer in the Makeup tab</string>
 </resources>

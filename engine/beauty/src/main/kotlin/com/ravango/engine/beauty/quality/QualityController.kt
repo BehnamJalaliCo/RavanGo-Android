@@ -153,29 +153,42 @@ class QualityController(
     }
 }
 
-/** What each quality level costs: resolution/taps of smoothing, detection cadence, mask sizes and enabled passes. */
+/**
+ * What each quality level costs: smoothing resolution/taps, detection cadence and input size, region-mask
+ * resolution and which passes run. LIGHT/MINIMAL are the "low tier" paths: lower-resolution masks, fewer taps,
+ * no retouch passes and no depth-tested makeup.
+ */
 data class QualityProfile(
     /** Smoothing resolution as a fraction of the frame width. */
     val smoothScale: Float,
     /** Taps per side of the separable bilateral filter (compile-time constant in the shader). */
     val bilateralRadius: Int,
-    /** Run detection at most every N frames. */
+    /** Start a face-landmarker readback at most every N frames. */
     val detectEveryFrames: Int,
-    /** Width of the detection image in pixels. */
+    /** Width in pixels of the image handed to the face landmarker. */
     val detectWidth: Int,
-    /** Width of landmark mask textures. */
+    /** Width of the image-space region masks (skin, under-eye, mouth, eyes). */
     val maskWidth: Int,
     val retouchAndBlemish: Boolean,
     val smoothing: Boolean,
     val faceEffects: Boolean,
     val sharpen: Boolean,
+    /** Depth-test the face mesh (correct self-occlusion on turned heads); otherwise back-face culling only. */
+    val depthTest: Boolean,
+    /** Sclera/iris effects (eye whitening, eye colour, eye sharpening). */
+    val eyeEffects: Boolean,
 ) {
     companion object {
+        private val FULL = QualityProfile(0.5f, 4, 1, 480, 384, retouchAndBlemish = true, smoothing = true, faceEffects = true, sharpen = true, depthTest = true, eyeEffects = true)
+        private val BALANCED = QualityProfile(0.375f, 3, 1, 416, 320, retouchAndBlemish = true, smoothing = true, faceEffects = true, sharpen = true, depthTest = true, eyeEffects = true)
+        private val LIGHT = QualityProfile(0.25f, 2, 2, 320, 224, retouchAndBlemish = false, smoothing = true, faceEffects = true, sharpen = true, depthTest = false, eyeEffects = true)
+        private val MINIMAL = QualityProfile(0.25f, 2, 4, 256, 192, retouchAndBlemish = false, smoothing = false, faceEffects = false, sharpen = false, depthTest = false, eyeEffects = false)
+
         fun of(level: BeautyQuality): QualityProfile = when (level) {
-            BeautyQuality.FULL -> QualityProfile(0.5f, 4, 1, 320, 360, retouchAndBlemish = true, smoothing = true, faceEffects = true, sharpen = true)
-            BeautyQuality.BALANCED -> QualityProfile(0.375f, 3, 2, 288, 288, retouchAndBlemish = true, smoothing = true, faceEffects = true, sharpen = true)
-            BeautyQuality.LIGHT -> QualityProfile(0.25f, 2, 3, 256, 224, retouchAndBlemish = false, smoothing = true, faceEffects = true, sharpen = true)
-            BeautyQuality.MINIMAL -> QualityProfile(0.25f, 2, 4, 256, 192, retouchAndBlemish = false, smoothing = false, faceEffects = false, sharpen = false)
+            BeautyQuality.FULL -> FULL
+            BeautyQuality.BALANCED -> BALANCED
+            BeautyQuality.LIGHT -> LIGHT
+            BeautyQuality.MINIMAL -> MINIMAL
         }
     }
 }

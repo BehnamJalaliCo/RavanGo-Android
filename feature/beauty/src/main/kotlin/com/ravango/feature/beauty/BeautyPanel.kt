@@ -33,6 +33,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Block
+import androidx.compose.material.icons.rounded.Face
+import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.Compare
 import androidx.compose.material.icons.rounded.FaceRetouchingOff
 import androidx.compose.material.icons.rounded.Lock
@@ -45,6 +49,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -54,6 +59,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -120,6 +133,7 @@ internal fun BeautyPanelImpl(modifier: Modifier, onOpenPresets: () -> Unit, onRe
     val failedText = stringResource(R.string.beauty_error_save)
     val appliedFormat = stringResource(R.string.beauty_preset_applied)
     val presetNames = rememberPresetNamer()
+    val lookNames = rememberLookNamer()
     LaunchedEffect(viewModel) {
         viewModel.eventFlow.collect { event ->
             when (event) {
@@ -127,6 +141,7 @@ internal fun BeautyPanelImpl(modifier: Modifier, onOpenPresets: () -> Unit, onRe
                 is BeautyEvent.PresetSaved -> toast = savedText
                 is BeautyEvent.PresetApplied -> toast = appliedFormat.format(presetNames(event.preset))
                 BeautyEvent.SaveFailed -> toast = failedText
+                is BeautyEvent.LookApplied -> toast = appliedFormat.format(lookNames(event.look))
                 BeautyEvent.PresetDeleted, BeautyEvent.PresetRenamed -> Unit
             }
         }
@@ -174,7 +189,9 @@ internal fun BeautyPanelImpl(modifier: Modifier, onOpenPresets: () -> Unit, onRe
                 label = "tab",
                 modifier = Modifier.alpha(dim),
             ) { tab ->
-                if (tab == BeautyTab.PRESETS) {
+                if (tab == BeautyTab.LOOKS) {
+                    LooksTab(ui = ui, onApply = viewModel::applyLook, onClear = viewModel::clearMakeup)
+                } else if (tab == BeautyTab.PRESETS) {
                     PresetsTab(
                         ui = ui,
                         nameOf = presetNames,
@@ -284,9 +301,14 @@ private fun CompareButton(comparing: Boolean, enabled: Boolean, onCompare: (Bool
     }
 }
 
+/**
+ * Status line: quality/thermal notices take priority; otherwise it shows multi-face awareness ("Face tracked",
+ * "2 faces") while tracking runs.
+ */
 @Composable
 private fun QualityIndicator(status: BeautyStatus, enabled: Boolean) {
-    val text = when {
+    val locale = currentLocale()
+    val quality = when {
         !enabled -> null
         status.suspendedReason == BeautySuspendReason.GPU_ERROR -> stringResource(R.string.beauty_gpu_error)
         status.suspendedReason == BeautySuspendReason.THERMAL -> stringResource(R.string.beauty_quality_thermal)
@@ -295,6 +317,15 @@ private fun QualityIndicator(status: BeautyStatus, enabled: Boolean) {
         status.quality == BeautyQuality.MINIMAL -> stringResource(R.string.beauty_quality_minimal)
         else -> null
     }
+    val faces = when {
+        !enabled || !status.tracking -> null
+        status.faceCount >= 2 -> stringResource(R.string.beauty_faces_tracked, status.faceCount.toString().localizeDigits(locale))
+        status.faceCount == 1 -> stringResource(R.string.beauty_face_tracked)
+        else -> stringResource(R.string.beauty_looking_for_face)
+    }
+    val text = quality ?: faces
+    val tracked = quality == null && status.faceCount > 0
+    val tint by animateColorAsState(if (tracked) RgTheme.colors.pastelMint else OnGlassMuted, Motion.quick(), label = "track")
     AnimatedVisibility(visible = text != null, enter = fadeIn(), exit = fadeOut()) {
         Row(
             Modifier
@@ -303,15 +334,26 @@ private fun QualityIndicator(status: BeautyStatus, enabled: Boolean) {
                 .padding(horizontal = 10.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Rounded.Speed, null, tint = OnGlassMuted, modifier = Modifier.size(14.dp))
+            val icon = when {
+                quality != null -> Icons.Rounded.Speed
+                status.faceCount >= 2 -> Icons.Rounded.People
+                else -> Icons.Rounded.Face
+            }
+            Icon(icon, null, tint = tint, modifier = Modifier.size(14.dp))
             Spacer(Modifier.width(4.dp))
-            Text(
-                text.orEmpty(),
-                style = MaterialTheme.typography.labelSmall,
-                color = OnGlassMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            AnimatedContent(
+                targetState = text.orEmpty(),
+                transitionSpec = { fadeIn(tween(160)) togetherWith fadeOut(tween(160)) },
+                label = "status",
+            ) { t ->
+                Text(
+                    t,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = OnGlassMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
@@ -360,14 +402,17 @@ private fun FeatureTab(ui: BeautyUiState, tab: BeautyTab, viewModel: BeautyViewM
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             items.forEach { item ->
-                FeatureChip(
-                    item = item,
-                    selected = item == selected,
-                    active = BeautyCatalog.value(ui.state, item) != BeautyCatalog.neutral(item),
-                    locked = ui.isLocked(item),
-                    faceMissing = faceMissing && item.requiresFace,
-                    onClick = { viewModel.select(item) },
-                )
+                key(item.key) {
+                    FeatureChip(
+                        item = item,
+                        selected = item == selected,
+                        value = ui.valueOf(item),
+                        shade = shadeOf(ui, item),
+                        locked = ui.isLocked(item),
+                        faceMissing = faceMissing && item.requiresFace,
+                        onClick = { viewModel.select(item) },
+                    )
+                }
             }
         }
         Spacer(Modifier.height(Spacing.md))
@@ -378,31 +423,65 @@ private fun FeatureTab(ui: BeautyUiState, tab: BeautyTab, viewModel: BeautyViewM
         ) { item ->
             FeatureDetail(
                 item = item,
-                value = BeautyCatalog.value(ui.state, item),
-                color = (item as? BeautyItem.Makeup)?.let { ui.state.layer(it.feature).color },
+                value = ui.valueOf(item),
+                color = shadeOf(ui, item),
                 locked = ui.isLocked(item),
                 faceMissing = faceMissing && item.requiresFace,
                 trackingUnavailable = item.requiresFace && ui.status.suspendedReason == BeautySuspendReason.TRACKING_UNAVAILABLE,
                 onValue = { v -> if (!viewModel.setValue(item, v)) viewModel.requirePro(item) },
                 onReset = { viewModel.reset(item) },
-                onColor = { c -> (item as? BeautyItem.Makeup)?.let { viewModel.setMakeupColor(it.feature, c) } },
+                onColor = { c ->
+                    when (item) {
+                        is BeautyItem.Makeup -> viewModel.setMakeupColor(item.feature, c)
+                        BeautyItem.EyeColor -> viewModel.setEyeColor(c)
+                        is BeautyItem.Beauty -> Unit
+                    }
+                },
                 onUnlock = { viewModel.requirePro(item) },
             )
         }
     }
 }
 
+/** The colour an item paints with (makeup layer or iris), or null for plain beauty sliders. */
+private fun shadeOf(ui: BeautyUiState, item: BeautyItem): Long? = when (item) {
+    is BeautyItem.Makeup -> ui.state.layer(item.feature).color
+    BeautyItem.EyeColor -> ui.eyeColor.color
+    is BeautyItem.Beauty -> null
+}
+
+/**
+ * Round preview chip (Snapchat-style carousel): the circle shows the item's shade when it paints a colour, and a
+ * ring around it shows the current amount (from the top, clockwise; counter-clockwise below neutral for bipolar
+ * sliders).
+ */
 @Composable
 private fun FeatureChip(
     item: BeautyItem,
     selected: Boolean,
-    active: Boolean,
+    value: Int,
+    shade: Long?,
     locked: Boolean,
     faceMissing: Boolean,
     onClick: () -> Unit,
 ) {
     val accent = RgTheme.colors.accent
-    val bg by animateColorAsState(if (selected) accent.copy(alpha = 0.9f) else ChipIdle, Motion.quick(), label = "chip")
+    val mint = RgTheme.colors.pastelMint
+    val neutral = BeautyCatalog.neutral(item)
+    val active = value != neutral
+    val fraction by animateFloatAsState(
+        if (item.bipolar) (value - 50) / 50f else value / 100f,
+        Motion.quick(),
+        label = "ring",
+    )
+    val scale by animateFloatAsState(if (selected) 1.08f else 1f, Motion.quick(), label = "chipScale")
+    val fill = when {
+        shade != null && active -> Color(shade)
+        selected -> accent.copy(alpha = 0.9f)
+        else -> ChipIdle
+    }
+    val bg by animateColorAsState(fill, Motion.quick(), label = "chip")
+    val iconTint = if (shade != null && active && Color(shade).luminance() > 0.6f) Color.Black.copy(alpha = 0.75f) else OnGlass
     Column(
         Modifier
             .widthIn(min = 68.dp)
@@ -414,20 +493,35 @@ private fun FeatureChip(
     ) {
         Box {
             Box(
-                Modifier.size(48.dp).clip(CircleShape).background(bg),
+                Modifier
+                    .size(54.dp)
+                    .graphicsLayer { scaleX = scale; scaleY = scale }
+                    .drawBehind {
+                        val stroke = 2.5.dp.toPx()
+                        val inset = stroke / 2
+                        drawCircle(
+                            Color.White.copy(alpha = if (selected) 0.35f else 0.14f),
+                            radius = size.minDimension / 2 - inset,
+                            style = Stroke(stroke),
+                        )
+                        if (fraction != 0f) {
+                            drawArc(
+                                color = if (selected) Color.White else mint,
+                                startAngle = -90f,
+                                sweepAngle = 360f * fraction,
+                                useCenter = false,
+                                topLeft = Offset(inset, inset),
+                                size = Size(size.width - stroke, size.height - stroke),
+                                style = Stroke(stroke, cap = StrokeCap.Round),
+                            )
+                        }
+                    }
+                    .padding(5.dp)
+                    .clip(CircleShape)
+                    .background(bg),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(BeautyCatalog.icon(item), null, tint = OnGlass, modifier = Modifier.size(22.dp))
-            }
-            if (active) {
-                Box(
-                    Modifier
-                        .align(Alignment.TopEnd)
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(RgTheme.colors.pastelMint)
-                        .border(1.5.dp, PanelTint, CircleShape),
-                )
+                Icon(BeautyCatalog.icon(item), null, tint = iconTint, modifier = Modifier.size(22.dp))
             }
             if (locked) {
                 ProBadge(Modifier.align(Alignment.BottomCenter).offset(y = 8.dp), text = stringResource(R.string.beauty_pro))
@@ -461,21 +555,26 @@ private fun FeatureDetail(
     val haptics = rememberHaptics()
     val locale = currentLocale()
     val neutral = BeautyCatalog.neutral(item)
+    val sweetSpot = BeautyCatalog.recommended(item)
     Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.lg)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 36.dp)) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(BeautyCatalog.label(item)), style = MaterialTheme.typography.titleSmall, color = OnGlass)
-                val hint = when {
+                val warning = when {
                     trackingUnavailable -> stringResource(R.string.beauty_tracking_unavailable)
                     faceMissing -> stringResource(R.string.beauty_face_not_detected)
                     else -> null
                 }
-                AnimatedVisibility(visible = hint != null) {
+                val hint = BeautyCatalog.hint(item)?.let { stringResource(it) }
+                AnimatedVisibility(visible = warning != null) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.FaceRetouchingOff, null, tint = RgTheme.colors.warning, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text(hint.orEmpty(), style = MaterialTheme.typography.labelSmall, color = RgTheme.colors.warning)
+                        Text(warning.orEmpty(), style = MaterialTheme.typography.labelSmall, color = RgTheme.colors.warning)
                     }
+                }
+                if (warning == null && hint != null) {
+                    Text(hint, style = MaterialTheme.typography.labelSmall, color = OnGlassMuted, maxLines = 2)
                 }
             }
             Text(
@@ -499,12 +598,9 @@ private fun FeatureDetail(
             RgSlider(
                 value = value.toFloat(),
                 onValueChange = { raw ->
-                    var v = raw.roundToInt()
-                    // Center detent for bipolar sliders.
-                    if (item.bipolar && abs(v - 50) <= 2) {
-                        if (value != 50) haptics.perform(HapticEvent.SNAP)
-                        v = 50
-                    }
+                    // Magnetic detents at the neutral point and the item's sweet spot (RgSlider also ticks every 10 %).
+                    val v = snapDetent(raw.roundToInt(), neutral, sweetSpot)
+                    if (v != raw.roundToInt() && v != value) haptics.perform(HapticEvent.SNAP)
                     if (v != value) onValue(v)
                 },
                 valueRange = 0f..100f,
@@ -539,16 +635,29 @@ private fun FeatureDetail(
                 Text(stringResource(end), style = MaterialTheme.typography.labelSmall, color = OnGlassMuted)
             }
         }
-        if (item is BeautyItem.Makeup && color != null) {
+        if (color != null) {
             Spacer(Modifier.height(Spacing.sm))
-            ShadeRow(feature = item.feature, selected = color, onSelect = onColor)
+            val shades = remember(item) {
+                when (item) {
+                    is BeautyItem.Makeup -> BeautyCatalog.shades(item.feature)
+                    BeautyItem.EyeColor -> BeautyCatalog.eyeColorShades
+                    is BeautyItem.Beauty -> emptyList()
+                }
+            }
+            ShadeRow(shades = shades, selected = color, onSelect = onColor)
         }
     }
 }
 
+/** Snaps [raw] to [neutral] or [sweetSpot] when within ±2 (magnetic slider detents); otherwise clamps to 0..100. */
+internal fun snapDetent(raw: Int, neutral: Int, sweetSpot: Int): Int {
+    if (abs(raw - neutral) <= 2) return neutral
+    if (abs(raw - sweetSpot) <= 2) return sweetSpot
+    return raw.coerceIn(0, 100)
+}
+
 @Composable
-private fun ShadeRow(feature: MakeupFeature, selected: Long, onSelect: (Long) -> Unit) {
-    val shades = remember(feature) { BeautyCatalog.shades(feature) }
+private fun ShadeRow(shades: List<Long>, selected: Long, onSelect: (Long) -> Unit) {
     val colors = remember(shades) { shades.map { Color(it) } }
     // Show the user's current colour even when it is not one of the curated shades.
     val all = if (shades.contains(selected)) colors else listOf(Color(selected)) + colors
@@ -558,6 +667,100 @@ private fun ShadeRow(feature: MakeupFeature, selected: Long, onSelect: (Long) ->
         onSelect = { c -> onSelect(argbOf(c)) },
         swatchSize = 30.dp,
     )
+}
+
+/** One-tap curated makeup looks, as round preview chips painted with each look's signature colours. */
+@Composable
+private fun LooksTab(ui: BeautyUiState, onApply: (MakeupLook) -> Unit, onClear: () -> Unit) {
+    val active = ui.activeLook
+    val locked = !ui.entitlements.has(ProFeature.MAKEUP)
+    val names = rememberLookNamer()
+    val faceMissing = ui.status.tracking && !ui.status.faceDetected
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.lg),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            LookChip(
+                label = stringResource(R.string.beauty_look_none),
+                swatches = emptyList(),
+                selected = !ui.hasMakeup,
+                locked = false,
+                onClick = onClear,
+            )
+            MakeupLook.entries.forEach { look ->
+                key(look.name) {
+                    LookChip(
+                        label = names(look),
+                        swatches = look.swatches,
+                        selected = look == active,
+                        locked = locked,
+                        onClick = { onApply(look) },
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(Spacing.sm))
+        Text(
+            when {
+                faceMissing -> stringResource(R.string.beauty_face_not_detected)
+                active != null -> stringResource(R.string.beauty_look_hint_edit)
+                else -> stringResource(R.string.beauty_look_hint)
+            },
+            style = MaterialTheme.typography.labelSmall,
+            color = if (faceMissing) RgTheme.colors.warning else OnGlassMuted,
+            modifier = Modifier.padding(horizontal = Spacing.lg),
+        )
+    }
+}
+
+@Composable
+private fun LookChip(label: String, swatches: List<Long>, selected: Boolean, locked: Boolean, onClick: () -> Unit) {
+    val ring by animateColorAsState(if (selected) Color.White else Color.White.copy(alpha = 0.16f), Motion.quick(), label = "lookRing")
+    val scale by animateFloatAsState(if (selected) 1.08f else 1f, Motion.quick(), label = "lookScale")
+    val brush = remember(swatches) {
+        if (swatches.isEmpty()) null else Brush.sweepGradient((swatches + swatches.first()).map { Color(it) })
+    }
+    Column(
+        Modifier
+            .widthIn(min = 68.dp)
+            .clip(RoundedCornerShape(Radius.md))
+            .pressable(haptic = HapticEvent.SNAP, onClick = onClick)
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box {
+            Box(
+                Modifier
+                    .size(58.dp)
+                    .graphicsLayer { scaleX = scale; scaleY = scale }
+                    .border(2.5.dp, ring, CircleShape)
+                    .padding(5.dp)
+                    .clip(CircleShape)
+                    .then(if (brush != null) Modifier.background(brush) else Modifier.background(ChipIdle)),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (brush == null) {
+                    Icon(Icons.Rounded.Block, null, tint = OnGlass, modifier = Modifier.size(22.dp))
+                } else {
+                    Icon(Icons.Rounded.AutoAwesome, null, tint = Color.White.copy(alpha = 0.9f), modifier = Modifier.size(18.dp))
+                }
+            }
+            if (locked) ProBadge(Modifier.align(Alignment.BottomCenter).offset(y = 8.dp), text = stringResource(R.string.beauty_pro))
+        }
+        Spacer(Modifier.height(if (locked) 10.dp else 6.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (selected) OnGlass else OnGlassMuted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.widthIn(max = 84.dp),
+        )
+    }
 }
 
 @Composable
@@ -680,4 +883,11 @@ internal fun rememberPresetNamer(): (BeautyPreset) -> String {
         "preset_beauty_glam" to stringResource(R.string.beauty_preset_glam),
     )
     return remember(names) { { preset: BeautyPreset -> if (preset.builtIn) names[preset.name] ?: preset.name else preset.name } }
+}
+
+/** Localized names of the curated makeup looks. */
+@Composable
+internal fun rememberLookNamer(): (MakeupLook) -> String {
+    val names = MakeupLook.entries.associateWith { stringResource(it.label) }
+    return remember(names) { { look: MakeupLook -> names.getValue(look) } }
 }

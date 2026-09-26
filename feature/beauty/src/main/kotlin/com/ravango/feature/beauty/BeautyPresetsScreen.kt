@@ -94,6 +94,8 @@ internal fun BeautyPresetsRoute(
                 BeautyEvent.PresetDeleted -> snackbar.showSnackbar(deletedText)
                 BeautyEvent.PresetRenamed -> snackbar.showSnackbar(renamedText)
                 BeautyEvent.SaveFailed -> snackbar.showSnackbar(failedText)
+                // Looks are applied from the camera panel only.
+                is BeautyEvent.LookApplied -> Unit
             }
         }
     }
