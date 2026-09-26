@@ -154,18 +154,23 @@ fun ProjectsRoute(
         viewModel.eventFlow.collect { event ->
             when (event) {
                 is ProjectsEvent.OpenEditor -> onOpenEditor(event.projectId)
-                is ProjectsEvent.Deleted -> scope.launch {
-                    var undone = false
-                    try {
-                        val message = context.resources.getQuantityString(R.plurals.projects_deleted, event.count, event.count.toString().localizeDigits())
-                        val result = snackbar.showSnackbar(message, actionLabel = undoText, duration = SnackbarDuration.Long)
-                        if (result == SnackbarResult.ActionPerformed) {
-                            undone = true
-                            haptics.perform(HapticEvent.CONFIRM)
-                            viewModel.undoDelete()
+                is ProjectsEvent.Deleted -> {
+                    // A newer delete replaces the visible snackbar; the older batch then commits via its finally.
+                    snackbar.currentSnackbarData?.dismiss()
+                    scope.launch {
+                        var undone = false
+                        try {
+                            val count = event.ids.size
+                            val message = context.resources.getQuantityString(R.plurals.projects_deleted, count, count.toString().localizeDigits())
+                            val result = snackbar.showSnackbar(message, actionLabel = undoText, duration = SnackbarDuration.Long)
+                            if (result == SnackbarResult.ActionPerformed) {
+                                undone = true
+                                haptics.perform(HapticEvent.CONFIRM)
+                                viewModel.undoDelete(event.ids)
+                            }
+                        } finally {
+                            if (!undone) viewModel.commitDelete(event.ids)
                         }
-                    } finally {
-                        if (!undone) viewModel.commitDelete()
                     }
                 }
                 is ProjectsEvent.Duplicated -> snackbar.showSnackbar(context.getString(R.string.projects_duplicated, event.title))

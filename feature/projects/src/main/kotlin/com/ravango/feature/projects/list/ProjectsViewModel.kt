@@ -61,7 +61,7 @@ data class ProjectsUiState(
 
 sealed interface ProjectsEvent {
     data class OpenEditor(val projectId: String) : ProjectsEvent
-    data class Deleted(val count: Int) : ProjectsEvent
+    data class Deleted(val ids: Set<String>) : ProjectsEvent
     data class Duplicated(val title: String) : ProjectsEvent
     data class Share(val uri: String, val mimeType: String) : ProjectsEvent
     data object NothingToShare : ProjectsEvent
@@ -189,23 +189,25 @@ class ProjectsViewModel @Inject constructor(
      */
     fun delete(ids: Set<String>) {
         if (ids.isEmpty()) return
-        commitDelete()
-        pendingDeletion.value = ids
+        pendingDeletion.update { it + ids }
         selection.value = emptySet()
-        viewModelScope.launch { events.send(ProjectsEvent.Deleted(ids.size)) }
+        viewModelScope.launch { events.send(ProjectsEvent.Deleted(ids)) }
     }
 
-    fun undoDelete() { pendingDeletion.value = emptySet() }
+    /** Restores a batch hidden by [delete]; ids already committed are unaffected. */
+    fun undoDelete(ids: Set<String>) = pendingDeletion.update { it - ids }
 
-    fun commitDelete() {
-        val ids = pendingDeletion.value
-        if (ids.isEmpty()) return
-        committing.update { it + ids }
-        pendingDeletion.value = emptySet()
+    /** Permanently deletes the given batch (only ids still awaiting undo), or every pending id when [ids] is null. */
+    fun commitDelete(ids: Set<String>? = null) {
+        val pending = pendingDeletion.value
+        val toCommit = if (ids == null) pending else pending intersect ids
+        if (toCommit.isEmpty()) return
+        committing.update { it + toCommit }
+        pendingDeletion.update { it - toCommit }
         // Runs outside the screen lifecycle so leaving the screen never loses a confirmed delete.
         appScope.launch {
-            ids.forEach { id -> runCatching { repository.delete(id) }.onFailure { RgLog.e(TAG, "Delete failed for $id", it) } }
-            committing.update { it - ids }
+            toCommit.forEach { id -> runCatching { repository.delete(id) }.onFailure { RgLog.e(TAG, "Delete failed for $id", it) } }
+            committing.update { it - toCommit }
         }
     }
 
