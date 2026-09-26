@@ -1,9 +1,11 @@
 # Third-party licenses
 
 Generated from the app's release dependency graph by the AboutLibraries Gradle plugin
-(`./gradlew :app:exportLibraryDefinitions` or the in-app **Licenses** screen, which also shows each full licence text).
+(the in-app **Licenses** screen shows the same list with each full licence text).
 
-**223 libraries.** Licence summary: Apache License 2.0 (199), Android Software Development Kit License (15), ML Kit Terms of Service (5), MIT License (3), BSD 3-Clause "New" or "Revised" License (1)
+**219 libraries.** Licence summary: Apache License 2.0 (198), Android Software Development Kit License (14), MIT License (5), BSD 3-Clause "New" or "Revised" License (2), GNU General Public License, version 2 (GPL2), with the classpath exception (1)
+
+Bundled assets: MediaPipe `face_landmarker.task` model and `canonical_face_model.obj` — Apache License 2.0 (Google), see `engine/beauty/src/main/assets/NOTICE.txt`.
 
 Fonts: *Ravagh* — commercial (fontiran.com, licence #136710), see [licenses/Ravagh-NOTICE.md](licenses/Ravagh-NOTICE.md); *Vazirmatn*, *Sahel*, *Samim* — SIL Open Font License 1.1, see [licenses/](licenses/).
 
@@ -34,6 +36,8 @@ Fonts: *Ravagh* — commercial (fontiran.com, licence #136710), see [licenses/Ra
 | billing | `com.android.billingclient:billing` | 8.0.0 | [Android Software Development Kit License](https://developer.android.com/studio/terms.html) |
 | billing-ktx | `com.android.billingclient:billing-ktx` | 8.0.0 | [Android Software Development Kit License](https://developer.android.com/studio/terms.html) |
 | Biometric | `androidx.biometric:biometric` | 1.1.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
+| Checker Qual | `org.checkerframework:checker-compat-qual` | 2.5.3 | [GNU General Public License, version 2 (GPL2), with the classpath exception](http://www.gnu.org/software/classpath/license.html), [MIT License](https://spdx.org/licenses/MIT.html) |
+| Checker Qual | `org.checkerframework:checker-qual` | 3.43.0 | [MIT License](https://spdx.org/licenses/MIT.html) |
 | ClassMate | `com.fasterxml:classmate` | 1.7.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | coil | `io.coil-kt:coil` | 2.7.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | coil-base | `io.coil-kt:coil-base` | 2.7.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
@@ -43,7 +47,6 @@ Fonts: *Ravagh* — commercial (fontiran.com, licence #136710), see [licenses/Ra
 | collections | `androidx.collection:collection` | 1.5.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | collections | `org.jetbrains.compose.collection-internal:collection` | 1.9.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Collections Kotlin Extensions | `androidx.collection:collection-ktx` | 1.5.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
-| common | `com.google.mlkit:common` | 18.11.0 | [ML Kit Terms of Service](https://developers.google.com/ml-kit/terms) |
 | Compose Animation | `androidx.compose.animation:animation` | 1.9.4 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Compose Animation | `org.jetbrains.compose.animation:animation` | 1.9.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Compose Animation Core | `androidx.compose.animation:animation-core` | 1.9.4 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
@@ -56,7 +59,6 @@ Fonts: *Ravagh* — commercial (fontiran.com, licence #136710), see [licenses/Ra
 | Compose Graphics | `org.jetbrains.compose.ui:ui-graphics` | 1.9.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Compose Layouts | `androidx.compose.foundation:foundation-layout` | 1.9.4 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Compose Layouts | `org.jetbrains.compose.foundation:foundation-layout` | 1.9.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
-| Compose Material Components | `androidx.compose.material:material` | 1.9.4 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Compose Material Icons Core | `androidx.compose.material:material-icons-core` | 1.7.8 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Compose Material Icons Extended | `androidx.compose.material:material-icons-extended` | 1.7.8 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Compose Material Ripple | `androidx.compose.material:material-ripple` | 1.9.4 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
@@ -70,9 +72,6 @@ Fonts: *Ravagh* — commercial (fontiran.com, licence #136710), see [licenses/Ra
 | Compose Runtime Annotation | `androidx.compose.runtime:runtime-annotation` | 1.9.4 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Compose Saveable | `androidx.compose.runtime:runtime-saveable` | 1.9.4 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Compose Saveable | `org.jetbrains.compose.runtime:runtime-saveable` | 1.9.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
-| Compose Testing manifest dependency | `androidx.compose.ui:ui-test-manifest` | 1.9.4 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
-| Compose Tooling | `androidx.compose.ui:ui-tooling` | 1.9.4 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
-| Compose Tooling Data | `androidx.compose.ui:ui-tooling-data` | 1.9.4 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Compose UI | `androidx.compose.ui:ui` | 1.9.4 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Compose UI Preview Tooling | `androidx.compose.ui:ui-tooling-preview` | 1.9.4 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Compose UI Preview Tooling | `org.jetbrains.compose.ui:ui-tooling-preview` | 1.9.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
@@ -95,14 +94,14 @@ Fonts: *Ravagh* — commercial (fontiran.com, licence #136710), see [licenses/Ra
 | Emoji2 | `androidx.emoji2:emoji2` | 1.4.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Emoji2 Views Helper | `androidx.emoji2:emoji2-views-helper` | 1.4.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | error-prone annotations | `com.google.errorprone:error_prone_annotations` | 2.50.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
+| ExifInterface | `androidx.exifinterface:exifinterface` | 1.4.1 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Experimental annotation | `androidx.annotation:annotation-experimental` | 1.4.1 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
-| face-detection | `com.google.mlkit:face-detection` | 16.1.7 | [ML Kit Terms of Service](https://developers.google.com/ml-kit/terms) |
 | FindBugs-jsr305 | `com.google.code.findbugs:jsr305` | 3.0.2 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
-| firebase-annotations | `com.google.firebase:firebase-annotations` | 16.0.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
-| firebase-components | `com.google.firebase:firebase-components` | 16.1.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | firebase-encoders | `com.google.firebase:firebase-encoders` | 17.0.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | firebase-encoders-json | `com.google.firebase:firebase-encoders-json` | 18.0.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | firebase-encoders-proto | `com.google.firebase:firebase-encoders-proto` | 16.0.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
+| Flogger | `com.google.flogger:flogger` | 0.6 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
+| Flogger System Backend | `com.google.flogger:flogger-system-backend` | 0.6 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Futures | `androidx.concurrent:concurrent-futures` | 1.2.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Futures Kotlin Extensions | `androidx.concurrent:concurrent-futures-ktx` | 1.2.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | googleid | `com.google.android.libraries.identity.googleid:googleid` | 1.1.1 | [Android Software Development Kit License](https://developer.android.com/studio/terms.html) |
@@ -112,7 +111,7 @@ Fonts: *Ravagh* — commercial (fontiran.com, licence #136710), see [licenses/Ra
 | Hilt Android | `com.google.dagger:hilt-android` | 2.57.2 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Hilt Common | `androidx.hilt:hilt-common` | 1.2.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Hilt Core | `com.google.dagger:hilt-core` | 2.57.2 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
-| image | `com.google.android.odml:image` | 1.0.0-beta1 | [Android Software Development Kit License](https://developer.android.com/studio/terms.html) |
+| J2ObjC Annotations | `com.google.j2objc:j2objc-annotations` | 3.0.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Jackson BOM | `com.fasterxml.jackson:jackson-bom` | 2.19.4 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Jackson datatype: jdk8 | `com.fasterxml.jackson.datatype:jackson-datatype-jdk8` | 2.19.4 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Jackson datatype: JSR310 | `com.fasterxml.jackson.datatype:jackson-datatype-jsr310` | 2.19.4 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
@@ -174,6 +173,8 @@ Fonts: *Ravagh* — commercial (fontiran.com, licence #136710), see [licenses/Ra
 | Media3 Transformer module | `androidx.media3:media3-transformer` | 1.8.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Media3 UI Compose module | `androidx.media3:media3-ui-compose` | 1.8.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Media3 UI module | `androidx.media3:media3-ui` | 1.8.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
+| MediaPipe Taksks Core | `com.google.mediapipe:tasks-core` | 1.0.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
+| MediaPipe Tasks Vision | `com.google.mediapipe:tasks-vision` | 1.0.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Navigation Common | `androidx.navigation:navigation-common` | 2.9.5 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Navigation Compose Hilt Integration | `androidx.hilt:hilt-navigation-compose` | 1.2.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Navigation Hilt Extension | `androidx.hilt:hilt-navigation` | 1.2.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
@@ -190,7 +191,6 @@ Fonts: *Ravagh* — commercial (fontiran.com, licence #136710), see [licenses/Ra
 | play-services-fido | `com.google.android.gms:play-services-fido` | 21.0.0 | [Android Software Development Kit License](https://developer.android.com/studio/terms.html) |
 | play-services-identity-credentials | `com.google.android.gms:play-services-identity-credentials` | 16.0.0-alpha02 | [Android Software Development Kit License](https://developer.android.com/studio/terms.html) |
 | play-services-location | `com.google.android.gms:play-services-location` | 19.0.0 | [Android Software Development Kit License](https://developer.android.com/studio/terms.html) |
-| play-services-mlkit-face-detection | `com.google.android.gms:play-services-mlkit-face-detection` | 17.1.0 | [ML Kit Terms of Service](https://developers.google.com/ml-kit/terms) |
 | play-services-places-placereport | `com.google.android.gms:play-services-places-placereport` | 17.0.0 | [Android Software Development Kit License](https://developer.android.com/studio/terms.html) |
 | play-services-tasks | `com.google.android.gms:play-services-tasks` | 18.2.0 | [Android Software Development Kit License](https://developer.android.com/studio/terms.html) |
 | Preferences DataStore | `androidx.datastore:datastore-preferences` | 1.1.7 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
@@ -198,6 +198,7 @@ Fonts: *Ravagh* — commercial (fontiran.com, licence #136710), see [licenses/Ra
 | Preferences DataStore Proto | `androidx.datastore:datastore-preferences-proto` | 1.1.7 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Preferences External Protobuf | `androidx.datastore:datastore-preferences-external-protobuf` | 1.1.7 | [BSD 3-Clause "New" or "Revised" License](https://spdx.org/licenses/BSD-3-Clause.html) |
 | Profile Installer | `androidx.profileinstaller:profileinstaller` | 1.4.1 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
+| Protocol Buffers [Lite] | `com.google.protobuf:protobuf-javalite` | 4.26.1 | [BSD 3-Clause "New" or "Revised" License](https://spdx.org/licenses/BSD-3-Clause.html) |
 | Room Kotlin Extensions | `androidx.room:room-ktx` | 2.7.2 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Room-Common | `androidx.room:room-common` | 2.7.2 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Room-Runtime | `androidx.room:room-runtime` | 2.7.2 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
@@ -215,7 +216,6 @@ Fonts: *Ravagh* — commercial (fontiran.com, licence #136710), see [licenses/Ra
 | Support Cursor Adapter | `androidx.cursoradapter:cursoradapter` | 1.0.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Support Custom View | `androidx.customview:customview` | 1.0.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Support Drawer Layout | `androidx.drawerlayout:drawerlayout` | 1.0.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
-| Support ExifInterface | `androidx.exifinterface:exifinterface` | 1.3.7 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Support fragment | `androidx.fragment:fragment` | 1.5.7 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Support Interpolators | `androidx.interpolator:interpolator` | 1.0.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | Support loader | `androidx.loader:loader` | 1.0.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
@@ -227,8 +227,6 @@ Fonts: *Ravagh* — commercial (fontiran.com, licence #136710), see [licenses/Ra
 | transport-backend-cct | `com.google.android.datatransport:transport-backend-cct` | 3.1.8 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | transport-runtime | `com.google.android.datatransport:transport-runtime` | 3.1.8 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | VersionedParcelable | `androidx.versionedparcelable:versionedparcelable` | 1.1.1 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
-| vision-common | `com.google.mlkit:vision-common` | 17.2.0 | [ML Kit Terms of Service](https://developers.google.com/ml-kit/terms) |
-| vision-interfaces | `com.google.mlkit:vision-interfaces` | 16.1.0 | [ML Kit Terms of Service](https://developers.google.com/ml-kit/terms) |
 | WorkManager Hilt Extension | `androidx.hilt:hilt-work` | 1.2.0 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | WorkManager Kotlin Extensions | `androidx.work:work-runtime-ktx` | 2.10.5 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
 | WorkManager Runtime | `androidx.work:work-runtime` | 2.10.5 | [Apache License 2.0](https://spdx.org/licenses/Apache-2.0.html) |
