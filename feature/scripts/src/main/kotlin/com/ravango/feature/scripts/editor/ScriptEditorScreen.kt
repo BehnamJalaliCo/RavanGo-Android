@@ -94,6 +94,9 @@ import com.ravango.core.designsystem.component.ProBadge
 import com.ravango.core.designsystem.component.RgConfirmDialog
 import com.ravango.core.designsystem.component.RgIconButton
 import com.ravango.core.designsystem.component.RgScreen
+import com.ravango.core.designsystem.motion.SharedKeys
+import com.ravango.core.designsystem.motion.rgFadeThrough
+import com.ravango.core.designsystem.motion.rgSharedBounds
 import com.ravango.core.designsystem.component.rememberSnackbarHostState
 import com.ravango.core.designsystem.component.pressable
 import com.ravango.core.designsystem.theme.HapticEvent
@@ -336,7 +339,15 @@ private fun EditorBody(
         textDirection = textDirection,
     )
 
-    Column(modifier.fillMaxSize().imePadding()) {
+    // Opened from a script card: the card's bounds grow into this body (container transform).
+    val sharedKey = remember { state.scriptId }
+    val reduceMotion = RgTheme.reduceMotion
+    Column(
+        modifier
+            .fillMaxSize()
+            .then(if (sharedKey != null) Modifier.rgSharedBounds(SharedKeys.script(sharedKey), RoundedCornerShape(Radius.lg)) else Modifier)
+            .imePadding(),
+    ) {
         // Title
         CompositionLocalProvider(LocalLayoutDirection provides contentDirection) {
             Box(Modifier.fillMaxWidth().padding(horizontal = Spacing.gutter, vertical = Spacing.xs)) {
@@ -368,7 +379,7 @@ private fun EditorBody(
 
         AnimatedContent(
             targetState = state.preview,
-            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            transitionSpec = { rgFadeThrough(reduceMotion, clipSize = true) },
             modifier = Modifier.weight(1f),
             label = "editor-mode",
         ) { preview ->

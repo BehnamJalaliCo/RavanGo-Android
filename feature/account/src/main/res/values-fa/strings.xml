@@ -18,7 +18,7 @@
     <string name="account_plan_free">رایگان</string>
     <string name="account_plan_pro">پرو</string>
     <string name="account_plan_lifetime">مادام‌العمر</string>
-    <string name="account_plan_trial">%1$s · دورهٔ رایگان</string>
+    <string name="account_plan_trial">%1$s، دورهٔ رایگان</string>
     <string name="account_provider_email_code">کد ایمیلی</string>
     <string name="account_provider_email_password">ایمیل</string>
     <string name="account_provider_phone">تلفن همراه</string>
@@ -43,7 +43,7 @@
     <string name="account_deleted">حسابت حذف شد.</string>
     <string name="account_wipe_local">همهٔ داده‌های این دستگاه هم پاک شود</string>
     <string name="account_ai_credits">اعتبار هوش مصنوعی</string>
-    <string name="account_ai_credits_value">%1$s باقی‌مانده · %2$s در ماه</string>
+    <string name="account_ai_credits_value">%1$s باقی‌مانده از %2$s در ماه</string>
     <string name="account_cloud_storage">فضای ابری</string>
     <string name="account_storage_value">%1$s از %2$s</string>
     <string name="account_local_media">ویدیوهای روی این دستگاه: %1$s</string>
@@ -187,7 +187,7 @@
     <string name="account_cloud_media_section">پشتیبان ویدیو</string>
     <string name="account_cloud_backup_media">پشتیبان‌گیری از ویدیوها</string>
     <string name="account_cloud_backup_media_sub">بارگذاری ضبط‌ها در فضای ابری خصوصی تو</string>
-    <string name="account_cloud_uploading">در حال بارگذاری %1$s از %2$s · %3$s از %4$s</string>
+    <string name="account_cloud_uploading">در حال بارگذاری %1$s از %2$s، %3$s از %4$s</string>
     <string name="account_cloud_issue_sign_in">برای همگام‌سازی وارد شو.</string>
     <string name="account_cloud_issue_session">نشستت منقضی شده. برای ادامهٔ همگام‌سازی دوباره وارد شو.</string>
     <string name="account_cloud_issue_network">ارتباط با سرور برقرار نشد. همگام‌سازی خودکار دوباره تلاش می‌کند.</string>

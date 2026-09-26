@@ -15,6 +15,7 @@ import android.hardware.camera2.params.SessionConfiguration
 import android.os.Build
 import android.os.Handler
 import android.view.Surface
+import com.ravango.core.common.diagnostics.Diagnostics
 import com.ravango.core.common.log.RgLog
 import com.ravango.engine.camera.CameraErrorKind
 import java.util.concurrent.Executor
@@ -51,6 +52,10 @@ internal class CameraSession(
     private var session: CameraCaptureSession? = null
     private var target: Surface? = null
     private var params: RequestParams = RequestParams()
+    private var lastDropped: List<String> = emptyList()
+
+    /** True when the repeating request is the minimal fallback (template defaults + fps range). */
+    val usingMinimalRequest: Boolean get() = params.minimal
 
     var cameraId: String? = null
         private set
@@ -137,6 +142,8 @@ internal class CameraSession(
         val s = session ?: return
         val d = device ?: return
         val t = target ?: return
+        // No AF triggers on the minimal fallback request, nor when the planner left AF_MODE out (fixed focus).
+        if (params.minimal || RequestKey.AF_MODE !in params.plan()) return
         try {
             val cancel = d.createCaptureRequest(CameraDevice.TEMPLATE_RECORD).apply {
                 addTarget(t)
@@ -184,10 +191,13 @@ internal class CameraSession(
             if (Build.VERSION.SDK_INT >= 28) {
                 val config = SessionConfiguration(SessionConfiguration.SESSION_REGULAR, listOf(OutputConfiguration(surface)), executor, callback)
                 // Session parameters let the HAL pick the right sensor mode for the fps range / stabilization up front.
-                runCatching {
-                    val builder = d.createCaptureRequest(CameraDevice.TEMPLATE_RECORD)
-                    params.applyTo(builder)
-                    config.sessionParameters = builder.build()
+                // The minimal fallback request (for a camera that keeps failing) sends none.
+                if (!params.minimal) {
+                    runCatching {
+                        val builder = d.createCaptureRequest(CameraDevice.TEMPLATE_RECORD)
+                        params.applyTo(builder)
+                        config.sessionParameters = builder.build()
+                    }
                 }
                 d.createCaptureSession(config)
             } else {
@@ -211,8 +221,9 @@ internal class CameraSession(
         return try {
             val builder = d.createCaptureRequest(CameraDevice.TEMPLATE_RECORD)
             builder.addTarget(t)
-            params.applyTo(builder)
+            val plan = params.applyTo(builder)
             s.setRepeatingRequest(builder.build(), captureCallback, handler)
+            reportDropped(d.id, plan.dropped)
             true
         } catch (e: CameraAccessException) {
             RgLog.e(TAG, "setRepeatingRequest failed", e)
@@ -225,13 +236,21 @@ internal class CameraSession(
         } catch (e: IllegalArgumentException) {
             RgLog.e(TAG, "invalid request", e)
             // Retry with the safest request so the preview never dies because of one bad manual value.
-            if (params != RequestParams(fpsRange = params.fpsRange)) {
-                params = RequestParams(fpsRange = params.fpsRange)
+            if (!params.minimal) {
+                Diagnostics.record(TAG, "camera ${d.id} rejected the request (${e.message}); using template defaults + fps range")
+                params = params.minimalCopy()
                 submitRepeating()
             } else {
                 false
             }
         }
+    }
+
+    /** Logs (once per change) the requested values this camera does not support and that were left out. */
+    private fun reportDropped(cameraId: String, dropped: List<String>) {
+        if (dropped == lastDropped) return
+        lastDropped = dropped
+        if (dropped.isNotEmpty()) Diagnostics.record(TAG, "camera $cameraId: unsupported request values left out: ${dropped.joinToString("; ")}")
     }
 
     private fun mapAccess(e: CameraAccessException): CameraErrorKind = when (e.reason) {

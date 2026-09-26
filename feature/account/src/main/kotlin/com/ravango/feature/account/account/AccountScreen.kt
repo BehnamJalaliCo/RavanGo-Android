@@ -1,5 +1,6 @@
 package com.ravango.feature.account.account
 
+import com.ravango.feature.account.common.iconTone
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedContent
@@ -212,7 +213,7 @@ internal fun AccountContent(
 
             RgGroup(title = stringResource(R.string.account_section_account)) {
                 if (user != null) {
-                    RgListItem(stringResource(R.string.account_profile_edit), icon = Icons.Rounded.Edit, onClick = onEditProfile)
+                    RgListItem(stringResource(R.string.account_profile_edit), icon = Icons.Rounded.Edit, iconTint = iconTone(Icons.Rounded.Edit).content, iconBackground = iconTone(Icons.Rounded.Edit).container, onClick = onEditProfile)
                 }
                 val planName = planLabel(state.entitlements.plan)
                 val planSubtitle = if (state.entitlements.isTrial) stringResource(R.string.account_plan_trial, planName) else planName
@@ -220,31 +221,31 @@ internal fun AccountContent(
                     RgListItem(
                         title = stringResource(R.string.account_subscription),
                         subtitle = planSubtitle,
-                        icon = Icons.Rounded.WorkspacePremium,
+                        icon = Icons.Rounded.WorkspacePremium, iconTint = iconTone(Icons.Rounded.WorkspacePremium).content, iconBackground = iconTone(Icons.Rounded.WorkspacePremium).container,
                         onClick = onSubscription,
                         trailing = { ProBadge(text = stringResource(R.string.account_upgrade_badge)) },
                     )
                 } else {
                     // Paid: keep the default chevron (the row opens subscription management).
-                    RgListItem(stringResource(R.string.account_subscription), subtitle = planSubtitle, icon = Icons.Rounded.WorkspacePremium, onClick = onSubscription)
+                    RgListItem(stringResource(R.string.account_subscription), subtitle = planSubtitle, icon = Icons.Rounded.WorkspacePremium, iconTint = iconTone(Icons.Rounded.WorkspacePremium).content, iconBackground = iconTone(Icons.Rounded.WorkspacePremium).container, onClick = onSubscription)
                 }
                 RgListItem(
                     title = stringResource(R.string.account_cloud),
                     subtitle = cloudSubtitle(state),
-                    icon = Icons.Rounded.Cloud,
+                    icon = Icons.Rounded.Cloud, iconTint = iconTone(Icons.Rounded.Cloud).content, iconBackground = iconTone(Icons.Rounded.Cloud).container,
                     onClick = onCloud,
                 )
             }
             RgGroup(title = stringResource(R.string.account_section_app)) {
-                RgListItem(stringResource(R.string.account_settings), icon = Icons.Rounded.Settings, onClick = onSettings)
-                RgListItem(stringResource(R.string.account_privacy), icon = Icons.Rounded.PrivacyTip, onClick = onPrivacy)
-                RgListItem(stringResource(R.string.account_terms), icon = Icons.Rounded.Description, onClick = onTerms)
-                RgListItem(stringResource(R.string.account_about), icon = Icons.Rounded.Info, onClick = onAbout)
+                RgListItem(stringResource(R.string.account_settings), icon = Icons.Rounded.Settings, iconTint = iconTone(Icons.Rounded.Settings).content, iconBackground = iconTone(Icons.Rounded.Settings).container, onClick = onSettings)
+                RgListItem(stringResource(R.string.account_privacy), icon = Icons.Rounded.PrivacyTip, iconTint = iconTone(Icons.Rounded.PrivacyTip).content, iconBackground = iconTone(Icons.Rounded.PrivacyTip).container, onClick = onPrivacy)
+                RgListItem(stringResource(R.string.account_terms), icon = Icons.Rounded.Description, iconTint = iconTone(Icons.Rounded.Description).content, iconBackground = iconTone(Icons.Rounded.Description).container, onClick = onTerms)
+                RgListItem(stringResource(R.string.account_about), icon = Icons.Rounded.Info, iconTint = iconTone(Icons.Rounded.Info).content, iconBackground = iconTone(Icons.Rounded.Info).container, onClick = onAbout)
                 if (state.supportEmail.isNotBlank()) {
                     RgListItem(
                         stringResource(R.string.account_contact_support),
                         subtitle = state.supportEmail,
-                        icon = Icons.Rounded.Mail,
+                        icon = Icons.Rounded.Mail, iconTint = iconTone(Icons.Rounded.Mail).content, iconBackground = iconTone(Icons.Rounded.Mail).container,
                         onClick = onContactSupport,
                     )
                 }
@@ -253,7 +254,7 @@ internal fun AccountContent(
                 RgGroup {
                     RgListItem(
                         stringResource(R.string.account_sign_out),
-                        icon = Icons.AutoMirrored.Rounded.Logout,
+                        icon = Icons.AutoMirrored.Rounded.Logout, iconTint = iconTone(Icons.AutoMirrored.Rounded.Logout).content, iconBackground = iconTone(Icons.AutoMirrored.Rounded.Logout).container,
                         onClick = onSignOut,
                     )
                     RgListItem(

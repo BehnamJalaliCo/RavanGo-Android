@@ -20,6 +20,7 @@ import com.ravango.engine.camera.LiveExposure
 import com.ravango.engine.camera.PipelineStats
 import com.ravango.engine.camera.PreviewFrame
 import com.ravango.engine.camera.RecordingStatus
+import com.ravango.engine.camera.StopReason
 import com.ravango.engine.camera.capability.CameraCapabilities
 import com.ravango.engine.camera.capability.LensOption
 
@@ -42,6 +43,9 @@ sealed interface StudioMessage {
     data object MicUnavailableVideoOnly : StudioMessage
     data class Recovered(val count: Int) : StudioMessage
     data object NothingRecorded : StudioMessage
+
+    /** The take ended because of the camera/encoder ([reason]) before anything playable was recorded. */
+    data class TakeLost(val reason: StopReason) : StudioMessage
     data object BackgroundPhotoFailed : StudioMessage
 }
 

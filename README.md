@@ -14,9 +14,9 @@
 
 [![Android CI](https://github.com/BehnamJalaliCo/RavanGo-Android/actions/workflows/android.yml/badge.svg)](https://github.com/BehnamJalaliCo/RavanGo-Android/actions/workflows/android.yml)
 
-| خانه | استودیوی دوربین و لنزها | فیلترهای زنده | بیوتی و میکاپ |
+| خانه | آرایش‌های آماده (یک‌لمسی) | فیلترهای زنده | بیوتی و میکاپ |
 |:-:|:-:|:-:|:-:|
-| <img src="docs/screenshots/home-fa-light.png" width="200"/> | <img src="docs/screenshots/camera-studio-lenses-fa-dark.png" width="200"/> | <img src="docs/screenshots/camera-effects-filters-fa-dark.png" width="200"/> | <img src="docs/screenshots/beauty-panel-makeup-fa-dark.png" width="200"/> |
+| <img src="docs/screenshots/home-fa-light.png" width="200"/> | <img src="docs/screenshots/camera-studio-looks-fa-dark.png" width="200"/> | <img src="docs/screenshots/camera-effects-filters-fa-dark.png" width="200"/> | <img src="docs/screenshots/beauty-panel-makeup-fa-dark.png" width="200"/> |
 | **پس‌زمینه‌ی مجازی** | **پروژه‌ها** | **اشتراک Pro** | **تنظیمات (تیره)** |
 | <img src="docs/screenshots/camera-effects-background-fa-light.png" width="200"/> | <img src="docs/screenshots/projects-fa-light.png" width="200"/> | <img src="docs/screenshots/paywall-fa-light.png" width="200"/> | <img src="docs/screenshots/settings-fa-dark.png" width="200"/> |
 
@@ -110,7 +110,11 @@
 - **میکاپ به روش Face Mask:** بافت‌های میکاپ در فضای UV چهره ساخته و روی مش ردیابی‌شده رندر می‌شوند؛ مثل نقاشی روی پوست با حرکات صورت جابه‌جا می‌شوند و هرگز روی دندان یا داخل چشم نمی‌افتند.
 - **Face Retouch:** نرمی پوست با حفظ بافت (Frequency Separation)، سفیدی دندان، شارپ و سفیدی چشم، **رنگ چشم**.
 - **تغییر فرم با Mesh Warp (مانند Face Liquify):** تغییر شکل خود مش چهره، هم‌راستا با چرخش سر و بدون درز.
-- **لُک‌های آماده‌ی یک‌لمسی:** Natural، Soft Glam، Bold Lips، Smokey Eyes، K-Beauty، Bronzed.
+- **استایل‌های آماده‌ی یک‌لمسی (مثل Snapchat):** ۲۰ استایل کامل — هرکدام ترکیبی از بیوتی (صافی پوست، زیر چشم، لاغری ملایم صورت، فک، چانه، بینی، چشم)، همه‌ی لایه‌های آرایش، لنز رنگی و در صورت نیاز یک فیلتر رنگ: گلم جسورانه، گلم ملایم، طبیعی، کی‌بیوتی، لاته، کلین‌گرل، هلویی و کک‌ومکی (رایگان) و عروس ایرانی، گلم عربی، عروسکی صورتی، شب دودی، چشم سایرن، برنزه‌ی تابستانی، لب تمشکی، نود مات، نقره‌ای سرد، گاتیک، چشم غروب و قرمز کلاسیک (Pro).
+  - در استودیوی دوربین داخل کاروسل لنزها با دسته‌های «اخیر / علاقه‌مندی‌ها / برای تو / آرایش / زیبایی / سرگرمی / فیلترها»؛ اسلایدر شدت ۰ تا ۱۰۰، دکمه‌ی «حذف»، نگه‌داشتن انگشت برای علاقه‌مندی. استایل و لنز سرگرمی روی هم سوار می‌شوند (یک استایل + یک لنز + یک فیلتر).
+  - در پنل بیوتی، زبانه‌ی اول «استایل‌ها»: شخصی‌سازی هر لایه و «ذخیره به‌عنوان استایل من».
+  - تصویر هر استایل یک چهره‌ی تصویرسازی‌شده (بدون عکس افراد واقعی) با رنگ‌های واقعی همان استایل است.
+  - موتور: خط چشم بال‌دار/دراماتیک، مژه‌ی حجیم چندرشته‌ای، سایه‌ی دو رنگ، شیمر، لب اومبره/براق/مات، ابروی حجم‌دار، پوست براق یا مات و کک‌ومک — همه در فضای UV چهره و بدون ساخت دوباره‌ی بافت هنگام عوض کردن استایل.
 - پایدارسازی One-Euro و پیش‌بینی حرکت برای حذف لرزش؛ شیدرهای GLES روی پیش‌نمایش **و** فایل نهایی.
 - **Before/After**، پریست‌های قابل ذخیره، **کاهش هوشمند کیفیت** بر اساس توان دستگاه، دما و زمان واقعی هر فریم (FULL → BALANCED → LIGHT → MINIMAL) تا FPS ضبط حفظ شود.
 
@@ -274,6 +278,7 @@ Workflow: [`.github/workflows/android.yml`](.github/workflows/android.yml)
 - دوربین، میکروفون، بلوتوث و اعلان‌ها **فقط هنگام نیاز** و با توضیح شفاف درخواست می‌شوند؛ Onboarding هیچ مجوزی نمی‌گیرد.
 - پردازش تصویر، بیوتی، صدا، سکوت‌یابی و پاک‌سازی صدا **روی دستگاه** انجام می‌شود.
 - هیچ داده‌ای بدون اجازه ارسال نمی‌شود: همگام‌سازی ابری خاموش است تا کاربر فعالش کند؛ ارسال متن/صدا به هوش مصنوعی نیازمند رضایت است؛ آمار و گزارش کرش پیش‌فرض خاموش‌اند.
+- **گزارش کرش محلی:** اگر برنامه بسته شود (از جمله کرش‌های سطح پایین گرافیک/MediaPipe و ANR در اندروید ۱۱+)، گزارش فقط روی خود گوشی ذخیره می‌شود و در اجرای بعد کارت «روان‌گو دفعه‌ی قبل بسته شد» با دکمه‌ی اشتراک نمایش داده می‌شود؛ همه‌ی گزارش‌ها در «تنظیمات ← درباره ← گزارش‌های کرش». هیچ چیزی خودکار ارسال نمی‌شود.
 - توکن‌ها و کلیدهای API در Android Keystore رمز می‌شوند و از پشتیبان‌گیری مستثنا هستند.
 - صفحات **حریم خصوصی**، **شرایط استفاده**، **مدیریت و حذف حساب** و **خروجی داده‌ها** در اپ موجودند.
 
@@ -321,7 +326,7 @@ Workflow: [`.github/workflows/android.yml`](.github/workflows/android.yml)
 **teleprompter → pro camera → real-time beauty & makeup → audio → multi-track editor → subtitles & AI → export**.
 Persian is the primary language (full RTL); English is fully supported.
 
-- **Stack:** Kotlin 2.2, Jetpack Compose (custom pastel/glass design system), Hilt, Room, DataStore, Camera2 + EGL/GLES + MediaCodec, MediaPipe Face Landmarker + Selfie Segmenter (Snapchat-style 3D face mesh, UV-space makeup, mesh-warp reshape, 12 face lenses, swipeable LUT filters, virtual background), Media3 1.8 (Transformer/Effect/CompositionPlayer), Anthropic Java SDK (Claude via a server-side gateway), Supabase (auth, RLS sync, storage), Google Play Billing 8.
+- **Stack:** Kotlin 2.2, Jetpack Compose (custom pastel/glass design system), Hilt, Room, DataStore, Camera2 + EGL/GLES + MediaCodec, MediaPipe Face Landmarker + Selfie Segmenter (Snapchat-style 3D face mesh, UV-space makeup, mesh-warp reshape, 12 face lenses, 20 one-tap Snapchat-style makeup looks with illustrated thumbnails, swipeable LUT filters, virtual background), Media3 1.8 (Transformer/Effect/CompositionPlayer), Anthropic Java SDK (Claude via a server-side gateway), Supabase (auth, RLS sync, storage), Google Play Billing 8.
 - **Modules:** `core:*` foundations, `engine:*` (render, camera, audio, beauty, teleprompter, editor, ai), `platform:*` (auth, cloud, billing), `feature:*` screens. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 - **Build:** `./gradlew :app:assembleDebug` / `:app:assembleRelease`; tests: `./gradlew testDebugUnitTest`; on-device Maestro walkthrough: `maestro test .maestro/` ([docs](docs/dev/DEVICE_TESTS.md), CI results in the `device-tests` release).
 - **Downloads:** GitHub Releases → `latest-build` (built by [CI](.github/workflows/android.yml) on every push).

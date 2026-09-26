@@ -165,6 +165,8 @@
 
     <string name="camera_msg_video_only">Microphone is off — recording video only</string>
     <string name="camera_msg_nothing_recorded">Nothing was recorded</string>
+    <string name="camera_msg_take_lost_camera">The camera disconnected before the first frame was recorded, so there was nothing to save.</string>
+    <string name="camera_msg_take_lost_encoder">The video encoder stopped before the first frame was recorded, so there was nothing to save. Please try again.</string>
     <plurals name="camera_msg_recovered">
         <item quantity="one">%1$s interrupted recording was recovered</item>
         <item quantity="other">%1$s interrupted recordings were recovered</item>
@@ -174,7 +176,7 @@
     <string name="camera_warn_stopped_thermal">Recording stopped because the device got too hot. Your take was saved.</string>
     <string name="camera_warn_low_storage">Storage is almost full</string>
     <string name="camera_warn_stopped_storage">Recording stopped: storage is full. Your take was saved.</string>
-    <string name="camera_warn_stopped_camera">The camera disconnected. Your take was saved.</string>
+    <string name="camera_warn_stopped_camera">The camera disconnected — your take was saved up to that moment.</string>
     <string name="camera_warn_stopped_encoder">The encoder stopped. Everything up to that moment was saved.</string>
     <string name="camera_warn_audio_unavailable">Microphone unavailable — continuing with video only</string>
     <string name="camera_warn_audio_format">The microphone changed mid-take; the rest is recorded without audio</string>

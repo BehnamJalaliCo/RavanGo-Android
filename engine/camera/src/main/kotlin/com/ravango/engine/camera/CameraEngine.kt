@@ -135,8 +135,28 @@ enum class CameraWarning {
 
 sealed interface CameraEvent {
     data class RecordingFinished(val media: RecordedMedia) : CameraEvent
-    data class RecordingFailed(val kind: ErrorKind, val message: String? = null) : CameraEvent
+
+    /** Nothing playable could be saved. [reason] is why the take ended (e.g. the camera disconnected mid-take). */
+    data class RecordingFailed(val kind: ErrorKind, val message: String? = null, val reason: StopReason? = null) : CameraEvent
     data class Warning(val warning: CameraWarning) : CameraEvent
+
+    companion object {
+        /**
+         * Events for a take that ended for [reason]. The "stopped … your take was saved" warnings are only sent once
+         * the take really was saved ([media] != null); otherwise a [RecordingFailed] carries the reason.
+         */
+        fun forStoppedTake(reason: StopReason, media: RecordedMedia?, detail: String? = null): List<CameraEvent> {
+            if (media == null) return listOf(RecordingFailed(ErrorKind.UNKNOWN, detail ?: "nothing was recorded", reason))
+            val warning = when (reason) {
+                StopReason.THERMAL -> CameraWarning.STOPPED_THERMAL
+                StopReason.LOW_STORAGE -> CameraWarning.STOPPED_LOW_STORAGE
+                StopReason.CAMERA_ERROR -> CameraWarning.STOPPED_CAMERA_ERROR
+                StopReason.ENCODER_ERROR -> CameraWarning.STOPPED_ENCODER_ERROR
+                StopReason.USER, StopReason.LIFECYCLE -> null
+            }
+            return listOfNotNull(warning?.let(::Warning), RecordingFinished(media))
+        }
+    }
 }
 
 /**

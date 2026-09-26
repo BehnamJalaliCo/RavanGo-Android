@@ -95,4 +95,7 @@
     <string name="paywall_msg_failed_network">در حین خرید مشکل شبکه پیش آمد. لطفاً دوباره تلاش کن.</string>
     <string name="paywall_msg_restored_paid">خریدها بازیابی شد. طرحت فعال است.</string>
     <string name="paywall_msg_restored_none">خرید قبلی برای این حساب پیدا نشد.</string>
+    <string name="paywall_period_year">در سال</string>
+    <string name="paywall_period_month">در ماه</string>
+    <string name="paywall_period_once">یک‌بار</string>
 </resources>

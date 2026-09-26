@@ -252,7 +252,15 @@ class CameraViewModel @Inject constructor(
                     is CameraEvent.RecordingFinished -> Unit // saved by RecordingSaver
                     is CameraEvent.RecordingFailed -> {
                         _state.update { it.copy(postRecord = null) }
-                        _messages.trySend(StudioMessage.NothingRecorded)
+                        // Say why when the camera/encoder ended the take (not just "nothing was recorded").
+                        val reason = event.reason
+                        _messages.trySend(
+                            if (reason == StopReason.CAMERA_ERROR || reason == StopReason.ENCODER_ERROR) {
+                                StudioMessage.TakeLost(reason)
+                            } else {
+                                StudioMessage.NothingRecorded
+                            },
+                        )
                     }
                     is CameraEvent.Warning -> _messages.trySend(StudioMessage.Warning(event.warning))
                 }

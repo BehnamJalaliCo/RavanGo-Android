@@ -17,6 +17,7 @@ import com.ravango.core.common.device.ThermalMonitor
 import com.ravango.core.common.di.AppScopeExceptionHandler
 import com.ravango.core.common.di.ApplicationScope
 import com.ravango.core.common.di.IoDispatcher
+import com.ravango.core.common.diagnostics.Diagnostics
 import com.ravango.core.common.log.RgLog
 import com.ravango.core.common.result.ErrorKind
 import com.ravango.core.common.result.Outcome
@@ -55,6 +56,7 @@ import com.ravango.engine.camera.session.CameraSession
 import com.ravango.engine.camera.session.MeteringMath
 import com.ravango.engine.camera.session.RequestParams
 import com.ravango.engine.camera.session.SensorRect
+import com.ravango.engine.camera.session.SessionRecoveryPolicy
 import com.ravango.engine.camera.session.WhiteBalanceMath
 import com.ravango.engine.render.GlFrameProcessor
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -188,7 +190,7 @@ class Camera2Engine @Inject constructor(
     private var afRegion: SensorRect? = null
     private var aeRegion: SensorRect? = null
     private var aeLocked = false
-    private var retryAttempts = 0
+    private val recoveryPolicy = SessionRecoveryPolicy()
     private var configFallbackUsed = false
     private var lastLivePublishMs = 0L
     private var lastAutoIso = 0
@@ -229,7 +231,6 @@ class Camera2Engine @Inject constructor(
     private val recorderEvents = object : VideoRecorder.Events {
         override fun onRecorderFailure(error: Exception?) {
             RgLog.e(TAG, "recorder failure; stopping safely", error)
-            _events.tryEmit(CameraEvent.Warning(CameraWarning.STOPPED_ENCODER_ERROR))
             commandScope.launch { stopRecording(StopReason.ENCODER_ERROR) }
         }
 
@@ -279,7 +280,7 @@ class Camera2Engine @Inject constructor(
             requested = settings
             if (!started) {
                 started = true
-                retryAttempts = 0
+                recoveryPolicy.reset()
                 runCatching { manager?.registerAvailabilityCallback(availability, cameraHandler) }
             }
             configure()
@@ -300,7 +301,7 @@ class Camera2Engine @Inject constructor(
 
     override fun retry() = command {
         onCamera {
-            retryAttempts = 0
+            recoveryPolicy.reset()
             configFallbackUsed = false
             cameraHandler.removeCallbacks(retryRunnable)
             if (started) {
@@ -375,6 +376,9 @@ class Camera2Engine @Inject constructor(
                 stabilization = recordingCfg.stabilization,
                 mirrorFrontRecording = recordingCfg.mirrorRecording,
             )
+        } else if (recoveryPolicy.reducedStream) {
+            // The camera kept failing at this size: run a lighter stream (never during a recording).
+            validated = VideoModeSelector.capped(validated, caps, REDUCED_SHORT_SIDE, REDUCED_FPS)
         }
         if (caps.cameraId != activeCaps?.cameraId) {
             val zoom = (pendingLensZoom ?: 1f).coerceIn(caps.zoomRange)
@@ -480,6 +484,7 @@ class Camera2Engine @Inject constructor(
 
     private fun closeInternal() {
         started = false
+        recoveryPolicy.reset()
         cameraHandler.removeCallbacks(retryRunnable)
         runCatching { manager?.unregisterAvailabilityCallback(availability) }
         session?.close()
@@ -492,21 +497,36 @@ class Camera2Engine @Inject constructor(
         _previewFrame.value = null
     }
 
+    /**
+     * Camera thread. Publishes the error and, unless the policy gives up, schedules a reopen with backoff. Repeated
+     * device/configuration failures escalate to a minimal request, then a lighter stream (see [SessionRecoveryPolicy]);
+     * when it gives up the state stays an error without `retrying` so the UI offers a manual retry.
+     */
     private fun setError(kind: CameraErrorKind, message: String?, recoverable: Boolean) {
-        _state.value = CameraState.Error(kind, message, retrying = recoverable && started)
-        if (recoverable && started) scheduleRetry()
-    }
-
-    private fun scheduleRetry() {
-        retryAttempts++
-        if (retryAttempts > MAX_RETRIES) {
-            val st = _state.value
-            if (st is CameraState.Error) _state.value = st.copy(retrying = false)
+        cameraHandler.removeCallbacks(retryRunnable)
+        if (!started) {
+            _state.value = CameraState.Error(kind, message, retrying = false)
             return
         }
-        val delayMs = minOf(8_000L, 500L shl retryAttempts)
-        cameraHandler.removeCallbacks(retryRunnable)
-        cameraHandler.postDelayed(retryRunnable, delayMs)
+        val decision = recoveryPolicy.onError(kind, recoverable, SystemClock.elapsedRealtime())
+        val cameraId = configuredCameraId ?: activeCaps?.cameraId
+        when (decision.action) {
+            SessionRecoveryPolicy.Action.RETRY_MINIMAL_REQUEST -> Diagnostics.record(
+                TAG,
+                "camera $cameraId keeps failing ($kind: $message); falling back to template defaults + fps range " +
+                    "(dropping stabilization, HDR scene, AF/AE regions, manual exposure/focus/white balance, torch, zoom)",
+            )
+            SessionRecoveryPolicy.Action.RETRY_REDUCED_STREAM -> Diagnostics.record(
+                TAG,
+                "camera $cameraId still failing on the minimal request ($kind); limiting the stream to ${REDUCED_SHORT_SIDE}p$REDUCED_FPS",
+            )
+            SessionRecoveryPolicy.Action.GIVE_UP -> if (recoverable || kind == CameraErrorKind.CONFIGURATION) {
+                Diagnostics.record(TAG, "camera $cameraId: giving up after ${recoveryPolicy.failures} failures ($kind: $message)")
+            }
+            SessionRecoveryPolicy.Action.RETRY -> Unit
+        }
+        _state.value = CameraState.Error(kind, message, retrying = decision.retrying)
+        if (decision.retrying) cameraHandler.postDelayed(retryRunnable, decision.delayMs)
     }
 
     private fun reopenAfterError() {
@@ -521,7 +541,7 @@ class Camera2Engine @Inject constructor(
 
     private fun handleStreaming() {
         if (!started) return
-        retryAttempts = 0
+        recoveryPolicy.onStreaming(SystemClock.elapsedRealtime())
         _state.value = CameraState.Streaming(activeConfig())
     }
 
@@ -530,7 +550,8 @@ class Camera2Engine @Inject constructor(
         configuredCameraId = null
         val rec = _recording.value
         if (rec.isActive && rec.captureMode != CaptureMode.AUDIO_ONLY) {
-            _events.tryEmit(CameraEvent.Warning(CameraWarning.STOPPED_CAMERA_ERROR))
+            // Keep everything encoded so far: finalize the take now (the user is told once it is saved).
+            RgLog.w(TAG, "camera error ($kind) during a take; stopping and saving it")
             commandScope.launch { stopRecording(StopReason.CAMERA_ERROR) }
         }
         if (kind == CameraErrorKind.CONFIGURATION && !configFallbackUsed) {
@@ -763,11 +784,9 @@ class Camera2Engine @Inject constructor(
         val awbMode = com.ravango.engine.camera.capability.CapabilityDetector.WB_MAPPING
             .firstOrNull { it.first == c.whiteBalance && it.first in caps.whiteBalanceModes }?.second
             ?: CameraMetadata.CONTROL_AWB_MODE_AUTO
-        return RequestParams(
+        val params = RequestParams(
             fpsRange = VideoModeSelector.aeRangeFor(fps, caps.fpsRanges),
             stabilization = s.stabilization,
-            eisAvailable = caps.electronicStabilization,
-            oisAvailable = caps.opticalStabilization,
             hdrScene = s.hdr && HdrOption.SCENE_MODE in caps.hdrOptions,
             torch = s.flash == FlashMode.TORCH && caps.flashAvailable,
             zoomRatio = zoom,
@@ -778,7 +797,6 @@ class Camera2Engine @Inject constructor(
             afRegion = if (caps.maxAfRegions > 0) afRegion else null,
             aeRegion = if (caps.maxAeRegions > 0) aeRegion else null,
             aeLock = aeLocked,
-            aeLockAvailable = caps.aeLockAvailable,
             evIndex = c.exposureCompensation.coerceIn(caps.exposureCompensationRange),
             manualIso = iso,
             manualExposureNs = exposure,
@@ -786,7 +804,9 @@ class Camera2Engine @Inject constructor(
             awbMode = awbMode,
             awbGains = if (kelvin) WhiteBalanceMath.rggbGains(c.kelvin) else null,
             colorTransform = if (kelvin) lastColorTransform else null,
+            support = caps.requestSupport,
         )
+        return if (recoveryPolicy.minimalRequest) params.minimalCopy() else params
     }
 
     // =========================================================================================================
@@ -808,7 +828,6 @@ class Camera2Engine @Inject constructor(
         when (level) {
             ThermalLevel.CRITICAL -> if (rec.isActive && rec.captureMode != CaptureMode.AUDIO_ONLY) {
                 RgLog.w(TAG, "thermal critical; stopping recording gracefully")
-                _events.tryEmit(CameraEvent.Warning(CameraWarning.STOPPED_THERMAL))
                 commandScope.launch { stopRecording(StopReason.THERMAL) }
             }
             ThermalLevel.HOT -> if (rec.isActive && !warnedHot) {
@@ -880,14 +899,19 @@ class Camera2Engine @Inject constructor(
             val dir = File(storage.recordingsDir, RecordingRecovery.DIR_PREFIX + id).apply { mkdirs() }
             val name = "RavanGo_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".mp4"
             ActiveRecordings.add(id)
-            fun create(c: VideoCodec, bps: Int): Pair<VideoRecorder, Surface> {
+            fun create(c: VideoCodec, requestedBps: Int): Pair<VideoRecorder, Surface> {
                 val manifest = RecordingManifest(
                     id = id, createdAt = System.currentTimeMillis(), finalName = name, captureMode = mode,
                     width = out.width, height = out.height, frameRate = config.frameRate, videoMime = c.mimeType, hasAudio = withAudio,
                 )
-                val encoderName = encoders.encoderFor(c, out.width, out.height, config.frameRate)?.name
+                val encoderInfo = encoders.encoderFor(c, out.width, out.height, config.frameRate)
+                val software = encoderInfo?.let(EncoderSupport::isSoftware) ?: false
+                // Software encoders (emulators, some low-end devices) cannot sustain high bitrates in realtime.
+                val bps = VideoModeSelector.encoderBitrate(requestedBps, software)
+                if (bps != requestedBps) RgLog.i(TAG, "software encoder ${encoderInfo?.name}: bitrate ${requestedBps / 1000} → ${bps / 1000} kbps")
+                videoBps = bps
                 val recorder = VideoRecorder(
-                    dir, manifest, VideoEncoderConfig(c, out.width, out.height, config.frameRate, bps, encoderName),
+                    dir, manifest, VideoEncoderConfig(c, out.width, out.height, config.frameRate, bps, encoderInfo?.name),
                     audioBps, withAudio, audioEngine, recorderEvents,
                 )
                 return try {
@@ -968,32 +992,38 @@ class Camera2Engine @Inject constructor(
         _recording.update { it.copy(phase = RecordingPhase.FINALIZING) }
         monitorJob?.cancel()
         monitorJob = null
+        val video = recorder
         val media = withContext(io) {
             val audio = audioHandle
-            val video = recorder
-            when {
-                audio != null -> finishAudioOnly(audio, reason)
-                video != null -> finishVideo(video, status, reason)
-                else -> null
+            try {
+                when {
+                    audio != null -> finishAudioOnly(audio, reason)
+                    video != null -> finishVideo(video, status, reason)
+                    else -> null
+                }
+            } catch (e: Exception) {
+                // Never let a finalization problem wedge the studio in FINALIZING; segments stay for recovery.
+                RgLog.e(TAG, "finalizing the take failed", e)
+                null
             }
         }
         recorder = null
         audioHandle = null
         recordingConfig = null
         _recording.value = RecordingStatus()
-        if (media != null) {
-            _events.tryEmit(CameraEvent.RecordingFinished(media))
-        } else {
-            _events.tryEmit(CameraEvent.RecordingFailed(ErrorKind.UNKNOWN, "nothing was recorded"))
-        }
-        // A camera switch requested during recording can apply now.
-        if (reason == StopReason.USER) command { onCamera { if (started) configure() } }
+        val detail = if (media == null) video?.summary?.describe() else null
+        if (media == null) RgLog.w(TAG, "take ended ($reason) with nothing playable: ${detail ?: "no data"}")
+        CameraEvent.forStoppedTake(reason, media, detail).forEach { _events.tryEmit(it) }
+        // A camera switch (or a lighter fallback stream) requested during recording can apply now, unless the camera
+        // is in an error state: then its own backoff reopens it.
+        command { onCamera { if (started && _state.value !is CameraState.Error) configure() } }
         return media
     }
 
     private fun finishVideo(rec: VideoRecorder, status: RecordingStatus, reason: StopReason): RecordedMedia? {
         renderer?.stopEncoding()
-        rec.stop()
+        val summary = rec.stop()
+        RgLog.i(TAG, "take stopped ($reason): ${summary.describe()}")
         val manifest = rec.manifest
         val finalized = RecordingFinalizer.finalize(rec.dir, manifest, storage.recordingsDir)
         ActiveRecordings.remove(manifest.id)
@@ -1060,8 +1090,14 @@ class Camera2Engine @Inject constructor(
                 _recording.update { if (it.isActive) it.copy(durationUs = duration, bytesWritten = bytes, remainingSeconds = remaining) else it }
                 if (snapshot.totalBytes > 0 && snapshot.availableBytes < StorageSnapshot.RESERVE_BYTES) {
                     RgLog.w(TAG, "storage below reserve; stopping recording")
-                    _events.tryEmit(CameraEvent.Warning(CameraWarning.STOPPED_LOW_STORAGE))
                     commandScope.launch { stopRecording(StopReason.LOW_STORAGE) }
+                    break
+                }
+                // Video stall watchdog: an encoder (or camera/GPU pipeline) that stops producing frames must not
+                // silently turn the rest of the take into nothing — stop and save what was recorded.
+                if (rec != null && status.phase == RecordingPhase.RECORDING && rec.videoStalledMs() > VIDEO_STALL_MS) {
+                    Diagnostics.record(TAG, "no encoded video for ${rec.videoStalledMs()}ms; stopping the take to save it (${rec.summary.describe()})")
+                    commandScope.launch { stopRecording(StopReason.ENCODER_ERROR) }
                     break
                 }
                 if (remaining < LOW_STORAGE_WARN_SECONDS && !warnedLowStorage) {
@@ -1074,7 +1110,9 @@ class Camera2Engine @Inject constructor(
 
     private companion object {
         const val TAG = "CameraEngine"
-        const val MAX_RETRIES = 6
+        const val REDUCED_SHORT_SIDE = 720
+        const val REDUCED_FPS = 30
+        const val VIDEO_STALL_MS = 8_000L
         const val LIVE_PUBLISH_MS = 250L
         const val MONITOR_INTERVAL_MS = 250L
         const val STORAGE_CHECK_MS = 2_000L

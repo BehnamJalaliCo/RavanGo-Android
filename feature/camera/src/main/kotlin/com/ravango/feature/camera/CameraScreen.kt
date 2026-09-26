@@ -127,6 +127,7 @@ import com.ravango.engine.camera.CameraWarning
 import com.ravango.engine.camera.FocusMode
 import com.ravango.engine.camera.RecordingPhase
 import com.ravango.engine.camera.RecordingStatus
+import com.ravango.engine.camera.StopReason
 import com.ravango.engine.camera.capability.LensOption
 import com.ravango.engine.camera.capability.VideoModeSelector
 import com.ravango.engine.teleprompter.PrompterController
@@ -146,6 +147,9 @@ import com.ravango.feature.camera.ui.LastTakeThumbnail
 import com.ravango.feature.camera.ui.LensCarousel
 import com.ravango.feature.camera.ui.LensChips
 import com.ravango.feature.camera.ui.LensNameToast
+import com.ravango.feature.camera.ui.LensTrayActions
+import com.ravango.feature.camera.ui.LensTrayState
+import com.ravango.feature.camera.ui.rememberLensTray
 import com.ravango.feature.camera.ui.LensesButton
 import com.ravango.feature.camera.ui.LevelIndicator
 import com.ravango.feature.camera.ui.LevelMeterBar
@@ -393,6 +397,21 @@ internal fun CameraStudioScreen(
             )
         }
 
+        // ADDED — looks in the lens tray (shared with the Beauty panel).
+        val lensTray = rememberLensTray()
+        val trayActions = remember(lensTray.viewModel) {
+            LensTrayActions(
+                onLook = lensTray.viewModel::applyLook,
+                onClearLook = lensTray.viewModel::clearLook,
+                onLookIntensity = lensTray.viewModel::setLookIntensity,
+                onFilter = { f -> viewModel.setFilter(f) },
+                onFilterIntensity = viewModel::setFilterIntensity,
+                onToggleFavourite = lensTray.viewModel::toggleFavourite,
+                onRecent = lensTray.viewModel::recordRecent,
+                onRequirePro = onRequirePro,
+            )
+        }
+
         CameraStudioContent(
             state = state,
             chrome = StudioChrome(
@@ -458,6 +477,8 @@ internal fun CameraStudioScreen(
                 if (prompterShown) PrompterOverlay(prompter!!, controller!!, topInset = 72.dp, onHide = { viewModel.setPrompterVisible(false) })
             },
             railTopPadding = if (prompterShown) screenHeight * 0.2f else 0.dp,
+            tray = LensTrayState(looks = lensTray.looks, filter = state.effects.filter, filterIntensity = state.effects.filterIntensity),
+            trayActions = trayActions,
         )
 
         // ---------------- sheets ----------------
@@ -588,6 +609,8 @@ internal fun CameraStudioContent(
     modifier: Modifier = Modifier,
     prompter: @Composable () -> Unit = {},
     railTopPadding: androidx.compose.ui.unit.Dp = 0.dp,
+    tray: LensTrayState = LensTrayState.LensesOnly,
+    trayActions: LensTrayActions = LensTrayActions(),
 ) {
     val caps = state.capabilities
     val video = state.mode == StudioMode.VIDEO
@@ -723,7 +746,8 @@ internal fun CameraStudioContent(
             // The lens under the shutter ring while browsing (may be a locked one that is not applied).
             var focusedLens by remember(lensMode) { mutableStateOf(state.effects.lens) }
             val focusedLocked = focusedLens?.let { !EffectsGating.lensAllowed(it, state.entitlements) } == true
-            AnimatedVisibility(lensMode || (video && state.effects.lens != null && !state.isRecording), enter = fadeIn(), exit = fadeOut()) {
+            // In the tray, the carousel shows its own header (name, hints, strength).
+            AnimatedVisibility(!lensMode && video && state.effects.lens != null && !state.isRecording, enter = fadeIn(), exit = fadeOut()) {
                 LensNameToast(
                     lens = if (lensMode) focusedLens else state.effects.lens,
                     locked = lensMode && focusedLocked,
@@ -759,6 +783,10 @@ internal fun CameraStudioContent(
                             focusedLens = lens
                             actions.onLens(lens)
                         },
+                        tray = tray,
+                        trayActions = trayActions,
+                        needsFace = state.effectsStatus.lensNeedsFace,
+                        lensUnavailable = state.effectsStatus.lensUnavailable,
                     ) {
                         RecordButton(
                             recording = false,
@@ -796,7 +824,7 @@ internal fun CameraStudioContent(
                             onClick = actions.onRecord,
                         )
                         Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                            if (video && !state.isRecording) LensesButton(state.effects.lens != null, rotation, actions.onToggleLenses)
+                            if (video && !state.isRecording) LensesButton(state.effects.lens != null || tray.looks?.activeId != null, rotation, actions.onToggleLenses)
                         }
                         Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                             if (video && state.facings.size > 1) FlipButton(enabled = !state.isRecording, iconRotation = rotation, onClick = actions.onFlip)
@@ -873,6 +901,9 @@ private fun messageText(context: Context, message: StudioMessage): String = when
     is StudioMessage.Error -> context.getString(message.kind.messageRes())
     StudioMessage.MicUnavailableVideoOnly -> context.getString(R.string.camera_msg_video_only)
     StudioMessage.NothingRecorded -> context.getString(R.string.camera_msg_nothing_recorded)
+    is StudioMessage.TakeLost -> context.getString(
+        if (message.reason == StopReason.CAMERA_ERROR) R.string.camera_msg_take_lost_camera else R.string.camera_msg_take_lost_encoder,
+    )
     StudioMessage.BackgroundPhotoFailed -> context.getString(R.string.camera_bg_photo_failed)
     is StudioMessage.Recovered -> context.resources.getQuantityString(R.plurals.camera_msg_recovered, message.count, message.count.toString().localizeDigits())
     is StudioMessage.Warning -> context.getString(
@@ -904,7 +935,12 @@ private fun CameraErrorCard(error: CameraState.Error, onRetry: () -> Unit, modif
         CameraErrorKind.DISABLED -> R.string.camera_error_disabled_title to R.string.camera_error_disabled_message
         CameraErrorKind.PERMISSION -> R.string.camera_error_permission_title to R.string.camera_permission_camera_message
         CameraErrorKind.NO_CAMERA -> R.string.camera_no_camera_title to R.string.camera_no_camera_message
-        CameraErrorKind.CONFIGURATION -> R.string.camera_error_config_title to R.string.camera_error_config_message
+        // While the engine still retries (lighter request/stream) a rejected session is not yet "unsupported".
+        CameraErrorKind.CONFIGURATION -> if (error.retrying) {
+            R.string.camera_error_generic_title to R.string.camera_error_generic_message
+        } else {
+            R.string.camera_error_config_title to R.string.camera_error_config_message
+        }
         else -> R.string.camera_error_generic_title to R.string.camera_error_generic_message
     }
     GlassSurface(modifier.fillMaxWidth(), tint = Color(0xE6141220)) {

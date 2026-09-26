@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Lens tray categories (under the carousel) -->
+    <string name="camera_tray_recents">Recents</string>
+    <string name="camera_tray_favorites">Favorites</string>
+    <string name="camera_tray_for_you">For you</string>
+    <string name="camera_tray_makeup">Makeup</string>
+    <string name="camera_tray_beauty">Beauty</string>
+    <string name="camera_tray_fun">Fun</string>
+    <string name="camera_tray_filters">Filters</string>
+    <string name="camera_tray_categories">Lens categories</string>
+
+    <string name="camera_tray_none">None</string>
+    <string name="camera_tray_clear">Clear</string>
+    <string name="camera_tray_look_strength">Look strength</string>
+    <string name="camera_tray_empty_recents">Looks and lenses you use show up here</string>
+    <string name="camera_tray_empty_favorites">Long-press any look or lens to add it here</string>
+    <string name="camera_tray_hint_look">Drag to set the strength · long-press to favourite</string>
+    <string name="camera_tray_hint_look_pro">Pro look · tap the shutter ring to unlock</string>
+    <string name="camera_tray_hint_combine">Stacks with your lens — pick one under Fun</string>
+    <string name="camera_tray_favorite_add">Add to favourites</string>
+    <string name="camera_tray_favorite_remove">Remove from favourites</string>
+    <string name="camera_tray_look_active">Look: %1$s</string>
+</resources>

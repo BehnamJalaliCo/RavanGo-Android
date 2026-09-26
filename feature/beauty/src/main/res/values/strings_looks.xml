@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Complete makeup looks (one-tap, Snapchat-style) -->
+    <string name="beauty_look_bold_glam">Bold Glam</string>
+    <string name="beauty_look_soft_glam">Soft Glam</string>
+    <string name="beauty_look_natural">Natural</string>
+    <string name="beauty_look_persian_bridal">Persian Bride</string>
+    <string name="beauty_look_arabic_glam">Arabic Glam</string>
+    <string name="beauty_look_k_beauty">K-Beauty</string>
+    <string name="beauty_look_latte">Latte</string>
+    <string name="beauty_look_clean_girl">Clean Girl</string>
+    <string name="beauty_look_rosy_doll">Rosy Doll</string>
+    <string name="beauty_look_smokey_night">Smokey Night</string>
+    <string name="beauty_look_siren_eyes">Siren Eyes</string>
+    <string name="beauty_look_bronzed_summer">Bronzed Summer</string>
+    <string name="beauty_look_peach_fresh">Peach Fresh</string>
+    <string name="beauty_look_berry_lips">Berry Lips</string>
+    <string name="beauty_look_nude_matte">Nude Matte</string>
+    <string name="beauty_look_cool_silver">Cool Silver</string>
+    <string name="beauty_look_goth">Goth</string>
+    <string name="beauty_look_sunset_eyes">Sunset Eyes</string>
+    <string name="beauty_look_freckled_natural">Freckled</string>
+    <string name="beauty_look_hollywood_red">Classic Red</string>
+
+    <string name="beauty_look_none">None</string>
+    <string name="beauty_look_hint">Tap a look — skin, shape and makeup in one go</string>
+    <string name="beauty_look_hint_edit">Drag to set the strength, or customise every layer</string>
+    <string name="beauty_look_hint_customised">You fine-tuned this look — save it to keep it</string>
+    <string name="beauty_look_hint_locked">A Pro look — upgrade to use it</string>
+    <string name="beauty_look_intensity">Look strength</string>
+    <string name="beauty_look_clear">Clear</string>
+    <string name="beauty_look_customise">Customise</string>
+    <string name="beauty_look_customised">Customised</string>
+    <string name="beauty_look_save">Save as my look</string>
+    <string name="beauty_look_save_title">Name your look</string>
+    <string name="beauty_look_saved">Saved to My looks</string>
+    <string name="beauty_look_delete">Delete look</string>
+    <string name="beauty_look_favourite_add">Add to favourites</string>
+    <string name="beauty_look_favourite_remove">Remove from favourites</string>
+    <string name="beauty_look_filter_all">All</string>
+    <string name="beauty_look_filter_full">Full glam</string>
+    <string name="beauty_look_filter_light">Fresh &amp; light</string>
+    <string name="beauty_look_filter_favourites">Favourites</string>
+    <string name="beauty_look_filter_mine">My looks</string>
+    <string name="beauty_look_empty_favourites">Long-press a look to add it to your favourites</string>
+    <string name="beauty_look_empty_mine">Customise a look and save it — it will appear here</string>
+</resources>

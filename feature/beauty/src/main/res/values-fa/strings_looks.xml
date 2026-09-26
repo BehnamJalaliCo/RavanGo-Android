@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- استایل‌های کامل آرایش (یک‌لمسی، مثل اسنپ‌چت) -->
+    <string name="beauty_look_bold_glam">گلم جسورانه</string>
+    <string name="beauty_look_soft_glam">گلم ملایم</string>
+    <string name="beauty_look_natural">طبیعی</string>
+    <string name="beauty_look_persian_bridal">عروس ایرانی</string>
+    <string name="beauty_look_arabic_glam">گلم عربی</string>
+    <string name="beauty_look_k_beauty">کی‌بیوتی</string>
+    <string name="beauty_look_latte">لاته</string>
+    <string name="beauty_look_clean_girl">کلین‌گرل</string>
+    <string name="beauty_look_rosy_doll">عروسکی صورتی</string>
+    <string name="beauty_look_smokey_night">شب دودی</string>
+    <string name="beauty_look_siren_eyes">چشم سایرن</string>
+    <string name="beauty_look_bronzed_summer">برنزهٔ تابستانی</string>
+    <string name="beauty_look_peach_fresh">هلویی</string>
+    <string name="beauty_look_berry_lips">لب تمشکی</string>
+    <string name="beauty_look_nude_matte">نود مات</string>
+    <string name="beauty_look_cool_silver">نقره‌ای سرد</string>
+    <string name="beauty_look_goth">گاتیک</string>
+    <string name="beauty_look_sunset_eyes">چشم غروب</string>
+    <string name="beauty_look_freckled_natural">کک‌ومکی</string>
+    <string name="beauty_look_hollywood_red">قرمز کلاسیک</string>
+
+    <string name="beauty_look_none">بدون استایل</string>
+    <string name="beauty_look_hint">یک استایل را لمس کنید؛ پوست، فرم صورت و آرایش یک‌جا</string>
+    <string name="beauty_look_hint_edit">با اسلایدر شدت را تنظیم کنید یا هر لایه را شخصی کنید</string>
+    <string name="beauty_look_hint_customised">این استایل را شخصی کرده‌اید؛ برای نگه‌داشتن، ذخیره‌اش کنید</string>
+    <string name="beauty_look_hint_locked">استایل حرفه‌ای؛ برای استفاده ارتقا دهید</string>
+    <string name="beauty_look_intensity">شدت استایل</string>
+    <string name="beauty_look_clear">حذف</string>
+    <string name="beauty_look_customise">شخصی‌سازی</string>
+    <string name="beauty_look_customised">شخصی‌شده</string>
+    <string name="beauty_look_save">ذخیره به‌عنوان استایل من</string>
+    <string name="beauty_look_save_title">نام استایل</string>
+    <string name="beauty_look_saved">در «استایل‌های من» ذخیره شد</string>
+    <string name="beauty_look_delete">حذف استایل</string>
+    <string name="beauty_look_favourite_add">افزودن به علاقه‌مندی‌ها</string>
+    <string name="beauty_look_favourite_remove">حذف از علاقه‌مندی‌ها</string>
+    <string name="beauty_look_filter_all">همه</string>
+    <string name="beauty_look_filter_full">گلم کامل</string>
+    <string name="beauty_look_filter_light">سبک و طبیعی</string>
+    <string name="beauty_look_filter_favourites">علاقه‌مندی‌ها</string>
+    <string name="beauty_look_filter_mine">استایل‌های من</string>
+    <string name="beauty_look_empty_favourites">روی هر استایل انگشت نگه دارید تا به علاقه‌مندی‌ها اضافه شود</string>
+    <string name="beauty_look_empty_mine">یک استایل را شخصی کنید و ذخیره کنید تا این‌جا بیاید</string>
+</resources>

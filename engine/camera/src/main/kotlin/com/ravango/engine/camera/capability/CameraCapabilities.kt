@@ -5,6 +5,7 @@ import com.ravango.core.model.StabilizationMode
 import com.ravango.core.model.VideoCodec
 import com.ravango.core.model.VideoSize
 import com.ravango.core.model.WhiteBalanceMode
+import com.ravango.engine.camera.session.RequestSupport
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -105,6 +106,8 @@ data class CameraCapabilities(
     val activeArray: SensorArea,
     /** SENSOR_INFO_TIMESTAMP_SOURCE == REALTIME (elapsedRealtimeNanos base). */
     val timestampRealtime: Boolean,
+    /** Request keys/values this camera advertises; every capture request is gated by it (see RequestPlanner). */
+    val requestSupport: RequestSupport = RequestSupport(),
 ) {
     /** Front cameras without a flash unit can light the face with the screen instead. */
     val screenFlash: Boolean get() = facing == LensFacing.FRONT

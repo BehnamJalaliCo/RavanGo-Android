@@ -62,9 +62,24 @@ object VideoModeSelector {
         return h in STANDARD_SHORT_SIDES && abs(w.toFloat() / h - SIXTEEN_NINE) < 0.01f
     }
 
+    /** Largest short side / frame rate / bitrate a software encoder (OMX.google.*, c2.android.*) is asked to sustain. */
+    const val SOFTWARE_MAX_SHORT_SIDE = 720
+    const val SOFTWARE_MAX_FPS = 30
+    const val SOFTWARE_MAX_BITRATE = 5_000_000
+
+    fun withinSoftwareEncoderCap(size: VideoSize, fps: Int): Boolean = size.shortSide <= SOFTWARE_MAX_SHORT_SIDE && fps <= SOFTWARE_MAX_FPS
+
+    /** Bitrate for an encoder: hardware encoders keep [bitrate]; software ones are capped to what they can sustain. */
+    fun encoderBitrate(bitrate: Int, softwareEncoder: Boolean): Int = if (softwareEncoder) min(bitrate, SOFTWARE_MAX_BITRATE) else bitrate
+
     /**
      * Builds the list of recordable modes. [encoderSupports] must answer for the exact output dimensions
      * (both orientations are checked because portrait aspect ratios produce portrait output).
+     *
+     * [hardwareEncoderSupports] answers the same for hardware encoders only: a codec that only a software encoder
+     * can handle is offered up to 720p30 ([withinSoftwareEncoderCap]) — software encoders cannot keep up with
+     * 1080p+ in realtime, which starves the pipeline and loses takes. When that leaves nothing, the lightest mode is
+     * still offered so the camera stays usable.
      */
     fun buildModes(
         streamSizes: List<VideoSize>,
@@ -72,20 +87,57 @@ object VideoModeSelector {
         minFrameDurationNs: (VideoSize) -> Long,
         codecs: Set<VideoCodec>,
         encoderSupports: (codec: VideoCodec, width: Int, height: Int, fps: Int) -> Boolean,
+        hardwareEncoderSupports: (codec: VideoCodec, width: Int, height: Int, fps: Int) -> Boolean = encoderSupports,
     ): List<VideoMode> {
-        val sizes = streamSizes.filter(::isStandardSize).distinct().sortedDescending()
+        val standard = streamSizes.filter(::isStandardSize).distinct().sortedDescending()
+        val first = collectModes(standard, streamSizes, fpsRanges, minFrameDurationNs, codecs, encoderSupports, hardwareEncoderSupports)
+        val softwareLimited = first.uncapped.sumOf { it.codecs.size } != first.modes.sumOf { it.codecs.size }
+        val software720 = VideoSize(1280, 720)
+        // Software-limited and the camera has no 720p stream: record 720p from a larger stream (the GL pipeline scales).
+        val result = if (softwareLimited && standard.none { it.shortSide == SOFTWARE_MAX_SHORT_SIDE } && standard.any { it.shortSide > SOFTWARE_MAX_SHORT_SIDE }) {
+            collectModes(standard + software720, streamSizes, fpsRanges, minFrameDurationNs, codecs, encoderSupports, hardwareEncoderSupports)
+        } else {
+            first
+        }
+        if (result.modes.isEmpty() && result.uncapped.isNotEmpty()) {
+            return listOf(result.uncapped.minWith(compareBy<VideoMode> { it.size.pixels.toLong() * it.fps }))
+        }
+        return result.modes
+    }
+
+    private class ModeLists(val modes: List<VideoMode>, val uncapped: List<VideoMode>)
+
+    @Suppress("LongParameterList")
+    private fun collectModes(
+        sizes: List<VideoSize>,
+        streamSizes: List<VideoSize>,
+        fpsRanges: List<Pair<Int, Int>>,
+        minFrameDurationNs: (VideoSize) -> Long,
+        codecs: Set<VideoCodec>,
+        encoderSupports: (codec: VideoCodec, width: Int, height: Int, fps: Int) -> Boolean,
+        hardwareEncoderSupports: (codec: VideoCodec, width: Int, height: Int, fps: Int) -> Boolean,
+    ): ModeLists {
         val modes = ArrayList<VideoMode>()
+        val uncapped = ArrayList<VideoMode>()
         for (size in sizes) {
             val longSide = max(size.width, size.height)
             val shortSide = min(size.width, size.height)
-            for (fps in frameRatesFor(fpsRanges, minFrameDurationNs(size))) {
-                val supported = codecs.filterTo(LinkedHashSet()) { codec ->
+            val landscape = VideoSize(longSide, shortSide)
+            val stream = if (streamSizes.any { it == landscape }) landscape else streamSizeFor(landscape, streamSizes)
+            for (fps in frameRatesFor(fpsRanges, minFrameDurationNs(stream))) {
+                val encodable = codecs.filterTo(LinkedHashSet()) { codec ->
                     encoderSupports(codec, longSide, shortSide, fps) && encoderSupports(codec, shortSide, longSide, fps)
                 }
-                if (supported.isNotEmpty()) modes += VideoMode(VideoSize(longSide, shortSide), fps, supported)
+                if (encodable.isEmpty()) continue
+                uncapped += VideoMode(landscape, fps, encodable)
+                val sustainable = encodable.filterTo(LinkedHashSet()) { codec ->
+                    withinSoftwareEncoderCap(landscape, fps) ||
+                        (hardwareEncoderSupports(codec, longSide, shortSide, fps) && hardwareEncoderSupports(codec, shortSide, longSide, fps))
+                }
+                if (sustainable.isNotEmpty()) modes += VideoMode(landscape, fps, sustainable)
             }
         }
-        return modes
+        return ModeLists(modes, uncapped)
     }
 
     /**
@@ -177,6 +229,22 @@ object VideoModeSelector {
             flash = validateFlash(settings.flash, caps),
             timerSeconds = TIMER_OPTIONS.minBy { abs(it - settings.timerSeconds) },
         )
+    }
+
+    /**
+     * [settings] limited to at most [maxShortSide]p at [maxFps] (the closest supported mode below the limit), for a
+     * camera that keeps failing at the requested size. Unchanged when already within the limit or nothing fits.
+     */
+    fun capped(settings: CameraSettings, caps: CameraCapabilities, maxShortSide: Int, maxFps: Int): CameraSettings {
+        if (settings.resolution.shortSide <= maxShortSide && settings.frameRate <= maxFps) return settings
+        val candidates = caps.videoModes.filter { it.size.shortSide <= maxShortSide && it.fps <= maxFps }
+        val mode = nearestMode(candidates, settings.resolution, settings.frameRate) ?: return settings
+        val codec = when {
+            settings.codec in mode.codecs -> settings.codec
+            VideoCodec.H264 in mode.codecs -> VideoCodec.H264
+            else -> mode.codecs.first()
+        }
+        return settings.copy(resolution = mode.size, frameRate = mode.fps, codec = codec)
     }
 
     fun validateStabilization(requested: StabilizationMode, available: List<StabilizationMode>): StabilizationMode = when {

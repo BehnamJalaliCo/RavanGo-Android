@@ -4,6 +4,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
+import com.ravango.core.designsystem.motion.RgNavDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.ravango.core.navigation.HomeRoute
@@ -15,6 +16,7 @@ const val PICKED_SCRIPT_ID_KEY = "picked_script_id"
 /** Registers this feature's destinations. Navigation to other features uses routes from :core:navigation. */
 fun NavGraphBuilder.homeDestinations(navController: NavHostController) {
     composable<HomeRoute> { entry ->
+        RgNavDestination(this) {
         // Teleprompter quick action: Scripts (pick mode) returns the chosen id here; open the prompter with it.
         val picked by entry.savedStateHandle.getStateFlow<String?>(PICKED_SCRIPT_ID_KEY, null).collectAsStateWithLifecycle()
         LaunchedEffect(picked) {
@@ -23,5 +25,6 @@ fun NavGraphBuilder.homeDestinations(navController: NavHostController) {
             navController.navigate(TeleprompterRoute(id)) { launchSingleTop = true }
         }
         HomeDestination(onNavigate = { route -> navController.navigate(route) { launchSingleTop = true } })
+        }
     }
 }

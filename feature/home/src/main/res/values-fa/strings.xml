@@ -58,4 +58,8 @@
         <item quantity="other">حدود %1$s دقیقه خواندن</item>
     </plurals>
     <string name="home_read_under_minute">کمتر از یک دقیقه</string>
+    <string name="home_greeting_with_name">%1$s، %2$s</string>
+    <string name="home_headline">امروز چه می‌سازیم؟</string>
+    <string name="home_start_recording">شروع ضبط</string>
+    <string name="home_tools">ابزارها</string>
 </resources>

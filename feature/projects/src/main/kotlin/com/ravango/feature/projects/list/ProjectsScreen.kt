@@ -126,8 +126,14 @@ import com.ravango.feature.projects.common.ProjectThumbnail
 import com.ravango.feature.projects.common.aspectLabel
 import com.ravango.feature.projects.common.currentLocale
 import com.ravango.feature.projects.common.formatRelativeTime
-import com.ravango.feature.projects.common.rememberEntranceActive
-import com.ravango.feature.projects.common.staggeredEntrance
+import com.ravango.core.designsystem.component.RgDialog
+import com.ravango.core.designsystem.component.SkeletonCard
+import com.ravango.core.designsystem.motion.RgEnter
+import com.ravango.core.designsystem.motion.RgExit
+import com.ravango.core.designsystem.motion.SharedKeys
+import com.ravango.core.designsystem.motion.rememberEntranceActive
+import com.ravango.core.designsystem.motion.rgSharedBounds
+import com.ravango.core.designsystem.motion.staggeredEntrance
 import kotlinx.coroutines.launch
 import java.io.File
 import com.ravango.core.ui.R as UiR
@@ -275,7 +281,7 @@ internal fun ProjectsContent(
         },
         floatingActionButton = {
             val libraryEmpty = !state.loading && state.totalProjects == 0
-            AnimatedVisibility(!state.selectionMode && !libraryEmpty, enter = scaleIn() + fadeIn(), exit = scaleOut() + fadeOut()) {
+            AnimatedVisibility(!state.selectionMode && !libraryEmpty, enter = RgEnter.rise(), exit = RgExit.sink()) {
                 RgPrimaryButton(
                     text = stringResource(R.string.projects_import),
                     onClick = onImport,
@@ -296,7 +302,7 @@ internal fun ProjectsContent(
         ) {
             item(key = "controls", span = { GridItemSpan(maxLineSpan) }) {
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-                    AnimatedVisibility(searchOpen, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+                    AnimatedVisibility(searchOpen, enter = RgEnter.expand(), exit = RgExit.collapse()) {
                         RgTextField(
                             value = state.query,
                             onValueChange = onQuery,
@@ -330,10 +336,7 @@ internal fun ProjectsContent(
 
             when {
                 state.loading -> items(4, key = { "placeholder$it" }) {
-                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                        ShimmerBox(Modifier.fillMaxWidth().aspectRatio(0.8f), RoundedCornerShape(Radius.lg))
-                        ShimmerBox(Modifier.fillMaxWidth(0.7f).height(14.dp))
-                    }
+                    SkeletonCard(thumbnailAspect = 0.8f)
                 }
                 state.items.isEmpty() -> item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
                     ProjectsEmpty(state, onImport)
@@ -474,6 +477,8 @@ private fun ProjectCard(
             Modifier
                 .fillMaxWidth()
                 .aspectRatio(0.8f)
+                // The thumbnail morphs into the editor's preview (container transform).
+                .rgSharedBounds(SharedKeys.project(project.id), shape)
                 .clip(shape)
                 .then(if (selected) Modifier.border(3.dp, colors.accent, shape) else Modifier.border(1.dp, colors.outline, shape)),
         ) {
@@ -508,7 +513,7 @@ private fun ProjectCard(
 @Composable
 private fun SelectionCheck(visible: Boolean, selected: Boolean, modifier: Modifier = Modifier) {
     val colors = RgTheme.colors
-    AnimatedVisibility(visible, modifier, enter = scaleIn() + fadeIn(), exit = scaleOut() + fadeOut()) {
+    AnimatedVisibility(visible, modifier, enter = RgEnter.pop(), exit = RgExit.pop()) {
         Box(
             Modifier
                 .size(26.dp)
@@ -525,7 +530,7 @@ private fun SelectionCheck(visible: Boolean, selected: Boolean, modifier: Modifi
 /** Status dot colors tuned to read on the dark frosted overlay pill. */
 private fun statusColor(status: ProjectStatus): Color = when (status) {
     ProjectStatus.RECORDED -> Palette.Butter400
-    ProjectStatus.EDITING -> Palette.Lavender300
+    ProjectStatus.EDITING -> Palette.Blue300
     ProjectStatus.EXPORTED -> Palette.Mint400
 }
 
@@ -536,7 +541,7 @@ private fun OverlayPill(text: String, modifier: Modifier = Modifier, dot: Color?
         modifier
             .height(22.dp)
             .clip(RoundedCornerShape(Radius.pill))
-            .background(Color.Black.copy(alpha = 0.45f))
+            .background(Palette.Ink.copy(alpha = 0.5f))
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -592,29 +597,29 @@ private fun ProjectMenuSheet(
 private fun RenameDialog(initial: String, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
     val colors = RgTheme.colors
     var text by rememberSaveable { mutableStateOf(initial) }
-    AlertDialog(
+    RgDialog(
         onDismissRequest = onDismiss,
-        containerColor = colors.backgroundElevated,
-        shape = RoundedCornerShape(Radius.xl),
-        title = { Text(stringResource(R.string.projects_rename_title), style = MaterialTheme.typography.titleLarge) },
-        text = {
-            RgTextField(
-                value = text,
-                onValueChange = { text = it.take(120) },
-                placeholder = stringResource(R.string.projects_rename_hint),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { if (text.isNotBlank()) onConfirm(text) }),
-            )
+        title = stringResource(R.string.projects_rename_title),
+        icon = Icons.Rounded.DriveFileRenameOutline,
+        buttons = { dismiss ->
+            RgTextButton(stringResource(UiR.string.action_cancel), { dismiss(onDismiss) }, color = colors.textSecondary)
+            RgPrimaryButton(stringResource(UiR.string.action_save), { dismiss { onConfirm(text) } }, enabled = text.isNotBlank(), size = com.ravango.core.designsystem.component.RgButtonSize.MEDIUM)
         },
-        confirmButton = { RgTextButton(stringResource(UiR.string.action_save), { onConfirm(text) }, enabled = text.isNotBlank()) },
-        dismissButton = { RgTextButton(stringResource(UiR.string.action_cancel), onDismiss, color = colors.textSecondary) },
-    )
+    ) {
+        RgTextField(
+            value = text,
+            onValueChange = { text = it.take(120) },
+            placeholder = stringResource(R.string.projects_rename_hint),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { if (text.isNotBlank()) onConfirm(text) }),
+        )
+    }
 }
 
 /** Importing overlay shared by the grid screen. */
 @Composable
 internal fun ImportingOverlay(visible: Boolean) {
-    AnimatedVisibility(visible, enter = fadeIn(), exit = fadeOut()) {
+    AnimatedVisibility(visible, enter = RgEnter.fade(), exit = RgExit.fade()) {
         // Swallows touches so nothing underneath is triggered while media is prepared.
         Box(Modifier.fillMaxSize().background(RgTheme.colors.scrim).pointerInput(Unit) { detectTapGestures { } }, contentAlignment = Alignment.Center) {
             GlassSurface {
