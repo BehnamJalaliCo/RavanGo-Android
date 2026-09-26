@@ -350,7 +350,7 @@ class BeautyViewModel @Inject constructor(
                     presetRepository.customBeautyPresetCount() >= entitlements.maxSavedPresets
                 ) {
                     events.send(BeautyEvent.RequirePro(ProFeature.UNLIMITED_PRESETS))
-                    return@launch
+                    return@launchSafely
                 }
                 val saved = presetRepository.saveBeautyPreset(clean, state.copy(enabled = true))
                 local.update { it.copy(activePresetId = saved.id) }
