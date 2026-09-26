@@ -89,7 +89,7 @@ fun RgPrimaryButton(
     Box(
         modifier
             .defaultMinSize(minHeight = size.height)
-            .softShadow(if (enabled && size >= RgButtonSize.LARGE) 12.dp else if (enabled) 6.dp else 0.dp, PillShape, colors.accent)
+            .softShadow(if (enabled && size >= RgButtonSize.LARGE) 14.dp else if (enabled) 6.dp else 0.dp, PillShape, if (brush == null) colors.accentGlow else colors.shadowTint)
             .clip(PillShape)
             .then(if (enabled) Modifier.background(brush ?: colors.ctaGradient) else Modifier.background(colors.surfaceMuted))
             .pressable(
@@ -240,7 +240,9 @@ fun RgIconButton(
     }
 }
 
-/** Small rounded label with a gradient, used to mark Pro features. Fixed 20dp height so it centers in any row. */
+/**
+ * Small gold label marking Pro features (dark ink on gold, ≥8:1). Fixed 20dp height so it centers in any row.
+ */
 @Composable
 fun ProBadge(modifier: Modifier = Modifier, text: String = "PRO") {
     Box(
@@ -254,7 +256,7 @@ fun ProBadge(modifier: Modifier = Modifier, text: String = "PRO") {
         Text(
             text,
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 0.06.em, lineHeight = 14.sp),
-            color = Color.White,
+            color = RgTheme.colors.onPro,
             maxLines = 1,
         )
     }

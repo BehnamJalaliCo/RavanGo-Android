@@ -58,4 +58,8 @@
         <item quantity="other">~%1$s min read</item>
     </plurals>
     <string name="home_read_under_minute">under a minute</string>
+    <string name="home_greeting_with_name">%1$s, %2$s</string>
+    <string name="home_headline">What are we making today?</string>
+    <string name="home_start_recording">Start recording</string>
+    <string name="home_tools">Tools</string>
 </resources>

@@ -1,6 +1,7 @@
 package com.ravango.feature.editor
 
 import androidx.navigation.NavGraphBuilder
+import com.ravango.core.designsystem.motion.RgNavDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
@@ -13,12 +14,14 @@ import com.ravango.feature.editor.export.ExportScreen
 /** Registers this feature's destinations. Navigation to other features uses routes from :core:navigation. */
 fun NavGraphBuilder.editorDestinations(navController: NavHostController) {
     composable<EditorRoute> {
+        RgNavDestination(this) {
         EditorScreen(
             onBack = { navController.popBackStack() },
             onExport = { projectId -> navController.navigate(ExportRoute(projectId)) },
             onRequirePro = { feature -> navController.navigate(PaywallRoute(source = "editor", feature = feature.name)) },
             onOpenSettings = { navController.navigate(SettingsRoute) },
         )
+        }
     }
     composable<ExportRoute> { entry ->
         val route = entry.toRoute<ExportRoute>()
