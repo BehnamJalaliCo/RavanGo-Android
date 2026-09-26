@@ -88,11 +88,8 @@ jobs:
       - name: Collect outputs
         run: |
           mkdir -p dist
-          for f in app/build/outputs/apk/release/*.apk; do
-            abi=$(basename "$f" .apk | sed -e 's/^app-//' -e 's/-release$//')
-            cp "$f" "dist/RavanGo-release-$abi.apk"
-          done
-          cp app/build/outputs/apk/debug/app-universal-debug.apk dist/RavanGo-debug-universal.apk
+          cp app/build/outputs/apk/release/app-release.apk dist/RavanGo-release.apk
+          cp app/build/outputs/apk/debug/app-debug.apk dist/RavanGo-debug.apk
           cp app/build/outputs/bundle/release/*.aab dist/RavanGo-release.aab
           ls -la dist
           FONT=$(grep -o 'name="brand_font_name"[^>]*>[^<]*' core/designsystem/build/generated/brandFonts/res/values/brand_font.xml | sed 's/.*>//')
@@ -123,7 +120,7 @@ jobs:
           gh release create latest-build dist/* \
             --target "$GITHUB_SHA" --prerelease \
             --title "RavanGo latest build (#${{ github.run_number }})" \
-            --notes "Automated build of ${GITHUB_SHA::7} from ${GITHUB_REF_NAME}. Most phones: RavanGo-release-arm64-v8a.apk. Older 32-bit phones: RavanGo-release-armeabi-v7a.apk. Not sure: RavanGo-release-universal.apk. Google Play: RavanGo-release.aab. Brand font: ${BRAND_FONT}."
+            --notes "Automated build of ${GITHUB_SHA::7} from ${GITHUB_REF_NAME}. Install RavanGo-release.apk on any Android 8.0+ phone. Google Play: RavanGo-release.aab. Brand font: ${BRAND_FONT}."
 
       - name: Publish tagged release
         if: startsWith(github.ref, 'refs/tags/v')

@@ -28,8 +28,9 @@ android {
         applicationId = "com.ravango.app"
         versionCode = 2
         versionName = "1.1.0"
-        // 32-bit x86 has no real phones left; dropping it saves ~25 MB of native libraries (MediaPipe) per build.
-        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
+        // One APK for every Android 8+ phone: 64-bit and 32-bit ARM. (x86 is emulator/Chromebook-only; Chromebooks
+        // run ARM apps through translation.)
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
 
         buildConfigField("String", "SUPABASE_URL", quoted(secret("supabaseUrl")))
         buildConfigField("String", "SUPABASE_ANON_KEY", quoted(secret("supabaseAnonKey")))
@@ -53,18 +54,6 @@ android {
         buildConfig = true
     }
 
-    // Per-ABI APKs keep downloads small (native ML Kit libraries are ~9 MB per ABI); the universal APK installs
-    // everywhere. Google Play builds use the App Bundle, which splits automatically.
-    // AGP cannot produce ABI-split APKs and an App Bundle in the same invocation, so splits are off for bundle builds.
-    val buildingBundle = gradle.startParameter.taskNames.any { it.contains("bundle", ignoreCase = true) }
-    splits {
-        abi {
-            isEnable = !buildingBundle
-            reset()
-            include("arm64-v8a", "armeabi-v7a", "x86_64")
-            isUniversalApk = true
-        }
-    }
 
     signingConfigs {
         // Shared debug key (public, non-secret) so debug/CI builds install over each other across machines.
@@ -83,6 +72,11 @@ android {
                 keyPassword = secret("releaseKeyPassword")
             }
         }
+    }
+
+    packaging {
+        // Store native libraries compressed: a much smaller single APK download (they are extracted at install time).
+        jniLibs.useLegacyPackaging = true
     }
 
     buildTypes {
