@@ -40,14 +40,23 @@ jobs:
         env:
           RAVAGH_FONT_PASSPHRASE: ${{ secrets.RAVAGH_FONT_PASSPHRASE }}
         run: |
-          if [ -n "$RAVAGH_FONT_PASSPHRASE" ]; then
-            mkdir -p private/fonts/ravagh
-            gpg --batch --quiet --pinentry-mode loopback --passphrase "$RAVAGH_FONT_PASSPHRASE" \
-              -d fonts-private/ravagh-fonts.tar.gz.gpg | tar -xz -C private/fonts/ravagh
+          # Trim stray whitespace/newlines that often sneak in when pasting a secret.
+          PASS="$(printf '%s' "$RAVAGH_FONT_PASSPHRASE" | tr -d '[:space:]')"
+          if [ -z "$PASS" ]; then
+            echo "::warning::RAVAGH_FONT_PASSPHRASE secret not set — building with the open fallback font (Vazirmatn)."
+            exit 0
+          fi
+          echo "Passphrase length: ${#PASS} (expected 40)"
+          mkdir -p private/fonts/ravagh
+          if gpg --batch --quiet --pinentry-mode loopback --passphrase "$PASS" \
+               -d fonts-private/ravagh-fonts.tar.gz.gpg > "$RUNNER_TEMP/ravagh.tgz" \
+             && tar -xzf "$RUNNER_TEMP/ravagh.tgz" -C private/fonts/ravagh; then
             echo "Brand font: Ravagh (licensed)"
           else
-            echo "::warning::RAVAGH_FONT_PASSPHRASE secret not set — building with the open fallback font (Vazirmatn)."
+            rm -rf private/fonts/ravagh
+            echo "::warning::Could not decrypt the Ravagh font (wrong RAVAGH_FONT_PASSPHRASE?) — building with the fallback font (Vazirmatn)."
           fi
+          rm -f "$RUNNER_TEMP/ravagh.tgz"
 
       - name: Prepare release signing key
         env:
