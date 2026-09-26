@@ -170,3 +170,16 @@ interface EyeContactService {
     val requiredService: String
     suspend fun correct(inputUri: String, output: File, onProgress: (Float) -> Unit = {}): Outcome<File>
 }
+
+// ---------- Configuration ----------
+
+/**
+ * Stores user-provided provider credentials ("bring your own key") in the Keystore-backed SecureStore.
+ * Provider selection and consent live in [com.ravango.core.model.AiPreferences] (UserPreferences.ai).
+ */
+interface AiCredentialStore {
+    fun hasKey(provider: AiProviderId): Boolean
+    fun setKey(provider: AiProviderId, key: String?)
+    fun hasSpeechKey(): Boolean
+    fun setSpeechKey(key: String?)
+}
