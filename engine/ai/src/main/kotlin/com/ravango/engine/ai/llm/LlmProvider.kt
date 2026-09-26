@@ -1,6 +1,7 @@
 package com.ravango.engine.ai.llm
 
 import com.ravango.core.common.result.ErrorKind
+import com.ravango.core.model.AiOperation
 import com.ravango.core.model.AiProviderId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.fold
@@ -24,6 +25,8 @@ data class LlmRequest(
     /** Hard cap on generated tokens (on Claude this includes adaptive thinking). */
     val maxTokens: Int,
     val effort: EffortHint = EffortHint.MEDIUM,
+    /** What the request is metered as; sent to the RavanGo gateway (`X-RavanGo-Operation`) so both ledgers agree. */
+    val operation: AiOperation? = null,
 )
 
 /** A provider failure mapped to the app's error model. [code] is one of [com.ravango.engine.ai.api.AiErrors]. */

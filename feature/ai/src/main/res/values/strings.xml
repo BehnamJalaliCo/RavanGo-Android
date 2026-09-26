@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ai_studio_title">AI Studio</string>
+    <string name="ai_studio_subtitle">Write, polish and publish faster</string>
+    <string name="ai_hero_title">Your creative co-pilot</string>
+    <string name="ai_hero_body">Turn an idea into a teleprompter-ready script, sharpen your words, and get hooks, titles and captions in seconds.</string>
+    <string name="ai_credits_remaining">%1$s of %2$s credits left this month</string>
+    <string name="ai_credits_short">%1$s credits</string>
+    <string name="ai_own_key_no_credits">Using your own API key — RavanGo credits are not used</string>
+    <string name="ai_get_more_credits">Get more credits</string>
+
+    <string name="ai_provider_gateway">RavanGo AI</string>
+    <string name="ai_provider_anthropic">Anthropic (your key)</string>
+    <string name="ai_provider_openai_compatible">Custom endpoint (your key)</string>
+    <string name="ai_status_ready">Ready</string>
+    <string name="ai_status_setup">Setup needed</string>
+    <string name="ai_status_consent">Needs your permission</string>
+
+    <string name="ai_issue_gateway">This build has no RavanGo AI server configured. Choose “Anthropic” or a custom endpoint with your own key in Settings.</string>
+    <string name="ai_issue_sign_in">Sign in to use RavanGo AI and your monthly credits.</string>
+    <string name="ai_issue_key">Add your API key in Settings to use this provider.</string>
+    <string name="ai_issue_endpoint">Set the base URL and model of your custom endpoint in Settings.</string>
+    <string name="ai_issue_generic">AI is not set up yet.</string>
+    <string name="ai_open_settings">Open settings</string>
+    <string name="ai_sign_in">Sign in</string>
+
+    <string name="ai_group_write">Write</string>
+    <string name="ai_group_improve">Improve</string>
+    <string name="ai_group_publish">Publish</string>
+    <string name="ai_group_translate">Translate</string>
+
+    <string name="ai_tool_script">Script from topic</string>
+    <string name="ai_tool_script_desc">A full script with hook, sections and CTA</string>
+    <string name="ai_tool_ideas">Video ideas</string>
+    <string name="ai_tool_ideas_desc">Fresh angles for your next video</string>
+    <string name="ai_tool_bullets">Bullets → script</string>
+    <string name="ai_tool_bullets_desc">Turn notes into flowing speech</string>
+    <string name="ai_tool_rewrite">Rewrite</string>
+    <string name="ai_tool_rewrite_desc">Clearer and more engaging</string>
+    <string name="ai_tool_shorten">Shorten</string>
+    <string name="ai_tool_shorten_desc">Keep the message, cut the rest</string>
+    <string name="ai_tool_lengthen">Lengthen</string>
+    <string name="ai_tool_lengthen_desc">Add depth and examples</string>
+    <string name="ai_tool_tone">Change tone</string>
+    <string name="ai_tool_tone_desc">Same content, new voice</string>
+    <string name="ai_tool_grammar">Fix grammar</string>
+    <string name="ai_tool_grammar_desc">Spelling, punctuation, spacing</string>
+    <string name="ai_tool_conversational">Formal → conversational</string>
+    <string name="ai_tool_conversational_desc">Sound natural on camera</string>
+    <string name="ai_tool_summarize">Summarize</string>
+    <string name="ai_tool_summarize_desc">The key points, briefly</string>
+    <string name="ai_tool_hooks">Hooks</string>
+    <string name="ai_tool_hooks_desc">Stop the scroll in 3 seconds</string>
+    <string name="ai_tool_cta">Call to action</string>
+    <string name="ai_tool_cta_desc">End with a clear next step</string>
+    <string name="ai_tool_titles">Titles</string>
+    <string name="ai_tool_titles_desc">Catchy and accurate</string>
+    <string name="ai_tool_caption">Caption</string>
+    <string name="ai_tool_caption_desc">Post text with hashtags</string>
+    <string name="ai_tool_description">Description</string>
+    <string name="ai_tool_description_desc">YouTube-ready description</string>
+    <string name="ai_tool_translate">Translate</string>
+    <string name="ai_tool_translate_desc">Persian ↔ English, markup kept</string>
+
+    <string name="ai_input_topic">Topic</string>
+    <string name="ai_input_topic_hint">e.g. 3 habits that doubled my productivity</string>
+    <string name="ai_input_text">Your text</string>
+    <string name="ai_input_text_hint">Paste or type the text to work on</string>
+    <string name="ai_input_bullets">Your notes</string>
+    <string name="ai_input_bullets_hint">One point per line</string>
+    <string name="ai_input_from_script">From script: %1$s</string>
+    <string name="ai_input_clear">Clear</string>
+
+    <string name="ai_options">Options</string>
+    <string name="ai_option_platform">Platform</string>
+    <string name="ai_option_tone">Tone</string>
+    <string name="ai_option_audience">Audience</string>
+    <string name="ai_option_audience_hint">e.g. beginner freelancers</string>
+    <string name="ai_option_duration">Length</string>
+    <string name="ai_option_duration_value">%1$s · about %2$s words</string>
+    <string name="ai_option_target_length">Target length</string>
+    <string name="ai_option_language">Output language</string>
+    <string name="ai_option_translate_to">Translate to</string>
+    <string name="ai_option_variants">Options to generate</string>
+    <string name="ai_option_extra">Extra instructions (optional)</string>
+    <string name="ai_option_extra_hint">e.g. mention our summer sale</string>
+    <string name="ai_lang_fa">Persian</string>
+    <string name="ai_lang_en">English</string>
+
+    <string name="ai_platform_instagram">Instagram</string>
+    <string name="ai_platform_youtube">YouTube</string>
+    <string name="ai_platform_shorts">Shorts</string>
+    <string name="ai_platform_tiktok">TikTok</string>
+    <string name="ai_platform_linkedin">LinkedIn</string>
+    <string name="ai_platform_telegram">Telegram</string>
+    <string name="ai_platform_podcast">Podcast</string>
+    <string name="ai_platform_general">General</string>
+
+    <string name="ai_tone_friendly">Friendly</string>
+    <string name="ai_tone_professional">Professional</string>
+    <string name="ai_tone_energetic">Energetic</string>
+    <string name="ai_tone_humorous">Humorous</string>
+    <string name="ai_tone_inspirational">Inspiring</string>
+    <string name="ai_tone_calm">Calm</string>
+    <string name="ai_tone_persuasive">Persuasive</string>
+    <string name="ai_tone_educational">Educational</string>
+
+    <string name="ai_generate">Generate</string>
+    <string name="ai_regenerate">Regenerate</string>
+    <string name="ai_stop">Stop</string>
+    <string name="ai_generating">Writing…</string>
+    <string name="ai_stopped">Stopped — partial result</string>
+    <string name="ai_result">Result</string>
+    <string name="ai_credits_used">%1$s credits used</string>
+    <string name="ai_pick_variants">Tap to select the ones you like</string>
+    <string name="ai_selected_count">%1$s selected</string>
+    <string name="ai_copied">Copied</string>
+    <string name="ai_share_title">Share text</string>
+    <string name="ai_save_new">Save as new script</string>
+    <string name="ai_replace_script">Replace script text</string>
+    <string name="ai_open_prompter">Open in teleprompter</string>
+    <string name="ai_saved">Saved to your scripts</string>
+    <string name="ai_replaced">Script updated</string>
+    <string name="ai_save_failed">Could not save the script</string>
+    <string name="ai_default_script_title">AI script</string>
+
+    <string name="ai_history">This session</string>
+    <string name="ai_history_empty">Your generations will appear here</string>
+
+    <string name="ai_err_refused">The AI declined this request. Try rephrasing the topic.</string>
+    <string name="ai_err_no_credits">You\'ve used all your AI credits for this month.</string>
+    <string name="ai_err_rate_limited">The AI is busy right now. Please try again in a moment.</string>
+    <string name="ai_err_overloaded">The AI service is overloaded. Please try again shortly.</string>
+    <string name="ai_err_invalid_key">The API key was rejected. Check it in Settings.</string>
+    <string name="ai_err_empty">The AI returned an empty answer. Try again.</string>
+    <string name="ai_err_service">The AI service is not available at this address.</string>
+
+    <string name="ai_consent_title">Send text to an AI service?</string>
+    <string name="ai_consent_gateway">To generate text, what you type here (topic, script text and options) is sent to RavanGo\'s AI server, which forwards it to Anthropic\'s Claude model. Nothing else from your device is sent. Your data is handled according to the providers\' policies. You can turn this off anytime in Settings.</string>
+    <string name="ai_consent_anthropic">To generate text, what you type here (topic, script text and options) is sent directly to Anthropic\'s Claude API using your own API key. Nothing else from your device is sent. Your data is handled according to Anthropic\'s policy. You can turn this off anytime in Settings.</string>
+    <string name="ai_consent_custom">To generate text, what you type here (topic, script text and options) is sent to the custom endpoint you configured, using your key. Nothing else from your device is sent. Your data is handled according to that provider\'s policy. You can turn this off anytime in Settings.</string>
+    <string name="ai_consent_accept">Agree and continue</string>
+    <string name="ai_consent_decline">Not now</string>
+
+    <string name="ai_video_title">Video tools</string>
+    <string name="ai_video_body">Auto captions, silence and filler removal, highlights, Shorts suggestions and voice cleanup work on your clips inside the Editor. Open a project to use them.</string>
+    <string name="ai_video_captions">Auto captions</string>
+    <string name="ai_video_cuts">Remove silences &amp; fillers</string>
+    <string name="ai_video_highlights">Highlights &amp; Shorts</string>
+    <string name="ai_video_cleanup">Voice cleanup</string>
+    <string name="ai_video_eye">Eye contact</string>
+    <string name="ai_video_eye_unavailable">Needs a server-side gaze model</string>
+    <string name="ai_video_open_projects">Open projects</string>
+    <string name="ai_back_to_tools">Back to tools</string>
+</resources>

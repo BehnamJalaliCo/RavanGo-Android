@@ -121,6 +121,9 @@ class AnthropicLlmProvider(
                 LlmRole.ASSISTANT -> builder.addAssistantMessage(m.text)
             }
         }
+        if (id == AiProviderId.RAVANGO_GATEWAY && request.operation != null) {
+            builder.putAdditionalHeader(OPERATION_HEADER, request.operation.name.lowercase())
+        }
         if (model.startsWith("claude-opus-5") || model.startsWith("claude-fable")) {
             // Server-side refusal fallback: a declined request is retried on Anthropic's recommended model.
             builder.putAdditionalHeader("anthropic-beta", FALLBACK_BETA)
@@ -184,6 +187,7 @@ class AnthropicLlmProvider(
     companion object {
         private const val TAG = "AnthropicLlm"
         const val FALLBACK_BETA = "server-side-fallback-2026-07-01"
+        const val OPERATION_HEADER = "X-RavanGo-Operation"
         const val ANTHROPIC_API_URL = "https://api.anthropic.com"
 
         /** Builds an SDK client. [bearerToken] is for the gateway (user JWT); [apiKey] for direct BYOK. */

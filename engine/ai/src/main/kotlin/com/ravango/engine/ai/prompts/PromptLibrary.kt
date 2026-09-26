@@ -55,15 +55,14 @@ object PromptLibrary {
             else -> EffortHint.LOW
         }
         // max_tokens bounds thinking + answer; scale with input for rewrite-style tasks.
-        val maxTokens = when {
-            request.task in SCRIPT_TASKS -> 16_000
-            isList -> 6_000
-            else -> (6_000 + request.input.length * 2).coerceAtMost(16_000)
-        }
+        // The gateway meters requests above SMALL_MAX_TOKENS as TEXT_LARGE, so keep these tiers aligned.
+        val maxTokens = if (large) LARGE_MAX_TOKENS else SMALL_MAX_TOKENS
         return PromptSpec(system, user, maxTokens, effort, if (large) AiOperation.TEXT_LARGE else AiOperation.TEXT_SMALL, isList)
     }
 
     private const val LARGE_INPUT_CHARS = 6_000
+    const val SMALL_MAX_TOKENS = 8_000
+    const val LARGE_MAX_TOKENS = 16_000
 
     private fun userMessage(r: TextRequest, persian: Boolean): String = buildString {
         val topicTask = r.task == TextTask.GENERATE_SCRIPT || r.task == TextTask.IDEAS

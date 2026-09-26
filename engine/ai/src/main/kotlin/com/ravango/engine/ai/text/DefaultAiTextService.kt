@@ -60,6 +60,7 @@ class DefaultAiTextService @Inject constructor(
             messages = listOf(LlmMessage(LlmRole.USER, spec.user)),
             maxTokens = spec.maxTokens,
             effort = spec.effort,
+            operation = spec.operation,
         )
         val charge = if (provider.usesRavanGoCredits) spec.operation else null
         if (charge != null && !entitlements.tryConsumeAiCredits(charge)) {

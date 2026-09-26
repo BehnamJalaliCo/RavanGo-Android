@@ -27,7 +27,7 @@ class LlmTaskRunner @Inject constructor(
         }
         return try {
             val text = entitlements.charged(provider, operation) {
-                provider.complete(request).trim().ifEmpty { throw LlmException(ErrorKind.UNKNOWN, AiErrors.EMPTY_RESPONSE) }
+                provider.complete(request.copy(operation = operation)).trim().ifEmpty { throw LlmException(ErrorKind.UNKNOWN, AiErrors.EMPTY_RESPONSE) }
             }
             Outcome.Success(text)
         } catch (e: CancellationException) {
