@@ -43,10 +43,10 @@ import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Mic
-import androidx.compose.material.icons.rounded.MovieEdit
+import androidx.compose.material.icons.rounded.MovieCreation
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Subject
+import androidx.compose.material.icons.automirrored.rounded.Subject
 import androidx.compose.material.icons.rounded.ViewQuilt
 import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.Icon
@@ -468,10 +468,10 @@ private data class QuickAction(val label: String, val icon: ImageVector, val bub
 private fun QuickActions(state: HomeUiState, onNavigate: (Any) -> Unit, onTeleprompter: () -> Unit, onImport: () -> Unit, modifier: Modifier = Modifier) {
     val colors = RgTheme.colors
     val actions = listOf(
-        QuickAction(stringResource(R.string.home_action_teleprompter), Icons.Rounded.Subject, colors.pastelLavender, colors.accent, onTeleprompter),
+        QuickAction(stringResource(R.string.home_action_teleprompter), Icons.AutoMirrored.Rounded.Subject, colors.pastelLavender, colors.accent, onTeleprompter),
         QuickAction(stringResource(R.string.home_action_scripts), Icons.Rounded.EditNote, colors.pastelSky, Color(0xFF4C8DDB), { onNavigate(ScriptsRoute()) }),
         QuickAction(stringResource(R.string.home_action_ai), Icons.Rounded.AutoAwesome, colors.pastelRose, Color(0xFFE0557A), { onNavigate(AiStudioRoute()) }),
-        QuickAction(stringResource(R.string.home_action_editor), Icons.Rounded.MovieEdit, colors.pastelPeach, Color(0xFFE07B3C), onImport),
+        QuickAction(stringResource(R.string.home_action_editor), Icons.Rounded.MovieCreation, colors.pastelPeach, Color(0xFFE07B3C), onImport),
         QuickAction(stringResource(R.string.home_action_projects), Icons.Rounded.Folder, colors.pastelMint, colors.success, { onNavigate(ProjectsRoute()) }),
         QuickAction(stringResource(R.string.home_action_drafts), Icons.Rounded.Description, colors.pastelButter, Color(0xFFC99A12), { onNavigate(ProjectsRoute(tab = 1)) }),
         QuickAction(stringResource(R.string.home_action_templates), Icons.Rounded.ViewQuilt, colors.pastelLavender, colors.accent, { onNavigate(TemplatesRoute) }),
