@@ -75,8 +75,11 @@ jobs:
       - name: Unit tests
         run: ./gradlew testDebugUnitTest --stacktrace --continue
 
-      - name: Build APKs (debug + release) and App Bundle
-        run: ./gradlew :app:assembleDebug :app:assembleRelease :app:bundleRelease --stacktrace
+      - name: Build APKs (debug + release)
+        run: ./gradlew :app:assembleDebug :app:assembleRelease --stacktrace
+
+      - name: Build App Bundle (Google Play)
+        run: ./gradlew :app:bundleRelease --stacktrace
 
       - name: Lint
         run: ./gradlew :app:lintDebug --continue

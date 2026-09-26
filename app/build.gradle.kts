@@ -51,9 +51,11 @@ android {
 
     // Per-ABI APKs keep downloads small (native ML Kit libraries are ~9 MB per ABI); the universal APK installs
     // everywhere. Google Play builds use the App Bundle, which splits automatically.
+    // AGP cannot produce ABI-split APKs and an App Bundle in the same invocation, so splits are off for bundle builds.
+    val buildingBundle = gradle.startParameter.taskNames.any { it.contains("bundle", ignoreCase = true) }
     splits {
         abi {
-            isEnable = true
+            isEnable = !buildingBundle
             reset()
             include("arm64-v8a", "armeabi-v7a", "x86_64")
             isUniversalApk = true
