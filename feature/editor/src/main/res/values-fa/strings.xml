@@ -304,4 +304,6 @@
     <string name="editor_voiceover_record">ضبط</string>
     <string name="editor_voiceover_stop">توقف</string>
     <string name="editor_volume">بلندی صدا</string>
+    <string name="editor_cue_earlier">زودتر</string>
+    <string name="editor_cue_later">دیرتر</string>
 </resources>

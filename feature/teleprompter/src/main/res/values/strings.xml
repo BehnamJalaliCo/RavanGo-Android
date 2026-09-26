@@ -12,7 +12,7 @@
     <string name="prompter_sections">Sections</string>
     <string name="prompter_speed_down">Slower</string>
     <string name="prompter_speed_up">Faster</string>
-    <string name="prompter_wpm">words/min</string>
+    <string name="prompter_wpm">wpm</string>
     <string name="prompter_wpm_value">%1$s wpm</string>
     <string name="prompter_font_smaller">Smaller text</string>
     <string name="prompter_font_larger">Larger text</string>

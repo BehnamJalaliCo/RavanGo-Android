@@ -24,6 +24,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -239,86 +247,36 @@ private fun PrompterContent(
         },
     )
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                // Observe (never consume) every touch so the controls reappear.
-                awaitEachGesture {
-                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-                    poke()
-                }
-            },
-    ) {
-        TeleprompterView(
-            text = script.body,
-            settings = settings,
-            controller = controller,
-            modifier = Modifier.fillMaxSize(),
-            startCharOffset = state.startOffset,
-            interactive = true,
-            onFontSizeChange = { size -> viewModel.updateSettings { it.copy(fontSizeSp = size) } },
-        )
-
-        // Minimal status while controls are hidden.
-        AnimatedVisibility(
-            visible = !controlsVisible && (settings.showProgress || settings.showRemainingTime),
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.align(Alignment.TopCenter),
-        ) {
-            MiniStatus(snapshot, settings)
-        }
-
-        AnimatedVisibility(
-            visible = controlsVisible,
-            enter = fadeIn() + slideInVertically { -it / 2 },
-            exit = fadeOut() + slideOutVertically { -it / 2 },
-            modifier = Modifier.align(Alignment.TopCenter),
-        ) {
-            TopControls(
-                title = script.title,
-                onBack = { persistPosition(); onBack() },
-                onSettings = { persistPosition(); controller.pause(); onOpenSettings(script.id) },
-            )
-        }
-
-        AnimatedVisibility(
-            visible = controlsVisible,
-            enter = fadeIn() + slideInVertically { it / 2 },
-            exit = fadeOut() + slideOutVertically { it / 2 },
-            modifier = Modifier.align(Alignment.BottomCenter),
-        ) {
-            BottomControls(
-                snapshot = snapshot,
-                settings = settings,
-                hasSections = sections.isNotEmpty(),
-                rotationLocked = rotationLocked,
-                maxBrightness = maxBrightness,
-                floatingIsPro = state.floatingAvailable,
-                controller = controller,
-                onPoke = poke,
-                onSettings = { transform -> viewModel.updateSettings(transform) },
-                onToggleRotationLock = { rotationLocked = !rotationLocked },
-                onToggleBrightness = { maxBrightness = !maxBrightness },
-                onSections = { showSections = true },
-                onStartPoint = { showStart = true },
-                onFloating = { launchFloating(script.id) },
-                onRecord = { persistPosition(); controller.pause(); onRecord(script.id) },
-            )
-        }
-
-        if (state.resumeOffset > 0 && snapshot.phase == PrompterPhase.IDLE) {
-            ResumeOffer(
-                modifier = Modifier.align(Alignment.Center),
-                onResume = {
-                    viewModel.setStartOffset(state.resumeOffset)
-                    controller.jumpToChar(state.resumeOffset)
-                },
-                onFromStart = { viewModel.consumeResumeOffer() },
-            )
-        }
-    }
+    PrompterStage(
+        title = script.title,
+        body = script.body,
+        settings = settings,
+        startOffset = state.startOffset,
+        controller = controller,
+        snapshot = snapshot,
+        hasSections = sections.isNotEmpty(),
+        controlsVisible = controlsVisible,
+        rotationLocked = rotationLocked,
+        maxBrightness = maxBrightness,
+        floatingIsPro = state.floatingAvailable,
+        showResume = state.resumeOffset > 0 && snapshot.phase == PrompterPhase.IDLE,
+        onPoke = poke,
+        onFontSizeChange = { size -> viewModel.updateSettings { it.copy(fontSizeSp = size) } },
+        onBack = { persistPosition(); onBack() },
+        onOpenSettings = { persistPosition(); controller.pause(); onOpenSettings(script.id) },
+        onSettings = { transform -> viewModel.updateSettings(transform) },
+        onToggleRotationLock = { rotationLocked = !rotationLocked },
+        onToggleBrightness = { maxBrightness = !maxBrightness },
+        onSections = { showSections = true },
+        onStartPoint = { showStart = true },
+        onFloating = { launchFloating(script.id) },
+        onRecord = { persistPosition(); controller.pause(); onRecord(script.id) },
+        onResume = {
+            viewModel.setStartOffset(state.resumeOffset)
+            controller.jumpToChar(state.resumeOffset)
+        },
+        onFromStart = { viewModel.consumeResumeOffer() },
+    )
 
     if (showSections) {
         SectionsSheet(
@@ -347,6 +305,111 @@ private fun PrompterContent(
     }
 }
 
+/**
+ * The full-screen prompter surface: text, auto-hiding controls and the resume offer. Stateless apart from the
+ * [controller], so screenshot tests can render it at a fixed reading position.
+ */
+@Composable
+internal fun PrompterStage(
+    title: String,
+    body: String,
+    settings: TeleprompterSettings,
+    startOffset: Int,
+    controller: PrompterController,
+    snapshot: PrompterSnapshot,
+    hasSections: Boolean,
+    controlsVisible: Boolean,
+    rotationLocked: Boolean,
+    maxBrightness: Boolean,
+    floatingIsPro: Boolean,
+    showResume: Boolean,
+    onPoke: () -> Unit,
+    onFontSizeChange: (Float) -> Unit,
+    onBack: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onSettings: ((TeleprompterSettings) -> TeleprompterSettings) -> Unit,
+    onToggleRotationLock: () -> Unit,
+    onToggleBrightness: () -> Unit,
+    onSections: () -> Unit,
+    onStartPoint: () -> Unit,
+    onFloating: () -> Unit,
+    onRecord: () -> Unit,
+    onResume: () -> Unit,
+    onFromStart: () -> Unit,
+) {
+    val poke by rememberUpdatedState(onPoke)
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .pointerInput(Unit) {
+                // Observe (never consume) every touch so the controls reappear.
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                    poke()
+                }
+            },
+    ) {
+        TeleprompterView(
+            text = body,
+            settings = settings,
+            controller = controller,
+            modifier = Modifier.fillMaxSize(),
+            startCharOffset = startOffset,
+            interactive = true,
+            onFontSizeChange = onFontSizeChange,
+        )
+
+        // Minimal status while controls are hidden.
+        AnimatedVisibility(
+            visible = !controlsVisible && (settings.showProgress || settings.showRemainingTime),
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter),
+        ) {
+            MiniStatus(snapshot, settings)
+        }
+
+        AnimatedVisibility(
+            visible = controlsVisible,
+            enter = fadeIn() + slideInVertically { -it / 2 },
+            exit = fadeOut() + slideOutVertically { -it / 2 },
+            modifier = Modifier.align(Alignment.TopCenter),
+        ) {
+            TopControls(title = title, onBack = onBack, onSettings = onOpenSettings)
+        }
+
+        AnimatedVisibility(
+            visible = controlsVisible,
+            enter = fadeIn() + slideInVertically { it / 2 },
+            exit = fadeOut() + slideOutVertically { it / 2 },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
+            BottomControls(
+                snapshot = snapshot,
+                settings = settings,
+                hasSections = hasSections,
+                rotationLocked = rotationLocked,
+                maxBrightness = maxBrightness,
+                floatingIsPro = floatingIsPro,
+                controller = controller,
+                onPoke = onPoke,
+                onSettings = onSettings,
+                onToggleRotationLock = onToggleRotationLock,
+                onToggleBrightness = onToggleBrightness,
+                onSections = onSections,
+                onStartPoint = onStartPoint,
+                onFloating = onFloating,
+                onRecord = onRecord,
+            )
+        }
+
+        if (showResume) {
+            ResumeOffer(modifier = Modifier, onResume = onResume, onFromStart = onFromStart)
+        }
+    }
+}
+
 @Composable
 private fun MiniStatus(snapshot: PrompterSnapshot, settings: TeleprompterSettings) {
     Column(Modifier.fillMaxWidth().safeDrawingPadding().padding(horizontal = Spacing.lg, vertical = Spacing.xs)) {
@@ -355,7 +418,7 @@ private fun MiniStatus(snapshot: PrompterSnapshot, settings: TeleprompterSetting
         }
         if (settings.showRemainingTime) {
             Text(
-                text = "−" + formatDurationMs(snapshot.remainingMs),
+                text = remainingLabel(snapshot.remainingMs),
                 color = Color.White.copy(alpha = 0.55f),
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.align(Alignment.End).padding(top = 4.dp),
@@ -364,17 +427,20 @@ private fun MiniStatus(snapshot: PrompterSnapshot, settings: TeleprompterSetting
     }
 }
 
+/** "−0:54", kept left-to-right so the minus sign stays in front of the time in RTL layouts. */
+private fun remainingLabel(ms: Long): String = "\u2066\u2212" + formatDurationMs(ms) + "\u2069"
+
 @Composable
 private fun TopControls(title: String, onBack: () -> Unit, onSettings: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
-            .background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent)))
+            .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.75f), Color.Transparent)))
             .safeDrawingPadding()
             .padding(horizontal = Spacing.md, vertical = Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RgIconButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(com.ravango.core.ui.R.string.action_back), onBack, glass = true)
+        RgIconButton(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(com.ravango.core.ui.R.string.action_back), onBack, glass = true, size = 48.dp)
         Spacer(Modifier.width(Spacing.md))
         Text(
             title,
@@ -384,7 +450,7 @@ private fun TopControls(title: String, onBack: () -> Unit, onSettings: () -> Uni
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        RgIconButton(Icons.Rounded.Tune, stringResource(R.string.prompter_settings), onSettings, glass = true)
+        RgIconButton(Icons.Rounded.Tune, stringResource(R.string.prompter_settings), onSettings, glass = true, size = 48.dp)
     }
 }
 
@@ -408,78 +474,85 @@ private fun BottomControls(
 ) {
     val haptics = rememberHaptics()
     val playing = snapshot.phase == PrompterPhase.SCROLLING || snapshot.phase == PrompterPhase.COUNTDOWN
-    Box(Modifier.fillMaxWidth().safeDrawingPadding().padding(Spacing.md), contentAlignment = Alignment.BottomCenter) {
+    // A scrim under the panel keeps the controls legible over the scrolling text.
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f), Color.Black)))
+            .safeDrawingPadding()
+            .padding(start = Spacing.md, end = Spacing.md, top = Spacing.xxl, bottom = Spacing.md),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
         GlassSurface(
             modifier = Modifier.widthIn(max = 640.dp).fillMaxWidth(),
             shape = RoundedCornerShape(Radius.xl),
-            contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.md),
-            tint = Color(0xCC121020),
+            contentPadding = PaddingValues(vertical = Spacing.lg),
+            tint = Color(0xF2141220),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
                 if (settings.showProgress || settings.showRemainingTime) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(formatDurationMs(snapshot.elapsedMs), color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelSmall)
-                        Spacer(Modifier.width(Spacing.sm))
+                    Row(Modifier.padding(horizontal = Spacing.lg), verticalAlignment = Alignment.CenterVertically) {
+                        Text(formatDurationMs(snapshot.elapsedMs), color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelMedium)
+                        Spacer(Modifier.width(Spacing.md))
                         RgProgressBar(snapshot.progress, modifier = Modifier.weight(1f), height = 4.dp, trackColor = Color.White.copy(alpha = 0.12f))
-                        Spacer(Modifier.width(Spacing.sm))
+                        Spacer(Modifier.width(Spacing.md))
                         if (settings.showRemainingTime) {
-                            Text("−" + formatDurationMs(snapshot.remainingMs), color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelSmall)
+                            Text(remainingLabel(snapshot.remainingMs), color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }
-                // Transport
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                    RgIconButton(Icons.Rounded.Replay, stringResource(R.string.prompter_restart), { onPoke(); controller.restart() }, glass = true)
-                    RgIconButton(Icons.Rounded.SkipPrevious, stringResource(R.string.prompter_prev_section), { onPoke(); controller.previousSection() }, glass = true, enabled = hasSections)
-                    RgIconButton(
-                        if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                        stringResource(if (playing) R.string.prompter_pause else R.string.prompter_play),
-                        {
-                            onPoke()
-                            haptics.perform(if (playing) HapticEvent.TOGGLE_OFF else HapticEvent.TOGGLE_ON)
-                            controller.toggle()
-                        },
-                        size = 68.dp,
-                        iconSize = 34.dp,
-                        container = RgTheme.colors.accent,
-                        tint = RgTheme.colors.onAccent,
-                    )
-                    RgIconButton(Icons.Rounded.SkipNext, stringResource(R.string.prompter_next_section), { onPoke(); controller.nextSection() }, glass = true, enabled = hasSections)
-                    RgIconButton(Icons.AutoMirrored.Rounded.List, stringResource(R.string.prompter_sections), { onPoke(); onSections() }, glass = true, enabled = hasSections)
-                }
-                // Speed and size
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    RgIconButton(Icons.Rounded.Remove, stringResource(R.string.prompter_speed_down), { onPoke(); controller.nudgeSpeed(-10) }, glass = true, size = 40.dp)
-                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            snapshot.wordsPerMinute.toString().localizeDigits(),
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
+                // Transport: media controls describe time, so they keep their left-to-right order in RTL too.
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.md), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+                        RgIconButton(Icons.Rounded.Replay, stringResource(R.string.prompter_restart), { onPoke(); controller.restart() }, glass = true, size = 48.dp)
+                        RgIconButton(Icons.Rounded.SkipPrevious, stringResource(R.string.prompter_prev_section), { onPoke(); controller.previousSection() }, glass = true, enabled = hasSections, size = 48.dp)
+                        RgIconButton(
+                            if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                            stringResource(if (playing) R.string.prompter_pause else R.string.prompter_play),
+                            {
+                                onPoke()
+                                haptics.perform(if (playing) HapticEvent.TOGGLE_OFF else HapticEvent.TOGGLE_ON)
+                                controller.toggle()
+                            },
+                            size = 72.dp,
+                            iconSize = 36.dp,
+                            container = RgTheme.colors.accent,
+                            tint = RgTheme.colors.onAccent,
                         )
-                        Text(stringResource(R.string.prompter_wpm), color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelSmall)
+                        RgIconButton(Icons.Rounded.SkipNext, stringResource(R.string.prompter_next_section), { onPoke(); controller.nextSection() }, glass = true, enabled = hasSections, size = 48.dp)
+                        RgIconButton(Icons.AutoMirrored.Rounded.List, stringResource(R.string.prompter_sections), { onPoke(); onSections() }, glass = true, enabled = hasSections, size = 48.dp)
                     }
-                    RgIconButton(Icons.Rounded.Add, stringResource(R.string.prompter_speed_up), { onPoke(); controller.nudgeSpeed(10) }, glass = true, size = 40.dp)
-                    Spacer(Modifier.width(Spacing.lg))
-                    RgIconButton(Icons.Rounded.TextDecrease, stringResource(R.string.prompter_font_smaller), {
-                        onPoke(); onSettings { it.copy(fontSizeSp = (it.fontSizeSp - 2f).coerceAtLeast(TeleprompterSettings.MIN_FONT_SP)) }
-                    }, glass = true, size = 40.dp)
-                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(settings.fontSizeSp.toInt().toString().localizeDigits(), color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        Text(stringResource(R.string.prompter_font_size_short), color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelSmall)
-                    }
-                    RgIconButton(Icons.Rounded.TextIncrease, stringResource(R.string.prompter_font_larger), {
-                        onPoke(); onSettings { it.copy(fontSizeSp = (it.fontSizeSp + 2f).coerceAtMost(TeleprompterSettings.MAX_FONT_SP)) }
-                    }, glass = true, size = 40.dp)
+                }
+                // Speed and text size: two equal steppers.
+                Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.lg), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+                    Stepper(
+                        value = snapshot.wordsPerMinute.toString().localizeDigits(),
+                        label = stringResource(R.string.prompter_wpm),
+                        decrement = Icons.Rounded.Remove to stringResource(R.string.prompter_speed_down),
+                        increment = Icons.Rounded.Add to stringResource(R.string.prompter_speed_up),
+                        onDecrement = { onPoke(); controller.nudgeSpeed(-10) },
+                        onIncrement = { onPoke(); controller.nudgeSpeed(10) },
+                        modifier = Modifier.weight(1f),
+                    )
+                    Stepper(
+                        value = settings.fontSizeSp.toInt().toString().localizeDigits(),
+                        label = stringResource(R.string.prompter_font_size_short),
+                        decrement = Icons.Rounded.TextDecrease to stringResource(R.string.prompter_font_smaller),
+                        increment = Icons.Rounded.TextIncrease to stringResource(R.string.prompter_font_larger),
+                        onDecrement = { onPoke(); onSettings { it.copy(fontSizeSp = (it.fontSizeSp - 2f).coerceAtLeast(TeleprompterSettings.MIN_FONT_SP)) } },
+                        onIncrement = { onPoke(); onSettings { it.copy(fontSizeSp = (it.fontSizeSp + 2f).coerceAtMost(TeleprompterSettings.MAX_FONT_SP)) } },
+                        modifier = Modifier.weight(1f),
+                    )
                 }
                 if (settings.mirrorHorizontal || settings.mirrorVertical) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Info, null, tint = RgTheme.colors.accent, modifier = Modifier.padding(end = Spacing.sm))
+                    Row(Modifier.padding(horizontal = Spacing.lg), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.Info, null, tint = RgTheme.colors.accent, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(Spacing.sm))
                         Text(stringResource(R.string.prompter_mirror_hint), color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.bodySmall)
                     }
                 }
-                // Tools
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                // Tools (scroll edge to edge inside the panel).
+                LazyRow(contentPadding = PaddingValues(horizontal = Spacing.lg), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     item {
                         RgChip(stringResource(R.string.prompter_mirror_h), settings.mirrorHorizontal, {
                             onPoke(); onSettings { it.copy(mirrorHorizontal = !it.mirrorHorizontal) }
@@ -511,15 +584,54 @@ private fun BottomControls(
     }
 }
 
+/** A value between − and + buttons, in a soft capsule. Buttons are 44dp inside a 48dp-tall capsule. */
+@Composable
+private fun Stepper(
+    value: String,
+    label: String,
+    decrement: Pair<ImageVector, String>,
+    increment: Pair<ImageVector, String>,
+    onDecrement: () -> Unit,
+    onIncrement: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier
+            .height(56.dp)
+            .clip(RoundedCornerShape(Radius.pill))
+            .background(Color.White.copy(alpha = 0.07f))
+            .padding(horizontal = Spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RgIconButton(decrement.first, decrement.second, onDecrement, size = 48.dp, iconSize = 20.dp, container = Color.Transparent, tint = Color.White)
+        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(value, color = Color.White, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(label, color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        RgIconButton(increment.first, increment.second, onIncrement, size = 48.dp, iconSize = 20.dp, container = Color.Transparent, tint = Color.White)
+    }
+}
+
 @Composable
 private fun ResumeOffer(modifier: Modifier, onResume: () -> Unit, onFromStart: () -> Unit) {
-    GlassSurface(modifier.padding(Spacing.xl).widthIn(max = 420.dp), tint = Color(0xE6141220)) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-            Text(stringResource(R.string.prompter_resume_title), color = Color.White, style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.prompter_resume_message), color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                RgSecondaryButton(stringResource(R.string.prompter_from_beginning), onFromStart, size = RgButtonSize.MEDIUM)
-                RgPrimaryButton(stringResource(R.string.prompter_resume), onResume, size = RgButtonSize.MEDIUM)
+    // Dim the text behind so the question reads as a clear, modal choice.
+    Box(modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f)), contentAlignment = Alignment.Center) {
+        GlassSurface(Modifier.padding(Spacing.xl).widthIn(max = 420.dp), tint = Color(0xFA1B1928), contentPadding = PaddingValues(Spacing.xl)) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Box(Modifier.size(48.dp).clip(RoundedCornerShape(Radius.pill)).background(RgTheme.colors.accent.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.History, null, tint = RgTheme.colors.accent)
+                }
+                Spacer(Modifier.height(Spacing.xs))
+                Text(stringResource(R.string.prompter_resume_title), color = Color.White, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+                Text(stringResource(R.string.prompter_resume_message), color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                Spacer(Modifier.height(Spacing.sm))
+                Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    RgSecondaryButton(
+                        stringResource(R.string.prompter_from_beginning), onFromStart, size = RgButtonSize.MEDIUM, modifier = Modifier.weight(1f),
+                        containerColor = Color.White.copy(alpha = 0.1f), contentColor = Color.White,
+                    )
+                    RgPrimaryButton(stringResource(R.string.prompter_resume), onResume, size = RgButtonSize.MEDIUM, modifier = Modifier.weight(1f))
+                }
             }
         }
     }

@@ -11,8 +11,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -62,6 +65,8 @@ import com.ravango.core.designsystem.component.RgButtonSize
 import com.ravango.core.designsystem.component.RgChip
 import com.ravango.core.designsystem.component.RgOutlineButton
 import com.ravango.core.designsystem.component.RgPrimaryButton
+import com.ravango.core.designsystem.component.RgProgressBar
+import androidx.compose.foundation.layout.height
 import com.ravango.core.designsystem.component.RgSecondaryButton
 import com.ravango.core.designsystem.component.RgTextButton
 import com.ravango.core.designsystem.component.pressable
@@ -106,59 +111,142 @@ internal fun AiAssistSheet(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
-    RgBottomSheet(onDismiss = { onCancel(); onDismiss() }, title = stringResource(R.string.scripts_ai_title)) {
+    RgBottomSheet(onDismiss = { onCancel(); onDismiss() }) {
+        AiAssistContent(
+            state = state,
+            hasSelection = hasSelection,
+            onRun = onRun,
+            onTone = onTone,
+            onCancel = onCancel,
+            onReplace = onReplace,
+            onInsertBelow = onInsertBelow,
+            onCopy = { text ->
+                copyToClipboard(context, text)
+                Toast.makeText(context, context.getString(UiR.string.copied), Toast.LENGTH_SHORT).show()
+            },
+            onDiscard = onDiscard,
+            onOpenSettings = onOpenSettings,
+            onOpenAiStudio = onOpenAiStudio,
+        )
+    }
+}
+
+/** Body of the AI assist sheet (tools, tone, streaming result). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun AiAssistContent(
+    state: AiUiState,
+    hasSelection: Boolean,
+    onRun: (TextTask) -> Unit,
+    onTone: (Tone) -> Unit,
+    onCancel: () -> Unit,
+    onReplace: (String) -> Unit,
+    onInsertBelow: (String) -> Unit,
+    onCopy: (String) -> Unit,
+    onDiscard: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenAiStudio: () -> Unit,
+) {
+    Column(Modifier.fillMaxWidth()) {
+        Text(
+            stringResource(R.string.scripts_ai_title),
+            style = MaterialTheme.typography.titleLarge,
+            color = RgTheme.colors.textPrimary,
+            modifier = Modifier.padding(horizontal = Spacing.gutter).padding(top = Spacing.xs, bottom = Spacing.sm),
+        )
         Column(
             Modifier
                 .fillMaxWidth()
                 .heightIn(max = 640.dp)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.gutter)
                 .animateContentSize(),
             verticalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
             val block = state.block
             if (block != null) {
-                BlockedCard(block, state.availability?.detail, onOpenSettings, onOpenAiStudio)
+                Box(Modifier.padding(horizontal = Spacing.gutter)) { BlockedCard(block, state.availability?.detail, onOpenSettings, onOpenAiStudio) }
                 return@Column
             }
             Text(
                 stringResource(if (hasSelection || state.onSelection) R.string.scripts_ai_scope_selection else R.string.scripts_ai_scope_all),
                 style = MaterialTheme.typography.bodySmall,
                 color = RgTheme.colors.textSecondary,
+                modifier = Modifier.padding(horizontal = Spacing.gutter),
             )
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                AiTools.forEach { tool ->
-                    RgChip(
-                        text = stringResource(tool.label),
-                        selected = state.task == tool.task,
-                        onClick = { if (!state.running) onRun(tool.task) },
-                        icon = tool.icon,
+            // The result sits right under the scope line so streaming text is always in view.
+            AnimatedVisibility(state.task != null) {
+                Box(Modifier.padding(horizontal = Spacing.gutter)) {
+                    ResultCard(
+                        state = state,
+                        onCancel = onCancel,
+                        onRetry = { state.task?.let(onRun) },
+                        onReplace = onReplace,
+                        onInsertBelow = onInsertBelow,
+                        onCopy = onCopy,
+                        onDiscard = onDiscard,
                     )
                 }
             }
-            Text(stringResource(R.string.scripts_ai_tone_label), style = MaterialTheme.typography.labelLarge, color = RgTheme.colors.textSecondary)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            // Tools: an even two-column grid of equal tiles.
+            Column(Modifier.padding(horizontal = Spacing.gutter), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                AiTools.chunked(2).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        row.forEach { tool ->
+                            ToolTile(
+                                tool = tool,
+                                selected = state.task == tool.task,
+                                enabled = !state.running,
+                                onClick = { onRun(tool.task) },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                        if (row.size == 1) Spacer(Modifier.weight(1f))
+                    }
+                }
+            }
+            Text(
+                stringResource(R.string.scripts_ai_tone_label),
+                style = MaterialTheme.typography.labelLarge,
+                color = RgTheme.colors.textSecondary,
+                modifier = Modifier.padding(horizontal = Spacing.gutter),
+            )
+            LazyRow(contentPadding = PaddingValues(horizontal = Spacing.gutter), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 items(Tone.entries, key = { it.name }) { tone ->
                     RgChip(toneLabel(tone), state.tone == tone, { onTone(tone) })
                 }
             }
-
-            AnimatedVisibility(state.task != null) {
-                ResultCard(
-                    state = state,
-                    onCancel = onCancel,
-                    onRetry = { state.task?.let(onRun) },
-                    onReplace = onReplace,
-                    onInsertBelow = onInsertBelow,
-                    onCopy = { text ->
-                        copyToClipboard(context, text)
-                        Toast.makeText(context, context.getString(UiR.string.copied), Toast.LENGTH_SHORT).show()
-                    },
-                    onDiscard = onDiscard,
-                )
-            }
-            Text(stringResource(R.string.scripts_ai_disclaimer), style = MaterialTheme.typography.labelSmall, color = RgTheme.colors.textTertiary)
+            Text(
+                stringResource(R.string.scripts_ai_disclaimer),
+                style = MaterialTheme.typography.labelSmall,
+                color = RgTheme.colors.textTertiary,
+                modifier = Modifier.padding(horizontal = Spacing.gutter),
+            )
         }
+    }
+}
+
+@Composable
+private fun ToolTile(tool: AiTool, selected: Boolean, enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = RgTheme.colors
+    val shape = RoundedCornerShape(Radius.md)
+    Row(
+        modifier
+            .height(52.dp)
+            .clip(shape)
+            .background(if (selected) colors.accent else colors.surfaceMuted)
+            .pressable(enabled = enabled || selected, onClick = onClick)
+            .padding(horizontal = Spacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(tool.icon, null, tint = if (selected) colors.onAccent else colors.accent, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(Spacing.sm))
+        Text(
+            stringResource(tool.label),
+            style = MaterialTheme.typography.labelLarge,
+            color = if (selected) colors.onAccent else colors.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -219,9 +307,7 @@ private fun ResultCard(
             .padding(Spacing.lg),
         verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-        if (state.running) {
-            LinearProgressIndicator(Modifier.fillMaxWidth(), color = colors.accent, trackColor = colors.surfaceMuted)
-        }
+        if (state.running) WorkingBar()
         val error = state.error
         if (error != null) {
             Text(error.message(), style = MaterialTheme.typography.bodyMedium, color = colors.danger)
@@ -259,7 +345,7 @@ private fun ResultCard(
             }
         }
         if (state.running) {
-            RgTextButton(stringResource(R.string.scripts_ai_stop), onCancel, color = colors.textSecondary)
+            RgSecondaryButton(stringResource(R.string.scripts_ai_stop), onCancel, icon = Icons.Rounded.Stop, size = RgButtonSize.SMALL)
         } else if (state.completed && state.output.isNotBlank()) {
             FlowActions(state, onReplace, onInsertBelow, onCopy, onDiscard)
         }
@@ -275,29 +361,36 @@ private fun FlowActions(
     onCopy: (String) -> Unit,
     onDiscard: () -> Unit,
 ) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         if (state.items.isEmpty()) {
-            RgPrimaryButton(
-                stringResource(if (state.onSelection) R.string.scripts_ai_replace_selection else R.string.scripts_ai_replace_all),
-                { onReplace(state.output) },
-                icon = Icons.Rounded.SwapHoriz,
-                size = RgButtonSize.SMALL,
-            )
-            RgSecondaryButton(stringResource(R.string.scripts_ai_insert_below), { onInsertBelow(state.output) }, icon = Icons.Rounded.VerticalAlignBottom, size = RgButtonSize.SMALL)
+            // Apply actions as two equal-width buttons.
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                RgPrimaryButton(
+                    stringResource(if (state.onSelection) R.string.scripts_ai_replace_selection else R.string.scripts_ai_replace_all),
+                    { onReplace(state.output) },
+                    icon = Icons.Rounded.SwapHoriz,
+                    size = RgButtonSize.MEDIUM,
+                    modifier = Modifier.weight(1f),
+                )
+                RgSecondaryButton(
+                    stringResource(R.string.scripts_ai_insert_below), { onInsertBelow(state.output) },
+                    icon = Icons.Rounded.VerticalAlignBottom, size = RgButtonSize.MEDIUM, modifier = Modifier.weight(1f),
+                )
+            }
         }
-        RgOutlineButton(stringResource(UiR.string.action_copy), { onCopy(state.output) }, icon = Icons.Rounded.ContentCopy, size = RgButtonSize.SMALL)
-        RgTextButton(stringResource(R.string.scripts_ai_discard), onDiscard, color = RgTheme.colors.textSecondary)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            RgOutlineButton(stringResource(UiR.string.action_copy), { onCopy(state.output) }, icon = Icons.Rounded.ContentCopy, size = RgButtonSize.SMALL)
+            Spacer(Modifier.weight(1f))
+            RgTextButton(stringResource(R.string.scripts_ai_discard), onDiscard, color = RgTheme.colors.textSecondary)
+        }
     }
 }
 
 @Composable
 private fun SmallAction(icon: ImageVector, description: String, onClick: () -> Unit) {
-    Icon(
-        icon,
-        description,
-        tint = RgTheme.colors.accent,
-        modifier = Modifier.size(36.dp).clip(RoundedCornerShape(50)).pressable(onClick = onClick).padding(8.dp),
-    )
+    Box(Modifier.size(48.dp).clip(CircleShape).pressable(onClick = onClick), contentAlignment = Alignment.Center) {
+        Icon(icon, description, tint = RgTheme.colors.accent, modifier = Modifier.size(20.dp))
+    }
 }
 
 @Composable
@@ -317,4 +410,15 @@ private fun toneLabel(tone: Tone): String = stringResource(
 private fun copyToClipboard(context: Context, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
     clipboard.setPrimaryClip(ClipData.newPlainText("RavanGo", text))
+}
+
+/** Indeterminate progress; a still bar when reduced motion is on. */
+@Composable
+private fun WorkingBar() {
+    val colors = RgTheme.colors
+    if (RgTheme.reduceMotion) {
+        RgProgressBar(0.35f, height = 4.dp)
+    } else {
+        LinearProgressIndicator(Modifier.fillMaxWidth().height(4.dp), color = colors.accent, trackColor = colors.surfaceMuted)
+    }
 }

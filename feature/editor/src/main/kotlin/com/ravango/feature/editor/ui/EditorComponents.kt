@@ -1,5 +1,9 @@
 package com.ravango.feature.editor.ui
 
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -68,7 +72,8 @@ fun ToolAction(
             .padding(horizontal = Spacing.xs, vertical = Spacing.xs),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box {
+        // The PRO tag sits on the circle's top-end corner, inside the item's own width (never clipped).
+        Box(Modifier.width(64.dp).height(48.dp), contentAlignment = Alignment.Center) {
             Box(
                 Modifier
                     .size(44.dp)
@@ -80,7 +85,7 @@ fun ToolAction(
                 if (busy) androidx.compose.material3.CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = colors.accent)
                 else Icon(icon, null, tint = if (selected) colors.onAccent else Color.White, modifier = Modifier.size(22.dp))
             }
-            if (pro) ProBadge(Modifier.align(Alignment.TopEnd).padding(start = 24.dp))
+            if (pro) ProBadge(Modifier.align(Alignment.TopEnd))
         }
         Spacer(Modifier.height(4.dp))
         Text(label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.85f), maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
@@ -135,7 +140,7 @@ fun ValueSlider(
         valueText = valueText,
         bipolar = bipolar,
         enabled = enabled,
-        trailing = if (pro) ({ ProBadge() }) else null,
+        trailing = if (pro) ({ ProBadge(); Spacer(Modifier.width(Spacing.sm)) }) else null,
         onValueChangeFinished = onFinished,
     )
 }
@@ -151,7 +156,7 @@ fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit, modi
             ProBadge()
             Spacer(Modifier.width(Spacing.sm))
         }
-        RgSwitch(checked = checked, onCheckedChange = onChange, enabled = enabled)
+        DirectionSafeSwitch(checked = checked, onCheckedChange = onChange, enabled = enabled)
     }
 }
 
@@ -202,3 +207,18 @@ val SwatchColors: List<Long> = listOf(
 
 fun Long.toComposeColor(): Color = Color((this and 0xFFFFFFFFL).toInt())
 fun Color.toArgbLong(): Long = (android.graphics.Color.argb((alpha * 255).roundToInt(), (red * 255).roundToInt(), (green * 255).roundToInt(), (blue * 255).roundToInt()).toLong() and 0xFFFFFFFFL)
+
+/**
+ * [RgSwitch] rendered in a left-to-right context and mirrored visually in RTL. Works around the design-system
+ * switch pushing its thumb outside the track when checked in RTL, and stays correct once that is fixed.
+ */
+@Composable
+internal fun DirectionSafeSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        RgSwitch(checked, onCheckedChange, modifier.graphicsLayer { if (rtl) scaleX = -1f }, enabled)
+    }
+}
+
+/** "start – end" time range, kept left-to-right inside RTL text. */
+fun timeRange(startUs: Long, endUs: Long, separator: String = " – "): String = "\u2066" + timecode(startUs) + separator + timecode(endUs) + "\u2069"

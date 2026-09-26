@@ -20,6 +20,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.unit.em
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -45,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -139,7 +150,7 @@ fun AiHero(state: AiStudioUiState, onGetCredits: () -> Unit, modifier: Modifier 
                     color = Color.White,
                 )
                 Spacer(Modifier.height(Spacing.sm))
-                RgProgressBar(remaining.toFloat() / total, trackColor = Color.White.copy(alpha = 0.25f))
+                CreditsBar(remaining.toFloat() / total)
                 if (remaining < total / 4) {
                     Spacer(Modifier.height(Spacing.md))
                     RgSecondaryButton(
@@ -200,8 +211,7 @@ fun ToolTile(tool: AiTool, tint: Color, onClick: () -> Unit, modifier: Modifier 
             .background(colors.surface)
             .border(1.dp, colors.outline, RoundedCornerShape(Radius.lg))
             .pressable(onClick = onClick)
-            .padding(Spacing.lg)
-            .heightIn(min = 112.dp),
+            .padding(Spacing.lg),
     ) {
         Box(Modifier.size(40.dp).clip(RoundedCornerShape(Radius.sm)).background(tint), contentAlignment = Alignment.Center) {
             Icon(tool.icon, null, tint = colors.accent, modifier = Modifier.size(22.dp))
@@ -221,29 +231,39 @@ fun ToolTile(tool: AiTool, tint: Color, onClick: () -> Unit, modifier: Modifier 
 fun StreamingText(text: String, streaming: Boolean, modifier: Modifier = Modifier) {
     val uiDirection = LocalLayoutDirection.current
     val direction = remember(text.take(64), uiDirection) { ContentDirection.AUTO.resolve(text, uiDirection) }
-    val reduceMotion = RgTheme.reduceMotion
-    val transition = rememberInfiniteTransition(label = "cursor")
-    val blink by transition.animateFloat(1f, 0f, infiniteRepeatable(tween(530), RepeatMode.Reverse), label = "blink")
+    // Blink is read only while drawing (no recomposition per frame) and is a steady caret under reduced motion.
+    val blink: State<Float> = if (RgTheme.reduceMotion || !streaming) {
+        remember { mutableFloatStateOf(1f) }
+    } else {
+        rememberInfiniteTransition(label = "cursor").animateFloat(1f, 0f, infiniteRepeatable(tween(530), RepeatMode.Reverse), label = "blink")
+    }
     val accent = RgTheme.colors.accent
-    CompositionLocalProvider(LocalLayoutDirection provides direction) {
-        Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-            Text(
-                text,
-                style = MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.Content),
-                color = RgTheme.colors.textPrimary,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            if (streaming) {
-                Box(
-                    Modifier
-                        .padding(start = 2.dp, bottom = 4.dp)
-                        .size(width = 2.dp, height = 18.dp)
-                        .drawWithContent { drawRect(accent.copy(alpha = if (reduceMotion) 1f else blink)) },
-                )
-            }
+    // The caret is inline content, so it sits right after the last character on the last line.
+    val annotated = remember(text, streaming) {
+        buildAnnotatedString {
+            append(text)
+            if (streaming) appendInlineContent(CARET_ID, "|")
         }
     }
+    val inline = remember(accent) {
+        mapOf(
+            CARET_ID to InlineTextContent(Placeholder(0.5.em, 1.2.em, PlaceholderVerticalAlign.TextCenter)) {
+                Box(Modifier.fillMaxSize().padding(start = 3.dp, end = 3.dp).drawBehind { drawRect(accent.copy(alpha = blink.value)) })
+            },
+        )
+    }
+    CompositionLocalProvider(LocalLayoutDirection provides direction) {
+        Text(
+            annotated,
+            style = MaterialTheme.typography.bodyLarge.copy(textDirection = TextDirection.Content),
+            color = RgTheme.colors.textPrimary,
+            inlineContent = inline,
+            modifier = modifier.fillMaxWidth(),
+        )
+    }
 }
+
+private const val CARET_ID = "caret"
 
 /** Selectable card for a list-style result item. */
 @Composable
@@ -320,4 +340,51 @@ fun VideoFeatureRow(label: String, trailing: String? = null) {
 @Composable
 fun AnimatedSection(visible: Boolean, content: @Composable () -> Unit) {
     AnimatedVisibility(visible, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) { content() }
+}
+
+/** Loading placeholder line: pulses gently, still under reduced motion (the shared shimmer ignores that setting). */
+@Composable
+fun SkeletonLine(modifier: Modifier = Modifier) {
+    val alpha = if (RgTheme.reduceMotion) {
+        1f
+    } else {
+        val transition = rememberInfiniteTransition(label = "skeleton")
+        val a by transition.animateFloat(0.5f, 1f, infiniteRepeatable(tween(900), RepeatMode.Reverse), label = "alpha")
+        a
+    }
+    Box(modifier.graphicsLayer { this.alpha = alpha }.clip(RoundedCornerShape(Radius.pill)).background(RgTheme.colors.surfaceMuted))
+}
+
+/** White-on-gradient meter (the shared progress bar's gradient fill disappears on the brand gradient). */
+@Composable
+private fun CreditsBar(fraction: Float) {
+    Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(Radius.pill)).background(Color.White.copy(alpha = 0.28f))) {
+        Box(Modifier.fillMaxWidth(fraction.coerceIn(0f, 1f)).height(6.dp).clip(RoundedCornerShape(Radius.pill)).background(Color.White))
+    }
+}
+
+/** Full-width tile for the last, unpaired tool of a group (keeps the grid free of holes). */
+@Composable
+fun WideToolTile(tool: AiTool, tint: Color, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = RgTheme.colors
+    Row(
+        modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.lg))
+            .background(colors.surface)
+            .border(1.dp, colors.outline, RoundedCornerShape(Radius.lg))
+            .pressable(onClick = onClick)
+            .padding(Spacing.lg),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size(40.dp).clip(RoundedCornerShape(Radius.sm)).background(tint), contentAlignment = Alignment.Center) {
+            Icon(tool.icon, null, tint = colors.accent, modifier = Modifier.size(22.dp))
+        }
+        Spacer(Modifier.width(Spacing.md))
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(tool.title), style = MaterialTheme.typography.titleSmall, color = colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.height(Spacing.xxs))
+            Text(stringResource(tool.subtitle), style = MaterialTheme.typography.bodySmall, color = colors.textSecondary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        }
+    }
 }

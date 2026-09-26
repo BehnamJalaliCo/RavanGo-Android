@@ -304,4 +304,6 @@
     <string name="editor_voiceover_record">Record</string>
     <string name="editor_voiceover_stop">Stop</string>
     <string name="editor_volume">Volume</string>
+    <string name="editor_cue_earlier">Earlier</string>
+    <string name="editor_cue_later">Later</string>
 </resources>

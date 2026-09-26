@@ -12,11 +12,11 @@
     <string name="prompter_sections">بخش‌ها</string>
     <string name="prompter_speed_down">آهسته‌تر</string>
     <string name="prompter_speed_up">تندتر</string>
-    <string name="prompter_wpm">کلمه در دقیقه</string>
+    <string name="prompter_wpm">کلمه/دقیقه</string>
     <string name="prompter_wpm_value">%1$s کلمه در دقیقه</string>
     <string name="prompter_font_smaller">متن کوچک‌تر</string>
     <string name="prompter_font_larger">متن بزرگ‌تر</string>
-    <string name="prompter_font_size_short">اندازهٔ متن</string>
+    <string name="prompter_font_size_short">اندازه</string>
     <string name="prompter_mirror_h">آینه ↔</string>
     <string name="prompter_mirror_v">آینه ↕</string>
     <string name="prompter_mirror_hint">حالت آینه برای ریگ‌های شیشه‌ای (بیم‌اسپلیتر) است: گوشی زیر شیشه قرار می‌گیرد و بازتاب متن درست خوانده می‌شود. آن را با دوربین پشتیِ پشت شیشه به کار ببرید و وقتی مستقیم از صفحه و با دوربین جلو می‌خوانید، خاموشش کنید.</string>

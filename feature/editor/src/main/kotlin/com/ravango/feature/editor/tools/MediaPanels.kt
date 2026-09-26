@@ -45,7 +45,7 @@ import com.ravango.core.ui.rememberPermissionRequester
 import com.ravango.engine.editor.ops.EditOps
 import com.ravango.engine.editor.ops.withTransform
 import com.ravango.feature.editor.EditorUiState
-import com.ravango.feature.editor.EditorViewModel
+import com.ravango.feature.editor.EditorActions
 import com.ravango.feature.editor.R
 import com.ravango.feature.editor.Selection
 import com.ravango.feature.editor.ui.ActionRow
@@ -62,7 +62,7 @@ import kotlin.math.roundToLong
 // ---------------------------------------------------------------------------------------------- overlay / PiP
 
 @Composable
-fun OverlayPanel(state: EditorUiState, vm: EditorViewModel) {
+fun OverlayPanel(state: EditorUiState, vm: EditorActions) {
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let(vm::addMediaOverlay) }
     val pickVideo = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let(vm::addMediaOverlay) }
     ActionRow {
@@ -105,7 +105,7 @@ private enum class Corner(val x: Float, val y: Float, val label: Int) {
 }
 
 @Composable
-fun LogoPanel(state: EditorUiState, vm: EditorViewModel) {
+fun LogoPanel(state: EditorUiState, vm: EditorActions) {
     val pickLogo = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let { vm.addLogo(it, asWatermark = false) } }
     val pickWatermark = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let { vm.addLogo(it, asWatermark = true) } }
     ActionRow {
@@ -131,7 +131,7 @@ fun LogoPanel(state: EditorUiState, vm: EditorViewModel) {
 // ---------------------------------------------------------------------------------------------- music
 
 @Composable
-fun MusicPanel(state: EditorUiState, vm: EditorViewModel) {
+fun MusicPanel(state: EditorUiState, vm: EditorActions) {
     val pickAudio = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::importMusic) }
     ActionRow {
         ToolAction(Icons.Rounded.LibraryMusic, stringResource(R.string.editor_import_music), { pickAudio.launch(arrayOf("audio/*")) })
@@ -145,11 +145,11 @@ fun MusicPanel(state: EditorUiState, vm: EditorViewModel) {
 }
 
 @Composable
-private fun AudioClipControls(state: EditorUiState, vm: EditorViewModel, track: com.ravango.core.model.AudioTrack, clip: com.ravango.core.model.AudioClip) {
+private fun AudioClipControls(state: EditorUiState, vm: EditorActions, track: com.ravango.core.model.AudioTrack, clip: com.ravango.core.model.AudioClip) {
     val secs = stringResource(R.string.editor_unit_seconds)
     Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.lg), verticalAlignment = Alignment.CenterVertically) {
         Text(
-            timecode(clip.startUs) + " – " + timecode(clip.endUs),
+            com.ravango.feature.editor.ui.timeRange(clip.startUs, clip.endUs),
             style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f), modifier = Modifier.weight(1f),
         )
         com.ravango.core.designsystem.component.RgIconButton(Icons.Rounded.Delete, stringResource(R.string.editor_delete), vm::deleteSelection, size = 36.dp, iconSize = 18.dp, glass = true)
@@ -166,7 +166,7 @@ private fun AudioClipControls(state: EditorUiState, vm: EditorViewModel, track: 
 // ---------------------------------------------------------------------------------------------- voice-over
 
 @Composable
-fun VoiceOverPanel(state: EditorUiState, vm: EditorViewModel) {
+fun VoiceOverPanel(state: EditorUiState, vm: EditorActions) {
     val mic = rememberPermissionRequester(AppPermission.MICROPHONE)
     if (!mic.allGranted) {
         PermissionRationaleCard(
@@ -201,7 +201,7 @@ fun VoiceOverPanel(state: EditorUiState, vm: EditorViewModel) {
 // ---------------------------------------------------------------------------------------------- clip audio
 
 @Composable
-fun AudioPanel(state: EditorUiState, vm: EditorViewModel) {
+fun AudioPanel(state: EditorUiState, vm: EditorActions) {
     val clip = state.selectedClip() ?: return SelectClipHint(vm)
     if (clip.source.kind != MediaKind.VIDEO || !clip.source.hasAudio) {
         InfoCard(stringResource(R.string.editor_msg_no_audio))

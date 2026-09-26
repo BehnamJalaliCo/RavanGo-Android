@@ -70,6 +70,24 @@ sealed interface ExportEvent {
     data class Launch(val intent: Intent) : ExportEvent
 }
 
+/** What the export screen can ask for; implemented by [ExportViewModel]. */
+interface ExportActions {
+    fun setResolution(shortSide: Int)
+    fun setFrameRate(fps: Int)
+    fun setCodec(codec: VideoCodec)
+    fun setAutoBitrate(auto: Boolean)
+    fun setBitrate(bps: Int)
+    fun setIncludeAudio(on: Boolean)
+    fun setExportSrt(on: Boolean)
+    fun removeWatermark()
+    fun startExport()
+    fun cancel()
+    fun reset()
+    fun share(chooserTitle: String)
+    fun shareSrt(chooserTitle: String)
+    fun openInGallery()
+}
+
 @HiltViewModel
 class ExportViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
@@ -78,7 +96,7 @@ class ExportViewModel @Inject constructor(
     private val controller: ExportController,
     private val entitlementProvider: EntitlementProvider,
     private val subtitleBuilder: SubtitleBuilder,
-) : ViewModel() {
+) : ViewModel(), ExportActions {
     val projectId: String = savedStateHandle.toRoute<ExportRoute>().projectId
     private val _state = MutableStateFlow(ExportUiState())
     val state: StateFlow<ExportUiState> = _state.asStateFlow()
@@ -125,7 +143,7 @@ class ExportViewModel @Inject constructor(
         return s.copy(resolutionShortSide = res, frameRate = fps, codec = codec)
     }
 
-    fun setResolution(shortSide: Int) {
+    override fun setResolution(shortSide: Int) {
         val s = state.value
         if (s.resolutionLocked(shortSide)) {
             _events.trySend(ExportEvent.RequirePro(ProFeature.EXPORT_4K))
@@ -134,7 +152,7 @@ class ExportViewModel @Inject constructor(
         update { it.copy(resolutionShortSide = shortSide) }
     }
 
-    fun setFrameRate(fps: Int) {
+    override fun setFrameRate(fps: Int) {
         if (state.value.fpsLocked(fps)) {
             _events.trySend(ExportEvent.RequirePro(ProFeature.EXPORT_60FPS))
             return
@@ -142,18 +160,18 @@ class ExportViewModel @Inject constructor(
         update { it.copy(frameRate = fps) }
     }
 
-    fun setCodec(codec: VideoCodec) = update { it.copy(codec = codec) }
-    fun setAutoBitrate(auto: Boolean) = update { s -> s.copy(videoBitrateBps = if (auto) null else state.value.videoBitrate) }
-    fun setBitrate(bps: Int) = update { it.copy(videoBitrateBps = bps.coerceIn(ExportMath.MIN_CUSTOM_BITRATE, ExportMath.MAX_CUSTOM_BITRATE)) }
-    fun setIncludeAudio(on: Boolean) = update { it.copy(includeAudio = on) }
-    fun setExportSrt(on: Boolean) = update { it.copy(exportSrt = on) }
-    fun removeWatermark() {
+    override fun setCodec(codec: VideoCodec) { update { it.copy(codec = codec) } }
+    override fun setAutoBitrate(auto: Boolean) { update { s -> s.copy(videoBitrateBps = if (auto) null else state.value.videoBitrate) } }
+    override fun setBitrate(bps: Int) { update { it.copy(videoBitrateBps = bps.coerceIn(ExportMath.MIN_CUSTOM_BITRATE, ExportMath.MAX_CUSTOM_BITRATE)) } }
+    override fun setIncludeAudio(on: Boolean) { update { it.copy(includeAudio = on) } }
+    override fun setExportSrt(on: Boolean) { update { it.copy(exportSrt = on) } }
+    override fun removeWatermark() {
         _events.trySend(ExportEvent.RequirePro(ProFeature.EXPORT_NO_WATERMARK))
     }
 
     private fun update(transform: (ExportSettings) -> ExportSettings) = _state.update { it.copy(settings = transform(it.settings)) }
 
-    fun startExport() {
+    override fun startExport() {
         val s = state.value
         val doc = s.document ?: return
         if (s.otherExportRunning || s.export.isActive) return
@@ -165,14 +183,14 @@ class ExportViewModel @Inject constructor(
         }
     }
 
-    fun cancel() = controller.cancel()
+    override fun cancel() { controller.cancel() }
 
     /** Returns to the settings form after a result was shown. */
-    fun reset() = controller.acknowledge()
+    override fun reset() { controller.acknowledge() }
 
     private fun uriFor(file: File): Uri = FileProvider.getUriForFile(context, context.packageName + ".files", file)
 
-    fun share(chooserTitle: String) {
+    override fun share(chooserTitle: String) {
         val done = state.value.export as? ExportState.Succeeded ?: return
         runCatching {
             val uri = uriFor(done.file)
@@ -185,7 +203,7 @@ class ExportViewModel @Inject constructor(
         }.onFailure { RgLog.e(TAG, "Share failed", it) }
     }
 
-    fun shareSrt(chooserTitle: String) {
+    override fun shareSrt(chooserTitle: String) {
         val done = state.value.export as? ExportState.Succeeded ?: return
         val srt = done.srtFile ?: return
         runCatching {
@@ -198,7 +216,7 @@ class ExportViewModel @Inject constructor(
         }.onFailure { RgLog.e(TAG, "Share SRT failed", it) }
     }
 
-    fun openInGallery() {
+    override fun openInGallery() {
         val done = state.value.export as? ExportState.Succeeded ?: return
         val uri = done.galleryUri?.let(Uri::parse) ?: runCatching { uriFor(done.file) }.getOrNull() ?: return
         val view = Intent(Intent.ACTION_VIEW).apply {

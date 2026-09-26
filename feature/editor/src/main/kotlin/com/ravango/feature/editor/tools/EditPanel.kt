@@ -35,7 +35,7 @@ import com.ravango.core.model.MediaKind
 import com.ravango.core.model.ProFeature
 import com.ravango.core.model.VideoClip
 import com.ravango.feature.editor.EditorUiState
-import com.ravango.feature.editor.EditorViewModel
+import com.ravango.feature.editor.EditorActions
 import com.ravango.feature.editor.R
 import com.ravango.feature.editor.Selection
 import com.ravango.feature.editor.ui.ActionRow
@@ -54,7 +54,7 @@ internal fun EditorUiState.selectedClip(): VideoClip? =
 
 /** Shown by clip-specific tools when nothing is selected. */
 @Composable
-internal fun SelectClipHint(vm: EditorViewModel) {
+internal fun SelectClipHint(vm: EditorActions) {
     InfoCard(stringResource(R.string.editor_hint_select_clip), icon = Icons.Rounded.TouchApp, tint = accent()) {
         RgTextButton(stringResource(R.string.editor_select_at_playhead), onClick = vm::selectClipAtPlayhead)
     }
@@ -63,7 +63,7 @@ internal fun SelectClipHint(vm: EditorViewModel) {
 private enum class EditSub { SPEED, CROP, VOLUME, FADES, DURATION }
 
 @Composable
-fun EditPanel(state: EditorUiState, vm: EditorViewModel) {
+fun EditPanel(state: EditorUiState, vm: EditorActions) {
     val clip = state.selectedClip()
     var sub by rememberSaveable { mutableStateOf<EditSub?>(null) }
     val secs = stringResource(R.string.editor_unit_seconds)
@@ -130,7 +130,7 @@ fun EditPanel(state: EditorUiState, vm: EditorViewModel) {
 private val SpeedPresets = listOf(0.25f, 0.5f, 0.75f, 1f, 1.5f, 2f, 3f, 4f)
 
 @Composable
-private fun SpeedControls(clip: VideoClip, vm: EditorViewModel) {
+private fun SpeedControls(clip: VideoClip, vm: EditorActions) {
     PanelSection(stringResource(R.string.editor_speed)) {
         RgChipRow(SpeedPresets, SpeedPresets.firstOrNull { it == clip.speed }, { vm.setSpeed(it, gesture = false) }, { localized(trim(it)) + "×" }, glass = true)
     }
@@ -151,7 +151,7 @@ private val CropPresets = listOf(
 )
 
 @Composable
-private fun CropControls(clip: VideoClip, vm: EditorViewModel) {
+private fun CropControls(clip: VideoClip, vm: EditorActions) {
     val c = clip.crop
     PanelSection(stringResource(R.string.editor_crop)) {
         RgChipRow(CropPresets, null, { p ->

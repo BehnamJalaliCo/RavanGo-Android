@@ -23,7 +23,9 @@
     <string name="scripts_sort_created">Newest first</string>
     <string name="scripts_sort_title">Title (A–Z)</string>
     <string name="scripts_sort_opened">Recently opened</string>
-    <string name="scripts_card_meta">%1$s words · %2$s at %3$s wpm · %4$s</string>
+    <string name="scripts_card_words">%1$s words</string>
+    <string name="scripts_card_duration_cd">Reading time at %1$s words per minute</string>
+    <string name="scripts_card_empty">No text yet</string>
     <string name="scripts_favorite">Add to favorites</string>
     <string name="scripts_unfavorite">Remove from favorites</string>
     <string name="scripts_deleted">Script deleted</string>
@@ -62,7 +64,8 @@
     <string name="scripts_editor_new_title">New script</string>
     <string name="scripts_editor_title_hint">Title</string>
     <string name="scripts_editor_body_hint">Write your script here…\n\nTips: “## ” starts a section, ==text== highlights, **text** emphasises, [pause] adds a pause and [[note]] is a note only you see.</string>
-    <string name="scripts_editor_stats">%1$s words · ≈ %2$s at %3$s wpm</string>
+    <string name="scripts_editor_words">%1$s words</string>
+    <string name="scripts_editor_direction">Text direction</string>
     <string name="scripts_editor_saving">Saving…</string>
     <string name="scripts_editor_saved">Saved</string>
     <string name="scripts_editor_save_failed">Couldn’t save — your text is kept here; we’ll retry</string>
@@ -101,8 +104,8 @@
     <string name="scripts_ai_lengthen">Lengthen</string>
     <string name="scripts_ai_change_tone">Change tone</string>
     <string name="scripts_ai_fix_grammar">Fix grammar</string>
-    <string name="scripts_ai_translate">Translate فارسی ↔ English</string>
-    <string name="scripts_ai_conversational">Make conversational</string>
+    <string name="scripts_ai_translate">Translate</string>
+    <string name="scripts_ai_conversational">Conversational</string>
     <string name="scripts_ai_bullets_to_script">Bullets → script</string>
     <string name="scripts_ai_hooks">Hooks</string>
     <string name="scripts_ai_cta">Call to action</string>

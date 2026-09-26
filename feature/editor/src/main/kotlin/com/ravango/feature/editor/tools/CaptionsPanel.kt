@@ -3,6 +3,13 @@ package com.ravango.feature.editor.tools
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -55,7 +62,7 @@ import com.ravango.core.model.ProFeature
 import com.ravango.core.model.SubtitleAnimation
 import com.ravango.core.model.SubtitleCue
 import com.ravango.feature.editor.EditorUiState
-import com.ravango.feature.editor.EditorViewModel
+import com.ravango.feature.editor.EditorActions
 import com.ravango.feature.editor.R
 import com.ravango.feature.editor.Selection
 import com.ravango.feature.editor.ui.ActionRow
@@ -90,7 +97,7 @@ fun SubtitleAnimation.label(): Int = when (this) {
 }
 
 @Composable
-fun CaptionsPanel(state: EditorUiState, vm: EditorViewModel) {
+fun CaptionsPanel(state: EditorUiState, vm: EditorActions) {
     var tab by rememberSaveable { mutableStateOf(if (state.document.subtitles.cues.isEmpty()) CaptionTab.AUTO else CaptionTab.EDIT) }
     LaunchedEffect(state.selection) { if (state.selection is Selection.Cue) tab = CaptionTab.EDIT }
     Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.lg)) {
@@ -113,7 +120,7 @@ fun CaptionsPanel(state: EditorUiState, vm: EditorViewModel) {
 }
 
 @Composable
-private fun AutoCaptions(state: EditorUiState, vm: EditorViewModel) {
+private fun AutoCaptions(state: EditorUiState, vm: EditorActions) {
     var lang by rememberSaveable { mutableStateOf(CaptionLanguage.AUTO) }
     val services = state.services
     val importSrt = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(vm::importSrt) }
@@ -154,7 +161,7 @@ private fun AutoCaptions(state: EditorUiState, vm: EditorViewModel) {
 }
 
 @Composable
-private fun CueEditor(state: EditorUiState, vm: EditorViewModel) {
+private fun CueEditor(state: EditorUiState, vm: EditorActions) {
     val cues = state.document.subtitles.cues
     var newText by rememberSaveable { mutableStateOf("") }
     Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.lg), verticalAlignment = Alignment.CenterVertically) {
@@ -181,44 +188,63 @@ private fun CueEditor(state: EditorUiState, vm: EditorViewModel) {
 }
 
 @Composable
-private fun CueRow(cue: SubtitleCue, selected: Boolean, vm: EditorViewModel) {
+private fun CueRow(cue: SubtitleCue, selected: Boolean, vm: EditorActions) {
+    val earlier = stringResource(R.string.editor_cue_earlier)
+    val later = stringResource(R.string.editor_cue_later)
     Column(
         Modifier
             .fillMaxWidth()
-            .background(if (selected) accent().copy(alpha = 0.18f) else Color.White.copy(alpha = 0.05f), RoundedCornerShape(Radius.sm))
+            .background(if (selected) accent().copy(alpha = 0.18f) else Color.White.copy(alpha = 0.05f), RoundedCornerShape(Radius.md))
             .padding(Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                timecode(cue.startUs) + " → " + timecode(cue.endUs),
-                style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.8f),
-                modifier = Modifier.weight(1f).pressable {
-                    vm.select(Selection.Cue(cue.id))
-                    vm.seekTo(cue.startUs)
-                },
-            )
-            Nudge(Icons.Rounded.Remove) { vm.updateCue(cue.id) { it.copy(startUs = (it.startUs - 100_000).coerceAtLeast(0)) } }
-            Nudge(Icons.Rounded.Add) { vm.updateCue(cue.id) { it.copy(startUs = minOf(it.startUs + 100_000, it.endUs - 100_000)) } }
-            Spacer(Modifier.width(6.dp))
-            Nudge(Icons.Rounded.Remove) { vm.updateCue(cue.id) { it.copy(endUs = maxOf(it.endUs - 100_000, it.startUs + 100_000)) } }
-            Nudge(Icons.Rounded.Add) { vm.updateCue(cue.id) { it.copy(endUs = it.endUs + 100_000) } }
+        // Start and end each get their own −/+ pair, grouped with the time they change (always left-to-right).
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                TimeNudge(
+                    cue.startUs, earlier, later,
+                    onMinus = { vm.updateCue(cue.id) { it.copy(startUs = (it.startUs - 100_000).coerceAtLeast(0)) } },
+                    onPlus = { vm.updateCue(cue.id) { it.copy(startUs = minOf(it.startUs + 100_000, it.endUs - 100_000)) } },
+                    onTap = { vm.select(Selection.Cue(cue.id)); vm.seekTo(cue.startUs) },
+                )
+                Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = Color.White.copy(alpha = 0.5f), modifier = Modifier.padding(horizontal = Spacing.xs).size(16.dp))
+                TimeNudge(
+                    cue.endUs, earlier, later,
+                    onMinus = { vm.updateCue(cue.id) { it.copy(endUs = maxOf(it.endUs - 100_000, it.startUs + 100_000)) } },
+                    onPlus = { vm.updateCue(cue.id) { it.copy(endUs = it.endUs + 100_000) } },
+                    onTap = { vm.select(Selection.Cue(cue.id)); vm.seekTo(cue.startUs) },
+                )
+            }
         }
         RgTextField(cue.text, { t -> vm.updateCue(cue.id, "cuetext") { it.copy(text = t) } }, Modifier.fillMaxWidth(), singleLine = false, maxLines = 3)
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-            RgIconButton(Icons.Rounded.ContentCut, stringResource(R.string.editor_split_at_playhead), { vm.splitCueAtPlayhead(cue.id) }, size = 32.dp, iconSize = 16.dp, glass = true)
-            RgIconButton(Icons.AutoMirrored.Rounded.CallMerge, stringResource(R.string.editor_merge_next), { vm.mergeCueWithNext(cue.id) }, size = 32.dp, iconSize = 16.dp, glass = true)
-            RgIconButton(Icons.Rounded.Delete, stringResource(R.string.editor_delete), { vm.deleteCue(cue.id) }, size = 32.dp, iconSize = 16.dp, glass = true)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.xs, Alignment.End)) {
+            RgIconButton(Icons.Rounded.ContentCut, stringResource(R.string.editor_split_at_playhead), { vm.splitCueAtPlayhead(cue.id) }, size = 40.dp, iconSize = 18.dp, glass = true)
+            RgIconButton(Icons.AutoMirrored.Rounded.CallMerge, stringResource(R.string.editor_merge_next), { vm.mergeCueWithNext(cue.id) }, size = 40.dp, iconSize = 18.dp, glass = true)
+            RgIconButton(Icons.Rounded.Delete, stringResource(R.string.editor_delete), { vm.deleteCue(cue.id) }, size = 40.dp, iconSize = 18.dp, glass = true)
         }
     }
 }
 
 @Composable
-private fun Nudge(icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
-    RgIconButton(icon, null, onClick, size = 26.dp, iconSize = 14.dp, glass = true)
+private fun TimeNudge(us: Long, earlier: String, later: String, onMinus: () -> Unit, onPlus: () -> Unit, onTap: () -> Unit) {
+    Row(
+        Modifier.clip(RoundedCornerShape(Radius.pill)).background(Color.White.copy(alpha = 0.06f)),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RgIconButton(Icons.Rounded.Remove, earlier, onMinus, size = 36.dp, iconSize = 16.dp, container = Color.Transparent, tint = Color.White)
+        Text(
+            timecode(us),
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White,
+            modifier = Modifier.pressable(onClick = onTap).padding(horizontal = Spacing.xs),
+        )
+        RgIconButton(Icons.Rounded.Add, later, onPlus, size = 36.dp, iconSize = 16.dp, container = Color.Transparent, tint = Color.White)
+    }
 }
 
+
 @Composable
-private fun SubtitleStyleEditor(state: EditorUiState, vm: EditorViewModel) {
+private fun SubtitleStyleEditor(state: EditorUiState, vm: EditorActions) {
     val style = state.document.subtitles.style
     PanelSection(stringResource(R.string.editor_font)) {}
     FontPicker(style.font) { vm.setSubtitleStyle(style.copy(font = it)) }
