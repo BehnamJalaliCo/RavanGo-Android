@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="beauty_title">Beauty</string>
+    <string name="beauty_pro">PRO</string>
+
+    <!-- Tabs -->
+    <string name="beauty_tab_skin">Skin</string>
+    <string name="beauty_tab_face">Face</string>
+    <string name="beauty_tab_eyes">Eyes</string>
+    <string name="beauty_tab_mouth">Mouth</string>
+    <string name="beauty_tab_makeup">Makeup</string>
+    <string name="beauty_tab_presets">Presets</string>
+
+    <!-- Beauty features -->
+    <string name="beauty_feature_smooth_skin">Smooth skin</string>
+    <string name="beauty_feature_skin_retouch">Retouch</string>
+    <string name="beauty_feature_blemish_removal">Blemishes</string>
+    <string name="beauty_feature_skin_brightness">Brightness</string>
+    <string name="beauty_feature_skin_tone">Skin tone</string>
+    <string name="beauty_feature_sharpen">Sharpen</string>
+    <string name="beauty_feature_whitening">Whitening</string>
+    <string name="beauty_feature_dark_circles">Dark circles</string>
+    <string name="beauty_feature_face_slim">Slim face</string>
+    <string name="beauty_feature_jaw">Jaw</string>
+    <string name="beauty_feature_chin">Chin</string>
+    <string name="beauty_feature_cheekbone">Cheekbones</string>
+    <string name="beauty_feature_forehead">Forehead</string>
+    <string name="beauty_feature_nose">Nose</string>
+    <string name="beauty_feature_eye_size">Eye size</string>
+    <string name="beauty_feature_eye_shape">Eye shape</string>
+    <string name="beauty_feature_teeth_whitening">Teeth whitening</string>
+
+    <!-- Makeup layers -->
+    <string name="beauty_makeup_lipstick">Lipstick</string>
+    <string name="beauty_makeup_lip_color">Lip tint</string>
+    <string name="beauty_makeup_eyebrow">Brows</string>
+    <string name="beauty_makeup_eyelashes">Lashes</string>
+    <string name="beauty_makeup_eyeliner">Eyeliner</string>
+    <string name="beauty_makeup_eyeshadow">Eyeshadow</string>
+    <string name="beauty_makeup_blush">Blush</string>
+    <string name="beauty_makeup_contour">Contour</string>
+    <string name="beauty_makeup_highlight">Highlight</string>
+    <string name="beauty_makeup_foundation">Foundation</string>
+
+    <!-- Bipolar slider ends -->
+    <string name="beauty_less">Less</string>
+    <string name="beauty_more">More</string>
+    <string name="beauty_tone_cooler">Cooler</string>
+    <string name="beauty_tone_warmer">Warmer</string>
+    <string name="beauty_eye_rounder">Rounder</string>
+    <string name="beauty_eye_lifted">Lifted</string>
+    <string name="beauty_narrower">Narrower</string>
+    <string name="beauty_wider">Wider</string>
+    <string name="beauty_shorter">Shorter</string>
+    <string name="beauty_taller">Longer</string>
+
+    <!-- Built-in presets -->
+    <string name="beauty_preset_natural">Natural</string>
+    <string name="beauty_preset_glow">Glow</string>
+    <string name="beauty_preset_studio">Studio</string>
+    <string name="beauty_preset_business">Business</string>
+    <string name="beauty_preset_glam">Glam</string>
+
+    <!-- Panel -->
+    <string name="beauty_compare">Hold to compare with the original</string>
+    <string name="beauty_reset">Reset</string>
+    <string name="beauty_reset_all">Reset to natural look</string>
+    <string name="beauty_unlock_pro">Unlock with Pro</string>
+    <string name="beauty_face_not_detected">Face not detected</string>
+    <string name="beauty_tracking_unavailable">Face tracking isn\'t available on this device</string>
+    <string name="beauty_gpu_error">Beauty is paused on this device</string>
+    <string name="beauty_quality_balanced">Balanced quality to keep the frame rate steady</string>
+    <string name="beauty_quality_light">Light quality to keep video smooth</string>
+    <string name="beauty_quality_minimal">Minimal quality: device is busy</string>
+    <string name="beauty_quality_thermal">Reduced quality: device is warm</string>
+    <string name="beauty_active">Active</string>
+
+    <!-- Presets -->
+    <string name="beauty_save_preset">Save preset</string>
+    <string name="beauty_manage_presets">Manage presets</string>
+    <string name="beauty_preset_name">Preset name</string>
+    <string name="beauty_preset_name_placeholder">e.g. Morning live</string>
+    <string name="beauty_preset_saved">Preset saved</string>
+    <string name="beauty_preset_applied">“%1$s” applied</string>
+    <string name="beauty_preset_deleted">Preset deleted</string>
+    <string name="beauty_preset_renamed">Preset renamed</string>
+    <string name="beauty_preset_copy_suffix">%1$s (copy)</string>
+    <string name="beauty_error_save">Couldn\'t save the preset. Please try again.</string>
+    <string name="beauty_presets_title">Beauty presets</string>
+    <string name="beauty_presets_current_title">Current look</string>
+    <string name="beauty_presets_save_current">Save current look</string>
+    <string name="beauty_presets_builtin">Ready-made looks</string>
+    <string name="beauty_presets_mine">My presets</string>
+    <string name="beauty_presets_empty_title">No presets yet</string>
+    <string name="beauty_presets_empty_message">Save your favorite look here or from the beauty panel in Camera Studio.</string>
+    <string name="beauty_presets_limit">%1$s of %2$s presets used</string>
+    <string name="beauty_delete_preset_title">Delete preset?</string>
+    <string name="beauty_delete_preset_message">“%1$s” will be removed from all your devices.</string>
+    <string name="beauty_no_adjustments">No adjustments</string>
+    <plurals name="beauty_adjustments">
+        <item quantity="one">%1$s adjustment</item>
+        <item quantity="other">%1$s adjustments</item>
+    </plurals>
+</resources>

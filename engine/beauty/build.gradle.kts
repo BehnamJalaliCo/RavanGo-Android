@@ -7,5 +7,6 @@ dependencies {
     api(project(":core:model"))
     api(project(":engine:render"))
     implementation(project(":core:common"))
+    implementation(project(":core:datastore"))
     implementation(libs.mlkit.face.detection)
 }
