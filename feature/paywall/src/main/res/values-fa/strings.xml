@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="paywall_title">روان‌گو پرو</string>
+    <string name="paywall_close">بستن</string>
+    <string name="paywall_restore">بازیابی</string>
+    <string name="paywall_hero_default">مثل یک استودیوی حرفه‌ای بساز</string>
+    <string name="paywall_hero_subtitle">هرچه برای فیلم‌برداری، ویرایش و انتشار لازم داری؛ بدون واترمارک و بدون محدودیت.</string>
+    <string name="paywall_hero_subtitle_feature">این قابلیت و همهٔ ابزارهای حرفه‌ای دیگر را برای همهٔ ویدیوهایت باز کن.</string>
+
+    <string name="paywall_feature_record_4k">ضبط با کیفیت خیره‌کنندهٔ 4K</string>
+    <string name="paywall_feature_record_high_fps">ضبط روان با ۶۰ فریم بر ثانیه</string>
+    <string name="paywall_feature_record_hevc">فایل‌های کم‌حجم‌تر با HEVC</string>
+    <string name="paywall_feature_manual_camera">کنترل کامل و دستی دوربین</string>
+    <string name="paywall_feature_advanced_beauty">زیبایی پیشرفته، کاملاً طبیعی</string>
+    <string name="paywall_feature_face_reshape">اصلاح ظریف فرم صورت</string>
+    <string name="paywall_feature_makeup">آرایش‌های استودیویی</string>
+    <string name="paywall_feature_floating_prompter">پرامپتر شناور روی هر برنامه</string>
+    <string name="paywall_feature_multi_layer">ویرایش چندلایه</string>
+    <string name="paywall_feature_pip">تصویر در تصویر</string>
+    <string name="paywall_feature_advanced_color">اصلاح رنگ پیشرفته</string>
+    <string name="paywall_feature_reverse">پخش معکوس کلیپ‌ها</string>
+    <string name="paywall_feature_noise_reduction">صدایی شفاف و بی‌نویز</string>
+    <string name="paywall_feature_export_4k">خروجی 4K</string>
+    <string name="paywall_feature_export_60fps">خروجی ۶۰ فریم بر ثانیه</string>
+    <string name="paywall_feature_no_watermark">خروجی بدون واترمارک</string>
+    <string name="paywall_feature_auto_captions">زیرنویس خودکار</string>
+    <string name="paywall_feature_ai_video">ابزارهای هوشمند ویدیو</string>
+    <string name="paywall_feature_project_sync">پروژه‌هایت روی همهٔ دستگاه‌ها</string>
+    <string name="paywall_feature_media_backup">پشتیبان‌گیری از ویدیوها</string>
+    <string name="paywall_feature_unlimited_presets">پریست‌های نامحدود</string>
+
+    <string name="paywall_benefits_title">همه‌چیز در پرو</string>
+    <string name="paywall_benefit_capture">ضبط 4K، ۶۰ فریم و HEVC با کنترل کامل دستی</string>
+    <string name="paywall_benefit_beauty">زیبایی پیشرفته، اصلاح فرم صورت و آرایش</string>
+    <string name="paywall_benefit_prompter">پرامپتر شناور روی برنامه‌های دیگر</string>
+    <string name="paywall_benefit_editor">چندلایه، تصویر در تصویر، اصلاح رنگ و پخش معکوس</string>
+    <string name="paywall_benefit_audio">حذف نویز برای صدایی شفاف</string>
+    <string name="paywall_benefit_export">خروجی 4K و ۶۰ فریم بدون واترمارک</string>
+    <string name="paywall_benefit_ai">زیرنویس خودکار، ابزارهای هوشمند و %1$s اعتبار هوش مصنوعی در ماه</string>
+    <string name="paywall_benefit_cloud">همگام‌سازی پروژه‌ها و %1$s فضای پشتیبان ویدیو</string>
+    <string name="paywall_benefit_presets">پریست‌های شخصی نامحدود</string>
+
+    <string name="paywall_plans_title">طرحت را انتخاب کن</string>
+    <string name="paywall_plan_yearly">سالانه</string>
+    <string name="paywall_plan_monthly">ماهانه</string>
+    <string name="paywall_plan_lifetime">مادام‌العمر</string>
+    <string name="paywall_per_year">%1$s در سال</string>
+    <string name="paywall_per_month">%1$s در ماه</string>
+    <string name="paywall_per_month_equivalent">فقط %1$s در ماه</string>
+    <string name="paywall_one_time">%1$s یک‌بار برای همیشه</string>
+    <string name="paywall_lifetime_note">یک‌بار پرداخت کن. همهٔ قابلیت‌های پرو برای همیشه، %1$s اعتبار هوش مصنوعی در ماه و %2$s فضای پشتیبان.</string>
+    <string name="paywall_monthly_note">انعطاف‌پذیر؛ هر وقت خواستی لغو کن.</string>
+    <string name="paywall_save_badge">٪%1$s صرفه‌جویی</string>
+    <string name="paywall_trial_badge">%1$s روز رایگان</string>
+    <string name="paywall_best_value">به‌صرفه‌ترین</string>
+
+    <string name="paywall_cta_trial">شروع %1$s روز استفادهٔ رایگان</string>
+    <string name="paywall_cta_subscribe">ادامه</string>
+    <string name="paywall_cta_lifetime">خرید مادام‌العمر</string>
+    <string name="paywall_terms_trial">%1$s روز رایگان، سپس %2$s در سال. اگر پیش از پایان دورهٔ رایگان لغو کنی، هزینه‌ای پرداخت نمی‌کنی. لغو در هر زمان از %3$s.</string>
+    <string name="paywall_terms_yearly">%1$s در سال، با تمدید خودکار. لغو در هر زمان از %2$s.</string>
+    <string name="paywall_terms_monthly">%1$s در ماه، با تمدید خودکار. لغو در هر زمان از %2$s.</string>
+    <string name="paywall_terms_lifetime">پرداخت یک‌بارهٔ %1$s. بدون اشتراک.</string>
+    <string name="paywall_continue_free">ادامه با نسخهٔ رایگان</string>
+    <string name="paywall_terms">شرایط استفاده</string>
+    <string name="paywall_privacy">حریم خصوصی</string>
+
+    <string name="paywall_credits_title">بسته‌های اعتبار هوش مصنوعی</string>
+    <string name="paywall_credits_subtitle">برای همهٔ طرح‌ها. اعتبارها منقضی نمی‌شوند و پس از سهمیهٔ ماهانه مصرف می‌شوند.</string>
+    <string name="paywall_credits_amount">%1$s اعتبار</string>
+    <string name="paywall_credits_balance">%1$s اعتبار هوش مصنوعی داری</string>
+    <string name="paywall_buy">خرید</string>
+
+    <string name="paywall_already_pro_title">تو کاربر پرو هستی</string>
+    <string name="paywall_already_lifetime_title">نسخهٔ مادام‌العمر روان‌گو مال توست</string>
+    <string name="paywall_already_trial">دورهٔ رایگانت فعال است.</string>
+    <string name="paywall_already_body">همهٔ قابلیت‌های پرو باز است. ممنون که از روان‌گو حمایت می‌کنی!</string>
+    <string name="paywall_manage">مدیریت اشتراک</string>
+
+    <string name="paywall_loading">در حال دریافت قیمت‌ها…</string>
+    <string name="paywall_unavailable_title">خرید در دسترس نیست</string>
+    <string name="paywall_unavailable_store">خرید درون‌برنامه‌ای در نسخهٔ گوگل‌پلی روان‌گو در دسترس است. پرداخت از طریق %1$s به کیت پرداخت آن (پولکی / مایکت) نیاز دارد که هنوز در این نسخه نیست. قابلیت‌های پرویی که روی حسابت فعال شده، این‌جا هم کار می‌کنند.</string>
+    <string name="paywall_unavailable_play">پرداخت گوگل‌پلی روی این دستگاه در دسترس نیست. مطمئن شو که پلی‌استور نصب، به‌روز و وارد حساب شده است.</string>
+    <string name="paywall_unavailable_service">ارتباط با %1$s برقرار نشد. اتصال اینترنت را بررسی کن و دوباره تلاش کن.</string>
+    <string name="paywall_products_missing">طرح‌ها از %1$s دریافت نشد.</string>
+    <string name="paywall_retry">تلاش دوباره</string>
+
+    <string name="paywall_msg_pro">به پرو خوش آمدی! همه‌چیز باز شد.</string>
+    <string name="paywall_msg_lifetime">نسخهٔ مادام‌العمر فعال شد. برای همیشه از روان‌گو لذت ببر!</string>
+    <string name="paywall_msg_credits">%1$s اعتبار هوش مصنوعی اضافه شد.</string>
+    <string name="paywall_msg_pending">پرداخت در انتظار تأیید است. به‌محض تکمیل پرداخت، پرو فعال می‌شود.</string>
+    <string name="paywall_msg_cancelled">خرید لغو شد. مبلغی کسر نشد.</string>
+    <string name="paywall_msg_owned">این مورد را قبلاً خریده‌ای و بازیابی شد.</string>
+    <string name="paywall_msg_failed">خرید انجام نشد. مبلغی از حسابت کسر نشده است.</string>
+    <string name="paywall_msg_failed_network">در حین خرید مشکل شبکه پیش آمد. لطفاً دوباره تلاش کن.</string>
+    <string name="paywall_msg_restored_paid">خریدها بازیابی شد. طرحت فعال است.</string>
+    <string name="paywall_msg_restored_none">خرید قبلی برای این حساب پیدا نشد.</string>
+</resources>

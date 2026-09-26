@@ -256,12 +256,12 @@ class PlayBillingProvider @Inject constructor(
                     phases = o.pricingPhases.pricingPhaseList.map { p ->
                         PricePhase(p.formattedPrice, p.priceAmountMicros, p.priceCurrencyCode, p.billingPeriod, p.billingCycleCount, p.recurrenceMode == ProductDetails.RecurrenceMode.INFINITE_RECURRING)
                     },
-                    tags = o.offerTags,
+                    tags = o.offerTags.orEmpty(),
                 )
             }
         } else {
             listOfNotNull(oneTimePurchaseOfferDetails).map { o ->
-                StoreOffer(productId, null, o.offerId, o.offerToken, listOf(PricePhase(o.formattedPrice, o.priceAmountMicros, o.priceCurrencyCode, "", 1, false)), o.offerTags)
+                StoreOffer(productId, null, o.offerId, o.offerToken, listOf(PricePhase(o.formattedPrice, o.priceAmountMicros, o.priceCurrencyCode, "", 1, false)), o.offerTags.orEmpty())
             }
         }
         return StoreProduct(productId, if (isSub) ProductType.SUBSCRIPTION else ProductType.ONE_TIME, name.ifBlank { title }, description, offers)

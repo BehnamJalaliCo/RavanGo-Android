@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation(project(":core:data"))
+    implementation(project(":core:datastore"))
     implementation(project(":platform:auth"))
     implementation(project(":platform:cloud"))
     implementation(project(":platform:billing"))
