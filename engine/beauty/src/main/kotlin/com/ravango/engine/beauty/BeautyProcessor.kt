@@ -131,6 +131,12 @@ internal class BeautyProcessor(
     /** The GL thread this processor is attached to; calls from any other thread are ignored (stale renderer). */
     @Volatile private var ownerThread: Thread? = null
 
+    /** Stages switched off in this session (for instrumented tests and diagnostics). GL thread only. */
+    internal val disabledStageNames: Set<String> get() = disabledStages.mapTo(HashSet()) { it.name }
+
+    /** True when repeated failures bypass the whole processor. */
+    internal val isBypassedByFailure: Boolean get() = failed
+
     // Programs (lazy).
     private var downsampleProgram: GlProgram? = null
     private var copyProgram: GlProgram? = null

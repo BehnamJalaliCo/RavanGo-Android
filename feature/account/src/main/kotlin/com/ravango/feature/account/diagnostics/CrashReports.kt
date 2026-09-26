@@ -24,17 +24,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Share
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -137,55 +144,78 @@ fun CrashReportPrompt(viewModel: CrashReportsViewModel = hiltViewModel()) {
         return
     }
     if (latest == null) return
-    AlertDialog(
-        onDismissRequest = { viewModel.acknowledge() },
-        containerColor = RgTheme.colors.backgroundElevated,
-        shape = RoundedCornerShape(Radius.xl),
-        title = { Text(stringResource(R.string.account_crash_prompt_title), style = MaterialTheme.typography.titleLarge, color = RgTheme.colors.textPrimary) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                Text(stringResource(R.string.account_crash_prompt_message), style = MaterialTheme.typography.bodyMedium, color = RgTheme.colors.textSecondary)
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .background(RgTheme.colors.surfaceMuted, RoundedCornerShape(Radius.md))
-                        .padding(Spacing.sm),
-                ) {
-                    Text(
-                        kindLabel(latest.kind) + " · " + formatTime(latest.timeMillis),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = RgTheme.colors.textSecondary,
-                    )
-                    Text(
-                        latest.summary,
-                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, textDirection = TextDirection.Ltr),
-                        color = RgTheme.colors.textPrimary,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                if (pending.size > 1) {
-                    Text(
-                        pluralStringResource(R.plurals.account_crash_more, pending.size - 1, (pending.size - 1).toString().localizeDigits()),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = RgTheme.colors.textTertiary,
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                RgTextButton(stringResource(R.string.account_crash_view), onClick = { viewing = latest })
-                RgTextButton(stringResource(R.string.account_crash_share), onClick = {
-                    shareReport(context, latest)
-                    viewModel.acknowledge()
-                })
-            }
-        },
-        dismissButton = {
-            RgTextButton(stringResource(R.string.account_crash_dismiss), onClick = { viewModel.acknowledge() }, color = RgTheme.colors.textSecondary)
-        },
-    )
+    Dialog(onDismissRequest = { viewModel.acknowledge() }) {
+        CrashReportPromptCard(
+            report = latest,
+            earlier = pending.size - 1,
+            onView = { viewing = latest },
+            onShare = {
+                shareReport(context, latest)
+                viewModel.acknowledge()
+            },
+            onDismiss = { viewModel.acknowledge() },
+        )
+    }
+}
+
+/** Stateless body of [CrashReportPrompt] (also used by screenshot tests). */
+@Composable
+internal fun CrashReportPromptCard(report: CrashReport, earlier: Int, onView: () -> Unit, onShare: () -> Unit, onDismiss: () -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.xl))
+            .background(RgTheme.colors.backgroundElevated)
+            .padding(Spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+    ) {
+        Box(
+            Modifier.size(48.dp).clip(RoundedCornerShape(Radius.md)).background(RgTheme.colors.accentSoft),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Rounded.BugReport, null, tint = RgTheme.colors.accent, modifier = Modifier.size(26.dp))
+        }
+        Text(stringResource(R.string.account_crash_prompt_title), style = MaterialTheme.typography.titleLarge, color = RgTheme.colors.textPrimary)
+        Text(stringResource(R.string.account_crash_prompt_message), style = MaterialTheme.typography.bodyMedium, color = RgTheme.colors.textSecondary)
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(Radius.md))
+                .background(RgTheme.colors.surfaceMuted)
+                .padding(Spacing.sm),
+        ) {
+            Text(
+                kindLabel(report.kind) + " · " + formatTime(report.timeMillis),
+                style = MaterialTheme.typography.labelMedium,
+                color = RgTheme.colors.textSecondary,
+            )
+            Text(
+                report.summary,
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, textDirection = TextDirection.Ltr),
+                color = RgTheme.colors.textPrimary,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (earlier > 0) {
+            Text(
+                pluralStringResource(R.plurals.account_crash_more, earlier, earlier.toString().localizeDigits()),
+                style = MaterialTheme.typography.bodySmall,
+                color = RgTheme.colors.textTertiary,
+            )
+        }
+        RgPrimaryButton(
+            stringResource(R.string.account_crash_share),
+            onClick = onShare,
+            icon = Icons.Rounded.Share,
+            size = RgButtonSize.MEDIUM,
+            modifier = Modifier.fillMaxWidth().padding(top = Spacing.xs),
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            RgTextButton(stringResource(R.string.account_crash_view), onClick = onView)
+            RgTextButton(stringResource(R.string.account_crash_dismiss), onClick = onDismiss, color = RgTheme.colors.textSecondary)
+        }
+    }
 }
 
 /** Full report with Share and Copy. */
@@ -193,46 +223,56 @@ fun CrashReportPrompt(viewModel: CrashReportsViewModel = hiltViewModel()) {
 fun CrashReportViewer(report: CrashReport, onDismiss: () -> Unit) {
     val context = LocalContext.current
     RgBottomSheet(onDismiss = onDismiss, title = kindLabel(report.kind) + " · " + formatTime(report.timeMillis)) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.gutter), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            Text(
-                stringResource(R.string.account_crash_privacy),
-                style = MaterialTheme.typography.bodySmall,
-                color = RgTheme.colors.textSecondary,
+        CrashReportViewerContent(report, onShare = { shareReport(context, report) }, onCopy = { copyReport(context, report) })
+    }
+}
+
+/** Stateless body of [CrashReportViewer]. */
+@Composable
+internal fun CrashReportViewerContent(report: CrashReport, onShare: () -> Unit, onCopy: () -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.gutter), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        Text(
+            stringResource(R.string.account_crash_privacy),
+            style = MaterialTheme.typography.bodySmall,
+            color = RgTheme.colors.textSecondary,
+        )
+        // The report is English/ASCII: lay the scroll box out LTR so lines start at the visible edge in Persian too.
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(max = 380.dp)
+                .clip(RoundedCornerShape(Radius.md))
+                .background(RgTheme.colors.surfaceMuted)
+                .verticalScroll(rememberScrollState())
+                .horizontalScroll(rememberScrollState())
+                .padding(Spacing.sm),
+        ) {
+            SelectionContainer {
+                Text(
+                    if (report.body.length > VIEW_LIMIT) report.body.take(VIEW_LIMIT) + "\n…" else report.body,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 15.sp, textDirection = TextDirection.Ltr),
+                    color = RgTheme.colors.textPrimary,
+                    softWrap = false,
+                )
+            }
+        }
+        }
+        Row(Modifier.fillMaxWidth().padding(bottom = Spacing.lg), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            RgPrimaryButton(
+                stringResource(R.string.account_crash_share),
+                onClick = onShare,
+                icon = Icons.Rounded.Share,
+                size = RgButtonSize.MEDIUM,
+                modifier = Modifier.weight(1f),
             )
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 380.dp)
-                    .background(RgTheme.colors.surfaceMuted, RoundedCornerShape(Radius.md))
-                    .verticalScroll(rememberScrollState())
-                    .horizontalScroll(rememberScrollState())
-                    .padding(Spacing.sm),
-            ) {
-                SelectionContainer {
-                    Text(
-                        if (report.body.length > VIEW_LIMIT) report.body.take(VIEW_LIMIT) + "\n…" else report.body,
-                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 15.sp, textDirection = TextDirection.Ltr),
-                        color = RgTheme.colors.textPrimary,
-                        softWrap = false,
-                    )
-                }
-            }
-            Row(Modifier.fillMaxWidth().padding(bottom = Spacing.lg), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                RgPrimaryButton(
-                    stringResource(R.string.account_crash_share),
-                    onClick = { shareReport(context, report) },
-                    icon = Icons.Rounded.Share,
-                    size = RgButtonSize.MEDIUM,
-                    modifier = Modifier.weight(1f),
-                )
-                RgSecondaryButton(
-                    stringResource(R.string.account_crash_copy),
-                    onClick = { copyReport(context, report) },
-                    icon = Icons.Rounded.ContentCopy,
-                    size = RgButtonSize.MEDIUM,
-                    modifier = Modifier.weight(1f),
-                )
-            }
+            RgSecondaryButton(
+                stringResource(R.string.account_crash_copy),
+                onClick = onCopy,
+                icon = Icons.Rounded.ContentCopy,
+                size = RgButtonSize.MEDIUM,
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }
