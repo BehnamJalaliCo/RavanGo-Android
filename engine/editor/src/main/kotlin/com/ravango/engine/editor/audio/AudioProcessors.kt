@@ -67,8 +67,11 @@ class GainEnvelopeAudioProcessor(private val envelope: GainEnvelope) : BaseAudio
 
 /**
  * Runs the shared [VoiceProcessor] chain (high-pass → spectral noise reduction → voice enhancement → limiter) on a clip.
- * The processor is created per configured format. If the DSP fails at runtime the audio passes through unchanged
- * (logged once) so an export never breaks because of an optional enhancement.
+ *
+ * The spectral stage delays its output by a constant `latencySamples` frames. To keep audio in sync with video the
+ * first `latencySamples` output frames (the pre-roll) are dropped and, at end of stream, the same number of silent
+ * frames is pushed through the chain to flush the tail — total length is unchanged. If the DSP fails at runtime the
+ * audio passes through unchanged (logged once) so an export never breaks because of an optional enhancement.
  */
 class VoiceCleanupAudioProcessor(
     private val noiseReduction: Float,
@@ -78,6 +81,10 @@ class VoiceCleanupAudioProcessor(
     private var shorts = ShortArray(0)
     private var floats = FloatArray(0)
     private var failed = false
+    private var latencyFrames = 0
+
+    /** Interleaved samples still to drop from the start of the processed stream. */
+    private var pendingDrop = 0
 
     override fun onConfigure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
         if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT && inputAudioFormat.encoding != C.ENCODING_PCM_FLOAT) {
@@ -96,60 +103,87 @@ class VoiceCleanupAudioProcessor(
                 ),
             )
         }.onFailure { RgLog.w(TAG, "Voice processor unavailable", it) }.getOrNull()
+        latencyFrames = processor?.let { latencyOf(it) } ?: 0
         return inputAudioFormat
     }
 
     override fun queueInput(inputBuffer: ByteBuffer) {
         val remaining = inputBuffer.remaining()
         if (remaining == 0) return
-        val out = replaceOutputBuffer(remaining)
         val input = inputBuffer.order(ByteOrder.nativeOrder())
-        val p = processor
-        if (inputAudioFormat.encoding == C.ENCODING_PCM_16BIT) {
-            val n = remaining / 2
+        val bytesPerSample = if (inputAudioFormat.encoding == C.ENCODING_PCM_16BIT) 2 else 4
+        val n = remaining / bytesPerSample
+        if (bytesPerSample == 2) {
             if (shorts.size < n) shorts = ShortArray(n)
             input.asShortBuffer().get(shorts, 0, n)
-            if (p != null && !failed) {
-                try {
-                    p.process(shorts, 0, n)
-                } catch (t: Throwable) {
-                    failed = true
-                    RgLog.w(TAG, "Voice processing failed; passing audio through", t)
-                    input.asShortBuffer().get(shorts, 0, n)
-                }
-            }
-            out.asShortBuffer().put(shorts, 0, n)
-            out.position(n * 2)
         } else {
-            val n = remaining / 4
             if (floats.size < n) floats = FloatArray(n)
             input.asFloatBuffer().get(floats, 0, n)
-            if (p != null && !failed) {
-                try {
-                    p.process(floats, 0, n)
-                } catch (t: Throwable) {
-                    failed = true
-                    RgLog.w(TAG, "Voice processing failed; passing audio through", t)
-                    input.asFloatBuffer().get(floats, 0, n)
-                }
-            }
-            out.asFloatBuffer().put(floats, 0, n)
-            out.position(n * 4)
         }
         inputBuffer.position(inputBuffer.limit())
+        process(n, bytesPerSample)
+    }
+
+    /** Processes the first [n] samples of the scratch array and emits them minus any pending pre-roll. */
+    private fun process(n: Int, bytesPerSample: Int) {
+        val p = processor
+        if (p != null && !failed) {
+            try {
+                if (bytesPerSample == 2) p.process(shorts, 0, n) else p.process(floats, 0, n)
+            } catch (t: Throwable) {
+                // Pass the (partially processed) block through and stop compensating.
+                failed = true
+                pendingDrop = 0
+                RgLog.w(TAG, "Voice processing failed; passing audio through", t)
+            }
+        }
+        val drop = minOf(pendingDrop, n)
+        pendingDrop -= drop
+        val count = n - drop
+        val out = replaceOutputBuffer(count * bytesPerSample)
+        if (count > 0) {
+            if (bytesPerSample == 2) out.asShortBuffer().put(shorts, drop, count) else out.asFloatBuffer().put(floats, drop, count)
+            out.position(count * bytesPerSample)
+        }
         out.flip()
+    }
+
+    override fun onQueueEndOfStream() {
+        // Flush the delayed tail by pushing latency frames of silence through the chain.
+        if (processor == null || failed || latencyFrames <= 0) return
+        val bytesPerSample = if (inputAudioFormat.encoding == C.ENCODING_PCM_16BIT) 2 else 4
+        val n = latencyFrames * inputAudioFormat.channelCount
+        if (bytesPerSample == 2) {
+            if (shorts.size < n) shorts = ShortArray(n)
+            shorts.fill(0, 0, n)
+        } else {
+            if (floats.size < n) floats = FloatArray(n)
+            floats.fill(0f, 0, n)
+        }
+        process(n, bytesPerSample)
     }
 
     override fun onFlush() {
         runCatching { processor?.reset() }
+        pendingDrop = latencyFrames * inputAudioFormat.channelCount.coerceAtLeast(0)
     }
 
     override fun onReset() {
         processor = null
         failed = false
+        latencyFrames = 0
+        pendingDrop = 0
     }
 
     private companion object {
         const val TAG = "VoiceCleanup"
+
+        /**
+         * `VoiceProcessor.latencySamples` (frames). Read reflectively so this module builds against both the original
+         * contract (no property; 0 latency) and the implemented processor. The getter is kept by consumer rules.
+         */
+        fun latencyOf(p: VoiceProcessor): Int = runCatching {
+            p.javaClass.getMethod("getLatencySamples").invoke(p) as Int
+        }.getOrDefault(0).coerceAtLeast(0)
     }
 }

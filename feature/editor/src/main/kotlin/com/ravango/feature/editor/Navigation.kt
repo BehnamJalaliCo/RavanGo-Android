@@ -1,25 +1,34 @@
 package com.ravango.feature.editor
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
-import com.ravango.core.designsystem.component.RgScreen
+import androidx.navigation.toRoute
 import com.ravango.core.navigation.EditorRoute
 import com.ravango.core.navigation.ExportRoute
+import com.ravango.core.navigation.PaywallRoute
+import com.ravango.core.navigation.SettingsRoute
+import com.ravango.feature.editor.export.ExportScreen
 
 /** Registers this feature's destinations. Navigation to other features uses routes from :core:navigation. */
 fun NavGraphBuilder.editorDestinations(navController: NavHostController) {
-    composable<EditorRoute> { StubScreen("EditorRoute") { navController.popBackStack() } }
-    composable<ExportRoute> { StubScreen("ExportRoute") { navController.popBackStack() } }
-}
-
-@Composable
-private fun StubScreen(name: String, onBack: () -> Unit) {
-    RgScreen(title = name, onBack = onBack) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(name) } }
+    composable<EditorRoute> {
+        EditorScreen(
+            onBack = { navController.popBackStack() },
+            onExport = { projectId -> navController.navigate(ExportRoute(projectId)) },
+            onRequirePro = { feature -> navController.navigate(PaywallRoute(source = "editor", feature = feature.name)) },
+            onOpenSettings = { navController.navigate(SettingsRoute) },
+        )
+    }
+    composable<ExportRoute> { entry ->
+        val route = entry.toRoute<ExportRoute>()
+        ExportScreen(
+            onBack = { navController.popBackStack() },
+            onBackToEditor = {
+                // Return to the project's editor (it is usually right below; otherwise open it).
+                if (!navController.popBackStack()) navController.navigate(EditorRoute(route.projectId))
+            },
+            onRequirePro = { feature -> navController.navigate(PaywallRoute(source = "export", feature = feature.name)) },
+        )
+    }
 }

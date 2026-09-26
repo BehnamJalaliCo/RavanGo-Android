@@ -7,7 +7,7 @@ plugins {
 kotlin {
     compilerOptions {
         // Most of the Media3 editing surface (Composition, CompositionPlayer, GL effects) is @UnstableApi.
-        freeCompilerArgs.add("-opt-in=androidx.media3.common.util.UnstableApi")
+        freeCompilerArgs.addAll("-opt-in=androidx.media3.common.util.UnstableApi", "-Xannotation-default-target=param-property")
     }
 }
 

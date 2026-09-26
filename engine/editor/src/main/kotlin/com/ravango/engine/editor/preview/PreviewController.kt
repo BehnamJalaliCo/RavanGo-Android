@@ -134,6 +134,11 @@ class PreviewController @Inject constructor(
         _player?.pause()
     }
 
+    /** Output volume of the preview (0 while recording a voice-over so the mic does not pick it up). */
+    fun setVolume(volume: Float) {
+        _player?.volume = volume.coerceIn(0f, 1f)
+    }
+
     fun togglePlay() = if (_isPlaying.value) pause() else play()
 
     /** Seeks to [timeUs]; while [scrubbing], seeks are optimised for rapid successive calls. */
