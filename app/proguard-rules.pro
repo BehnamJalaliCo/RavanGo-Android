@@ -41,4 +41,4 @@
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
 
-# ML Kit / Media3 ship their own consumer rules.
+# MediaPipe tasks and Media3 ship their own consumer rules (engine:beauty adds MediaPipe-specific keeps).

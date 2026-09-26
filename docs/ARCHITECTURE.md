@@ -14,7 +14,7 @@ This document is the map of the codebase. Read it before adding a module or cros
 | Camera | **Camera2** directly | Capability-accurate UI (ISO, shutter, focus distance, WB, fps ranges, stabilization, HDR) |
 | Real-time GPU | EGL14 + GLES 2/3 (`engine:render`) | One GPU pipeline renders preview *and* encoder input → effects identical in preview and file |
 | Encoding | MediaCodec (surface input) + segmented MediaMuxer | Hardware encoding, crash-safe segments |
-| Face tracking | ML Kit Face Detection (contours, bundled model) | On-device, free, no network |
+| Face tracking | MediaPipe Face Landmarker (478 3D landmarks, 2 faces, GPU delegate) + canonical face mesh with UVs | Snapchat-style architecture: makeup as UV-space face-mask textures, mesh-warp reshape; on-device, no network |
 | Editor / export | Media3 Transformer + Effect + CompositionPlayer | Hardware-accelerated composition, same graph for preview and export |
 | AI (text) | Anthropic Claude via official Java SDK, through the RavanGo gateway | Keys never ship in the APK |
 | Speech-to-text | Gateway (Whisper-compatible) / Android on-device recognizer | Word timestamps for captions |

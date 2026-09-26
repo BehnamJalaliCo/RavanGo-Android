@@ -26,8 +26,10 @@ android {
 
     defaultConfig {
         applicationId = "com.ravango.app"
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
+        // 32-bit x86 has no real phones left; dropping it saves ~25 MB of native libraries (MediaPipe) per build.
+        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64") }
 
         buildConfigField("String", "SUPABASE_URL", quoted(secret("supabaseUrl")))
         buildConfigField("String", "SUPABASE_ANON_KEY", quoted(secret("supabaseAnonKey")))
@@ -43,6 +45,8 @@ android {
         // Per-app language support (Android 13+) generated from res folders.
         generateLocaleConfig = true
         localeFilters += listOf("fa", "en")
+        // Keep the MediaPipe face model uncompressed so it can be memory-mapped instead of copied into the heap.
+        noCompress += listOf("task", "tflite")
     }
 
     buildFeatures {

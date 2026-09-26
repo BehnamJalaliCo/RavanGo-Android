@@ -44,7 +44,7 @@
 | `RavanGo-release-arm64-v8a.apk` | **اکثر گوشی‌ها** (۶۴ بیتی) — نسخه‌ی بهینه‌شده (R8) |
 | `RavanGo-release-armeabi-v7a.apk` | گوشی‌های قدیمی ۳۲ بیتی |
 | `RavanGo-release-universal.apk` | اگر مطمئن نیستید؛ روی همه‌ی دستگاه‌ها نصب می‌شود (حجم بیشتر) |
-| `RavanGo-release-x86_64.apk` | شبیه‌ساز / دستگاه‌های x86 |
+| `RavanGo-release-x86_64.apk` | شبیه‌ساز / دستگاه‌های x86 ۶۴ بیتی |
 | `RavanGo-release.aab` | App Bundle برای انتشار در Google Play |
 | `RavanGo-debug-universal.apk` | نسخه‌ی اشکال‌زدایی (قابل نصب کنار نسخه‌ی release با شناسه‌ی `com.ravango.app.debug`) |
 
@@ -90,7 +90,12 @@
 ### ۵. بیوتی و میکاپ لحظه‌ای (`engine:beauty`، `feature:beauty`)
 - **Beauty:** صاف کردن پوست، رتوش، حذف لک و جوش، روشنایی، رنگ پوست، شارپ، سفید کردن، حذف تیرگی زیر چشم، لاغری صورت، فک، چانه، گونه، پیشانی، بینی، اندازه و فرم چشم، سفید کردن دندان.
 - **Makeup:** رژ لب، رنگ لب، ابرو، مژه، خط چشم، سایه چشم، رژگونه، کانتور، هایلایت، کرم‌پودر — هرکدام با اسلایدر ۰ تا ۱۰۰ و انتخاب رنگ.
-- ردیابی صورت روی دستگاه (ML Kit) + فیلتر One-Euro برای حرکت نرم، شیدرهای GLES روی پیش‌نمایش **و** فایل نهایی.
+- **معماری مشابه Snapchat / Lens Studio:** ردیابی **مش سه‌بعدی چهره** با MediaPipe Face Landmarker (۴۷۸ نقطه‌ی سه‌بعدی، تا ۲ چهره، شتاب GPU) و مش استاندارد چهره با مختصات UV.
+- **میکاپ به روش Face Mask:** بافت‌های میکاپ در فضای UV چهره ساخته و روی مش ردیابی‌شده رندر می‌شوند؛ مثل نقاشی روی پوست با حرکات صورت جابه‌جا می‌شوند و هرگز روی دندان یا داخل چشم نمی‌افتند.
+- **Face Retouch:** نرمی پوست با حفظ بافت (Frequency Separation)، سفیدی دندان، شارپ و سفیدی چشم، **رنگ چشم**.
+- **تغییر فرم با Mesh Warp (مانند Face Liquify):** تغییر شکل خود مش چهره، هم‌راستا با چرخش سر و بدون درز.
+- **لُک‌های آماده‌ی یک‌لمسی:** Natural، Soft Glam، Bold Lips، Smokey Eyes، K-Beauty، Bronzed.
+- پایدارسازی One-Euro و پیش‌بینی حرکت برای حذف لرزش؛ شیدرهای GLES روی پیش‌نمایش **و** فایل نهایی.
 - **Before/After**، پریست‌های قابل ذخیره، **کاهش هوشمند کیفیت** بر اساس توان دستگاه، دما و زمان واقعی هر فریم (FULL → BALANCED → LIGHT → MINIMAL) تا FPS ضبط حفظ شود.
 
 ### ۶. ادیتور ویدیو (`engine:editor`، `feature:editor`)
@@ -132,7 +137,7 @@
 | معماری | ماژولار چندلایه، MVVM/UDF، Hilt |
 | داده | Room (local-first)، DataStore، SecureStore مبتنی بر Android Keystore |
 | دوربین و GPU | Camera2 + EGL14/GLES2-3 + MediaCodec + MediaMuxer |
-| بیوتی | ML Kit Face Detection (روی دستگاه) + شیدرهای GLSL |
+| بیوتی | MediaPipe Face Landmarker (مش سه‌بعدی چهره) + میکاپ UV-space + شیدرهای GLSL |
 | ادیتور | Media3 Transformer / Effect / CompositionPlayer 1.8 |
 | هوش مصنوعی | Anthropic Java SDK (Claude)، گیت‌وی Supabase Edge Function |
 | بک‌اند | Supabase (Auth، PostgREST با RLS، Storage) |
@@ -277,7 +282,8 @@ Workflow: [`.github/workflows/android.yml`](.github/workflows/android.yml)
 
 - قابلیت‌های وابسته به سخت‌افزار (ضبط، GL، بیوتی، Bluetooth، مانیتورینگ) روی دستگاه‌های واقعی نیازمند تست میدانی گسترده هستند.
 - HDR ده‌بیتی (HLG) پشتیبانی نمی‌شود چون خط لوله‌ی GPU هشت‌بیتی است؛ فقط حالت HDR صحنه در صورت پشتیبانی دستگاه.
-- ML Kit کانتور را فقط برای یک چهره (برجسته‌ترین) ارائه می‌دهد؛ افکت‌های چهره روی یک نفر اعمال می‌شوند.
+- لنزهای دقیقاً خودِ Snapchat فقط از طریق SDK رسمی **Snap Camera Kit** (نیازمند حساب توسعه‌دهنده‌ی Snap و توکن API) در دسترس‌اند؛ موتور روان‌گو همان معماری را با ابزارهای آزاد پیاده می‌کند.
+- دست‌ها روی صورت فقط با تشخیص رنگ پوست مدیریت می‌شوند (بدون Segmentation).
 - Transitionها از نوع «عبور» هستند (بدون هم‌پوشانی دو کلیپ / cross-dissolve).
 - Import فایل PDF پشتیبانی نمی‌شود.
 - اصلاح تماس چشمی (Eye Contact) نیازمند سرویس سمت سرور است.
@@ -293,7 +299,7 @@ Workflow: [`.github/workflows/android.yml`](.github/workflows/android.yml)
 **teleprompter → pro camera → real-time beauty & makeup → audio → multi-track editor → subtitles & AI → export**.
 Persian is the primary language (full RTL); English is fully supported.
 
-- **Stack:** Kotlin 2.2, Jetpack Compose (custom pastel/glass design system), Hilt, Room, DataStore, Camera2 + EGL/GLES + MediaCodec, ML Kit face contours, Media3 1.8 (Transformer/Effect/CompositionPlayer), Anthropic Java SDK (Claude via a server-side gateway), Supabase (auth, RLS sync, storage), Google Play Billing 8.
+- **Stack:** Kotlin 2.2, Jetpack Compose (custom pastel/glass design system), Hilt, Room, DataStore, Camera2 + EGL/GLES + MediaCodec, MediaPipe Face Landmarker (Snapchat-style 3D face mesh, UV-space makeup, mesh-warp reshape), Media3 1.8 (Transformer/Effect/CompositionPlayer), Anthropic Java SDK (Claude via a server-side gateway), Supabase (auth, RLS sync, storage), Google Play Billing 8.
 - **Modules:** `core:*` foundations, `engine:*` (render, camera, audio, beauty, teleprompter, editor, ai), `platform:*` (auth, cloud, billing), `feature:*` screens. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 - **Build:** `./gradlew :app:assembleDebug` / `:app:assembleRelease`; tests: `./gradlew testDebugUnitTest`.
 - **Downloads:** GitHub Releases → `latest-build` (built by [CI](.github/workflows/android.yml) on every push).
