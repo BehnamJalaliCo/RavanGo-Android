@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.opengl.GLES20
 import android.opengl.GLES30
+import com.ravango.core.common.diagnostics.Diagnostics
 import com.ravango.core.common.log.RgLog
 import com.ravango.core.model.BeautyFeature
 import com.ravango.core.model.BeautyState
@@ -47,13 +48,16 @@ import com.ravango.engine.beauty.tracking.FrameGrabber
 import com.ravango.engine.beauty.tracking.SelfieSegmenterTracker
 import com.ravango.engine.beauty.tracking.TrackedFace
 import com.ravango.engine.render.FullScreenQuad
+import com.ravango.engine.render.GlDiagnostics
 import com.ravango.engine.render.GlFramebuffer
 import com.ravango.engine.render.GlFrameProcessor
 import com.ravango.engine.render.GlProcessingContext
 import com.ravango.engine.render.GlProgram
+import com.ravango.engine.render.GlProgramException
 import com.ravango.engine.render.GlTextureFrame
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.EnumSet
 import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -97,18 +101,41 @@ internal class BeautyControls(tier: TierHint) {
  * Every pass is skipped when its features are neutral; the processor returns the input untouched when nothing is
  * active. Full-resolution passes ping-pong between two reused framebuffers; low-resolution work (masks, blurs) runs
  * at ¼–½ resolution. GL objects are created lazily at the sizes needed and released in [onDetach]. Per-frame work
- * does not allocate. Any GL failure bypasses the processor (reported as [BeautySuspendReason.GPU_ERROR]); a
- * face-mesh-only failure keeps skin effects, filters and background effects running.
+ * does not allocate.
+ *
+ * Failure isolation: every pass runs as a [Stage]. A stage that throws (shader rejected by this GPU, framebuffer
+ * incomplete, texture upload refused…) is recorded in the diagnostics log with the GPU name and switched off for this
+ * camera session — the frame and every other effect keep working (reported as [BeautySuspendReason.GPU_ERROR] /
+ * [EffectsStatus.effectsGpuError]). Only repeated failures outside any stage bypass the whole processor.
  */
 internal class BeautyProcessor(
     private val controls: BeautyControls,
     private val context: Context,
 ) : GlFrameProcessor {
 
+    /** Independent GPU passes; one failing never takes the others down. */
+    internal enum class Stage { SKIN, MAKEUP, PAINT, WARP, BACKGROUND, GLOW, FINAL, SPRITES, READBACK }
+
     private var glVersion = 2
     private var attached = false
     private var failed = false
     private var meshFailed = false
+
+    // Failure isolation (GL thread only).
+    private val disabledStages = EnumSet.noneOf(Stage::class.java)
+    private val stageFailures = IntArray(Stage.entries.size)
+    private val stageRetryAtNs = LongArray(Stage.entries.size)
+    private var consecutiveFrameFailures = 0
+    private var lastGlCheckNs = 0L
+
+    /** The GL thread this processor is attached to; calls from any other thread are ignored (stale renderer). */
+    @Volatile private var ownerThread: Thread? = null
+
+    /** Stages switched off in this session (for instrumented tests and diagnostics). GL thread only. */
+    internal val disabledStageNames: Set<String> get() = disabledStages.mapTo(HashSet()) { it.name }
+
+    /** True when repeated failures bypass the whole processor. */
+    internal val isBypassedByFailure: Boolean get() = failed
 
     // Programs (lazy).
     private var downsampleProgram: GlProgram? = null
@@ -147,7 +174,7 @@ internal class BeautyProcessor(
     private var fxGlow: GlFramebuffer? = null
     private var fxGlowTmp: GlFramebuffer? = null
     private var faceMaskClear = false
-    private val depth = DepthBufferGl()
+    private var depth = DepthBufferGl()
 
     // Tracking.
     private var tracker: FaceLandmarkerTracker? = null
@@ -165,7 +192,7 @@ internal class BeautyProcessor(
     // Face mesh.
     private var topology: FaceTopology? = null
     private var meshGl: FaceMeshGl? = null
-    private val textures = MakeupTexturesGl()
+    private var textures = MakeupTexturesGl()
     private var poses: Array<PoseFit> = emptyArray()
     private var reshapeField: ReshapeField? = null
     private var lensWarpField: LensWarpField? = null
@@ -188,16 +215,15 @@ internal class BeautyProcessor(
     private var irisCount = 0
 
     // Effects.
-    private val luts = LutTexturesGl()
-    private val maskTexture = MaskTextureGl()
+    private var luts = LutTexturesGl()
+    private var maskTexture = MaskTextureGl()
     private var maskStaging: ByteBuffer? = null
-    private val atlasTexture = BitmapTextureGl(mipmap = true)
-    private val paintTexture = BitmapTextureGl(mipmap = true)
-    private val bgImageTexture = BitmapTextureGl(mipmap = false)
+    private var atlasTexture = BitmapTextureGl(mipmap = true)
+    private var paintTexture = BitmapTextureGl(mipmap = true)
+    private var bgImageTexture = BitmapTextureGl(mipmap = false)
     private val scene = LensScene()
     private var spriteDrawer: SpriteDrawer? = null
     private val splitAxis = FloatArray(3)
-    private var bokehTaps = FloatArray(0)
     private var lensTimeSec = 0f
     private var lastEffectsStatus = EffectsStatus()
     private var lastEffectsStatusNs = 0L
@@ -219,22 +245,37 @@ internal class BeautyProcessor(
     // ------------------------------------------------------------------------------------------------ lifecycle
 
     override fun onAttach(context: GlProcessingContext) {
+        val current = Thread.currentThread()
+        val previousOwner = ownerThread
+        if (attached && previousOwner != null && previousOwner !== current) {
+            // A previous renderer never detached (its GL thread stalled): its GL objects died with its context.
+            // Drop the stale ids without GL calls and close its trackers so nothing leaks or is double-owned.
+            RgLog.w(TAG, "Attached to a new GL thread without a detach; forgetting stale GL objects")
+            closeTrackers()
+            forgetGlObjects()
+        }
+        ownerThread = current
         glVersion = context.glVersion
         attached = true
         failed = false
         meshFailed = false
+        disabledStages.clear()
+        stageFailures.fill(0)
+        stageRetryAtNs.fill(0L)
+        consecutiveFrameFailures = 0
         FaceAssets.prepare(this.context)
         SpriteAtlas.prepare()
+        closeTrackers()
         tracker = try {
             FaceLandmarkerTracker(this.context).also { it.start() }
         } catch (t: Throwable) {
-            RgLog.e(TAG, "Face landmarker unavailable", t)
+            Diagnostics.record(TAG, "Face landmarker unavailable", t)
             null
         }
         segmenter = try {
             SelfieSegmenterTracker(this.context).also { it.start() }
         } catch (t: Throwable) {
-            RgLog.e(TAG, "Selfie segmenter unavailable", t)
+            Diagnostics.record(TAG, "Selfie segmenter unavailable", t)
             null
         }
         grabber = FrameGrabber(glVersion)
@@ -242,12 +283,46 @@ internal class BeautyProcessor(
         scene.reset()
     }
 
-    override fun onDetach() {
-        attached = false
-        tracker?.close()
+    private fun closeTrackers() {
+        runCatching { tracker?.close() }
         tracker = null
-        segmenter?.close()
+        runCatching { segmenter?.close() }
         segmenter = null
+    }
+
+    /** Forgets (without GL calls) every GL object id: they belonged to a context that no longer exists. */
+    private fun forgetGlObjects() {
+        downsampleProgram = null; copyProgram = null; gaussianProgram = null; skinProgram = null
+        compositeProgram = null; maskRegionsProgram = null; maskSolidProgram = null; makeupProgram = null
+        warpProgram = null; finalProgram = null; maskRefineProgram = null; bokehPrepProgram = null; bokehProgram = null
+        bokehProgramTaps = 0; paintProgram = null; spriteProgram = null
+        bilateralPrograms.fill(null)
+        small = null; smallTmp = null; smooth = null; large = null; largeTmp = null; skin = null
+        faceMask = null; maskTmp = null; outA = null; outB = null
+        fxGuide = null; fxMask = null; fxQuarterA = null; fxQuarterB = null; fxGlow = null; fxGlowTmp = null
+        depth = DepthBufferGl()
+        meshGl = null
+        topology = null
+        textures = MakeupTexturesGl()
+        luts = LutTexturesGl()
+        maskTexture = MaskTextureGl()
+        atlasTexture = BitmapTextureGl(mipmap = true)
+        paintTexture = BitmapTextureGl(mipmap = true)
+        bgImageTexture = BitmapTextureGl(mipmap = false)
+        spriteDrawer = null
+        grabber = null
+    }
+
+    override fun onDetach() {
+        val owner = ownerThread
+        if (owner != null && owner !== Thread.currentThread()) {
+            // A late detach from a renderer that was already replaced: the new owner's objects must stay alive.
+            RgLog.w(TAG, "Ignoring detach from a stale GL thread")
+            return
+        }
+        ownerThread = null
+        attached = false
+        closeTrackers()
         grabber?.release()
         grabber = null
         releasePrograms()
@@ -295,6 +370,7 @@ internal class BeautyProcessor(
     // ------------------------------------------------------------------------------------------------ frame
 
     override fun process(input: GlTextureFrame): GlTextureFrame {
+        if (ownerThread !== Thread.currentThread()) return input
         val start = System.nanoTime()
         val state = controls.state
         val eyeColor = controls.eyeColor
@@ -303,65 +379,125 @@ internal class BeautyProcessor(
         syncControllerInputs(start)
         syncState(state)
         val beautyOn = beautyActive(state, eyeColor)
-        val effectsOn = !effects.isNeutral || swipe != null
+        val effectsOn = BeautyMapping.effectsActive(effects, swipe)
         if (!attached || failed || controls.bypassAll || (!beautyOn && !effectsOn) || input.width <= 0 || input.height <= 0) {
             if (trackingActive) { trackingActive = false; tracks.reset() }
             if (segmentationActive) { segmentationActive = false; segmenter?.reset(); maskTexture.invalidate() }
             scene.reset()
             lastFrameNs = 0L
             publishStatus(force = false, nowNs = start)
+            if (effectsOn || beautyOn) publishEffectsStatus(effects, false, false, false, false, start)
             return input
         }
         return try {
             val out = render(input, state, eyeColor, beautyOn, effects, swipe)
+            consecutiveFrameFailures = 0
             val end = System.nanoTime()
             // Without timing feedback from the renderer, measure our own submission cost against a 30 fps budget.
             if (end - lastExternalTimingNs > 2_000_000_000L) feedController(end - start, DEFAULT_BUDGET_NS, end)
+            if (end - lastGlCheckNs > GL_CHECK_INTERVAL_NS) {
+                lastGlCheckNs = end
+                GlDiagnostics.drainErrors("effects frame (beauty=$beautyOn, fx=${effects.describe()})")
+            }
             publishStatus(force = false, nowNs = end)
             out
         } catch (t: Throwable) {
-            // Never break the camera: bypass for the rest of this attachment and report it.
-            RgLog.e(TAG, "Beauty pipeline failed; bypassing", t)
-            failed = true
+            // Never break the camera: show the unprocessed frame. A failure outside every stage that repeats on
+            // consecutive frames bypasses the processor for the rest of this camera session.
+            consecutiveFrameFailures++
+            Diagnostics.record(TAG, "Effects frame failed ($consecutiveFrameFailures in a row) [${GlDiagnostics.rendererSummary()}]", t)
             restoreGlState()
+            if (consecutiveFrameFailures >= MAX_FRAME_FAILURES) {
+                failed = true
+                Diagnostics.record(TAG, "Effects bypassed for this camera session after repeated failures")
+            }
             publishStatus(force = true, nowNs = System.nanoTime())
             input
         }
     }
 
+    /**
+     * Runs one pass. A throwing pass is recorded; transient failures are retried after a pause, a pass that fails
+     * again (or whose shader this GPU rejects) is switched off for this camera session. Returns true on success.
+     */
+    private inline fun runStage(stage: Stage, nowNs: Long, block: () -> Unit): Boolean {
+        if (!stageUsable(stage, nowNs)) return false
+        return try {
+            block()
+            true
+        } catch (t: Throwable) {
+            stageFailed(stage, t, nowNs)
+            false
+        }
+    }
+
+    private fun stageUsable(stage: Stage, nowNs: Long): Boolean =
+        stage !in disabledStages && nowNs >= stageRetryAtNs[stage.ordinal]
+
+    private fun stageFailed(stage: Stage, t: Throwable, nowNs: Long) {
+        restoreGlState()
+        val n = ++stageFailures[stage.ordinal]
+        val permanent = t is GlProgramException || n >= MAX_STAGE_FAILURES
+        if (permanent) disabledStages += stage else stageRetryAtNs[stage.ordinal] = nowNs + STAGE_RETRY_NS
+        Diagnostics.record(
+            TAG,
+            "Effect pass $stage failed (#$n) on ${GlDiagnostics.rendererSummary()}; " +
+                if (permanent) "switched off for this camera session" else "retrying shortly",
+            t,
+        )
+        publishStatus(force = true, nowNs = nowNs)
+        lastEffectsStatusNs = 0L
+    }
+
+    /** The stage a lens draws in (it is unavailable when that stage is off). */
+    private fun lensStage(lens: Lens): Stage = when (lens.kind) {
+        Lens.Kind.WARP -> Stage.WARP
+        Lens.Kind.PAINT -> Stage.PAINT
+        Lens.Kind.SPRITE, Lens.Kind.PARTICLES -> Stage.SPRITES
+        Lens.Kind.GRADE -> Stage.GLOW
+    }
+
+    private fun EffectsState.describe(): String =
+        "lens=${lens?.id ?: "-"} filter=${filter.id}@$filterIntensity bg=${background::class.simpleName}"
+
     private fun beautyActive(state: BeautyState, eyeColor: EyeColorSetting) = state.enabled && (!cachedNeutral || eyeColor.active)
 
     private fun render(
-        input: GlTextureFrame, state: BeautyState, eyeColor: EyeColorSetting, beautyOn: Boolean,
+        input: GlTextureFrame, state: BeautyState, eyeColor: EyeColorSetting, beautyRequested: Boolean,
         effects: EffectsState, swipe: FilterSwipe?,
     ): GlTextureFrame {
         val w = input.width
         val h = input.height
         val aspect = w.toFloat() / h
         val nowNs = if (input.timestampNs > 0) input.timestampNs else System.nanoTime()
+        val clockNs = System.nanoTime()
         val dtSec = if (lastFrameNs == 0L) 0f else ((nowNs - lastFrameNs) / 1e9f).coerceIn(0f, 0.1f)
         lastFrameNs = nowNs
         lensTimeSec += dtSec
         val profile = QualityProfile.of(controller.level)
         val lens = effects.lens
+        // A beauty pipeline whose skin pass is off (GPU rejected it) cannot feed makeup or reshape either.
+        val beautyOn = beautyRequested && stageUsable(Stage.SKIN, clockNs)
 
         restoreGlState()
         val meshReady = ensureMeshResources()
 
         // ---------------------------------------------------------------- tracking & segmentation
         val beautyTracks = beautyOn && profile.faceEffects
-        val lensTracks = lens?.needsFace == true
+        val lensTracks = lens != null && BeautyMapping.lensNeedsFace(lens) && lensStage(lens) !in disabledStages
         val tr = tracker
-        trackingActive = (beautyTracks || lensTracks) && tr != null && !tr.isFailed && !meshFailed
-        val wantsBackground = effects.background.active && (effects.background !is BackgroundEffect.Image || controls.backgroundBitmap != null)
+        val readbackOk = Stage.READBACK !in disabledStages
+        trackingActive = (beautyTracks || lensTracks) && tr != null && !tr.isFailed && !meshFailed && readbackOk
+        val wantsBackground = BeautyMapping.wantsBackground(effects, controls.backgroundBitmap != null) &&
+            Stage.BACKGROUND !in disabledStages && Stage.FINAL !in disabledStages
         val sg = segmenter
-        val segOk = wantsBackground && sg != null && !sg.isFailed
+        val segOk = wantsBackground && sg != null && !sg.isFailed && readbackOk
         if (segOk && !segmentationActive) { sg?.reset(); maskTexture.invalidate() }
         if (!segOk && segmentationActive) maskTexture.invalidate()
         segmentationActive = segOk
         if (trackingActive || segmentationActive) {
             val detectEvery = if (beautyTracks) profile.detectEveryFrames else profile.lensDetectEveryFrames
-            updateReadback(input, profile, nowNs, aspect, detectEvery)
+            runStage(Stage.READBACK, clockNs) { updateReadback(input, profile, nowNs, aspect, detectEvery) }
         }
         tracks.update(nowNs / 1e9, dtSec)
         var faceCount = 0
@@ -379,38 +515,26 @@ internal class BeautyProcessor(
         val beautyFace = beautyTracks && anyFace
 
         // ---------------------------------------------------------------- beauty intensities
-        fun uni(f: BeautyFeature) = state.intensity(f) / 100f
-        val smoothK = if (beautyOn && profile.smoothing) uni(BeautyFeature.SMOOTH_SKIN) else 0f
-        val retouchK = if (beautyOn && profile.retouchAndBlemish) uni(BeautyFeature.SKIN_RETOUCH) else 0f
-        val blemishK = if (beautyOn && profile.retouchAndBlemish) uni(BeautyFeature.BLEMISH_REMOVAL) else 0f
-        val brightK = if (beautyOn) uni(BeautyFeature.SKIN_BRIGHTNESS) else 0f
-        val whitenK = if (beautyOn) uni(BeautyFeature.WHITENING) else 0f
-        val toneT = if (beautyOn) (state.intensity(BeautyFeature.SKIN_TONE) - 50) / 50f else 0f
-        val sharpenK = if (beautyOn && profile.sharpen) uni(BeautyFeature.SHARPEN) * 0.9f else 0f
-        val darkK = if (beautyFace) uni(BeautyFeature.DARK_CIRCLES) else 0f
-        val teethK = if (beautyFace) uni(BeautyFeature.TEETH_WHITENING) else 0f
-        // Eye whitening rides on WHITENING and eye sharpening on SHARPEN (documented on BeautyEngine).
-        val eyeFx = beautyFace && profile.eyeEffects
-        val eyeWhitenK = if (eyeFx) whitenK * 0.85f else 0f
-        val eyeSharpenK = if (eyeFx) uni(BeautyFeature.SHARPEN) * 0.9f else 0f
-        val eyeColorK = if (eyeFx && eyeColor.active) eyeColor.intensity.coerceIn(0, 100) / 100f else 0f
-        val needMakeup = beautyFace && textures.ready && cachedHasMakeup
-        val needBeautyWarp = beautyFace && !reshapeParams.isNeutral && updateReshapeField()
-        val needLensWarp = anyFace && lens != null && lens.kind == Lens.Kind.WARP && updateLensWarp(lens)
-        val needPaint = anyFace && lens == Lens.FRECKLES && paintTexture.ensureRgba(EffectsAssets.paint(), FacePaint.SIZE)
-        val needSprites = anyFace && lens != null && (lens.kind == Lens.Kind.SPRITE || lens.kind == Lens.Kind.PARTICLES) &&
-            atlasTexture.ensure(SpriteAtlas.bitmap)
-        if (eyeWhitenK > 0f || eyeColorK > 0f) collectIrises() else irisCount = 0
+        val u = BeautyMapping.uniforms(state, eyeColor, beautyOn, beautyFace, profile)
+        val needMakeup = beautyFace && textures.ready && cachedHasMakeup && stageUsable(Stage.MAKEUP, clockNs)
+        val warpOk = stageUsable(Stage.WARP, clockNs)
+        val needBeautyWarp = warpOk && beautyFace && !reshapeParams.isNeutral && updateReshapeField()
+        val needLensWarp = warpOk && anyFace && lens != null && lens.kind == Lens.Kind.WARP && updateLensWarp(lens)
+        val wantPaint = anyFace && lens == Lens.FRECKLES && stageUsable(Stage.PAINT, clockNs)
+        val wantSprites = lens != null && (lens.kind == Lens.Kind.SPRITE || lens.kind == Lens.Kind.PARTICLES)
+        if (u.eyeWhitenK > 0f || u.eyeColorK > 0f) collectIrises() else irisCount = 0
 
         // ---------------------------------------------------------------- effect flags
-        val glowK = if (lens == Lens.SMOOTH_GLOW) 1f else 0f
-        if (segmentationActive) pollMask()
-        val bgReady = segmentationActive && maskTexture.ready
-        val filterActive = (effects.filter != LiveFilter.NONE && effects.filterIntensity > 0) || swipe != null
-        val needFinal = bgReady || glowK > 0f || filterActive
-        // The filter can ride on the composite when nothing after it rewrites the frame.
-        val mergeFilterIntoComposite = beautyOn && filterActive && !bgReady && glowK == 0f &&
-            !needMakeup && !needPaint && !needBeautyWarp && !needLensWarp
+        val glowK = if (lens == Lens.SMOOTH_GLOW && stageUsable(Stage.GLOW, clockNs)) 1f else 0f
+        if (segmentationActive) runStage(Stage.BACKGROUND, clockNs) { pollMask() }
+        val bgReady = segmentationActive && maskTexture.ready && stageUsable(Stage.BACKGROUND, clockNs)
+        val filterActive = BeautyMapping.filterActive(effects, swipe)
+        val finalOk = stageUsable(Stage.FINAL, clockNs)
+        val needFinal = finalOk && (bgReady || glowK > 0f || filterActive)
+        // The filter can ride on the composite when nothing after it rewrites the frame (or the final pass is off).
+        val mergeFilterIntoComposite = beautyOn && filterActive && (
+            !finalOk || (!bgReady && glowK == 0f && !needMakeup && !wantPaint && !needBeautyWarp && !needLensWarp)
+            )
 
         var current: GlFramebuffer? = null
         var spare: GlFramebuffer? = null
@@ -418,137 +542,163 @@ internal class BeautyProcessor(
 
         // ---------------------------------------------------------------- beauty (low-resolution analysis + composite)
         if (beautyOn) {
-            val smallW = even((w * profile.smoothScale).roundToInt().coerceAtLeast(32))
-            val smallH = even((smallW.toLong() * h / w).toInt().coerceAtLeast(32))
-            val smallFb = fbo(small, smallW, smallH).also { small = it }
-            downsample(input.textureId, smallFb)
+            runStage(Stage.SKIN, clockNs) {
+                val smallW = even((w * profile.smoothScale).roundToInt().coerceAtLeast(32))
+                val smallH = even((smallW.toLong() * h / w).toInt().coerceAtLeast(32))
+                val smallFb = fbo(small, smallW, smallH).also { small = it }
+                downsample(input.textureId, smallFb)
 
-            val maskW = even(minOf(profile.maskWidth, w))
-            val maskH = even((maskW.toLong() * h / w).toInt().coerceAtLeast(16))
-            if (faceMask?.let { it.width != maskW || it.height != maskH } != false) faceMaskClear = false
-            val faceFb = fbo(faceMask, maskW, maskH).also { faceMask = it }
-            if (beautyFace) {
-                renderRegionMasks(faceFb, aspect)
-                faceMaskClear = false
-            } else if (!faceMaskClear) {
-                faceFb.bind()
-                GLES20.glClearColor(0f, 0f, 0f, 0f)
-                GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
-                faceMaskClear = true
-            }
+                val maskW = even(minOf(profile.maskWidth, w))
+                val maskH = even((maskW.toLong() * h / w).toInt().coerceAtLeast(16))
+                if (faceMask?.let { it.width != maskW || it.height != maskH } != false) faceMaskClear = false
+                val faceFb = fbo(faceMask, maskW, maskH).also { faceMask = it }
+                if (beautyFace) {
+                    renderRegionMasks(faceFb, aspect)
+                    faceMaskClear = false
+                } else if (!faceMaskClear) {
+                    faceFb.bind()
+                    GLES20.glClearColor(0f, 0f, 0f, 0f)
+                    GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+                    faceMaskClear = true
+                }
 
-            val skinFb = fbo(skin, smallW, smallH).also { skin = it }
-            skinProgram().let { p ->
-                skinFb.bind()
-                p.use()
-                p.bindTexture("uTexture", 0, smallFb.textureId)
-                p.bindTexture("uFaceMask", 1, faceFb.textureId)
-                p.setFloat("uOutsideK", 1f - 0.35f * (if (beautyFace) maxPresence else 0f))
-                FullScreenQuad.draw(p)
-            }
+                val skinFb = fbo(skin, smallW, smallH).also { skin = it }
+                skinProgram().let { p ->
+                    skinFb.bind()
+                    p.use()
+                    p.bindTexture("uTexture", 0, smallFb.textureId)
+                    p.bindTexture("uFaceMask", 1, faceFb.textureId)
+                    p.setFloat("uOutsideK", 1f - 0.35f * (if (beautyFace) maxPresence else 0f))
+                    FullScreenQuad.draw(p)
+                }
 
-            var smoothTex = smallFb.textureId
-            if (smoothK > 0f || retouchK > 0f) {
-                val strength = max(smoothK, retouchK * 0.6f)
-                smoothTex = bilateral(smallFb, smallW, smallH, w, h, profile.bilateralRadius, strength)
-            }
-            var largeTex = smallFb.textureId
-            if (retouchK > 0f || blemishK > 0f || darkK > 0f) largeTex = largeBlur(smallFb, smallW, smallH)
+                var smoothTex = smallFb.textureId
+                if (u.smoothK > 0f || u.retouchK > 0f) {
+                    val strength = max(u.smoothK, u.retouchK * 0.6f)
+                    smoothTex = bilateral(smallFb, smallW, smallH, w, h, profile.bilateralRadius, strength)
+                }
+                var largeTex = smallFb.textureId
+                if (u.retouchK > 0f || u.blemishK > 0f || u.darkK > 0f) largeTex = largeBlur(smallFb, smallW, smallH)
 
-            val a = fbo(outA, w, h).also { outA = it }
-            compositeProgram().let { p ->
-                a.bind()
-                p.use()
-                p.bindTexture("uTexture", 0, input.textureId)
-                p.bindTexture("uLow", 1, smallFb.textureId)
-                p.bindTexture("uSmooth", 2, smoothTex)
-                p.bindTexture("uLarge", 3, largeTex)
-                p.bindTexture("uSkin", 4, skinFb.textureId)
-                p.bindTexture("uFaceMask", 5, faceFb.textureId)
-                p.setVec2("uTexel", 1f / w, 1f / h)
-                p.setFloat("uAspect", aspect)
-                p.setFloat("uSmoothK", smoothK)
-                // Frequency separation: keep most fine texture (pores) at low strengths, less at high ones.
-                p.setFloat("uDetailKeep", 0.85f - 0.4f * smoothK)
-                p.setFloat("uRetouchK", retouchK)
-                p.setFloat("uBlemishK", blemishK)
-                p.setFloat("uBrightK", brightK)
-                p.setFloat("uWhitenK", whitenK)
-                p.setFloat("uToneT", toneT)
-                p.setFloat("uSharpenK", sharpenK)
-                p.setFloat("uDarkCircleK", darkK)
-                p.setFloat("uTeethK", teethK)
-                p.setFloat("uEyeWhitenK", eyeWhitenK)
-                p.setFloat("uEyeSharpenK", eyeSharpenK)
-                p.setVec4("uEyeColor", red(eyeColor.color), green(eyeColor.color), blue(eyeColor.color), eyeColorK)
-                p.setFloat("uUseFaceMask", if (beautyFace) 1f else 0f)
-                p.setInt("uIrisCount", irisCount)
-                if (irisCount > 0) p.setVec4Array("uIris", iris, irisCount)
-                setFilterUniforms(p, if (mergeFilterIntoComposite) effects else null, swipe, 6, 7)
-                FullScreenQuad.draw(p)
-            }
-            current = a
-            spare = fbo(outB, w, h).also { outB = it }
-            currentTex = a.textureId
+                val a = fbo(outA, w, h).also { outA = it }
+                compositeProgram().let { p ->
+                    a.bind()
+                    p.use()
+                    p.bindTexture("uTexture", 0, input.textureId)
+                    p.bindTexture("uLow", 1, smallFb.textureId)
+                    p.bindTexture("uSmooth", 2, smoothTex)
+                    p.bindTexture("uLarge", 3, largeTex)
+                    p.bindTexture("uSkin", 4, skinFb.textureId)
+                    p.bindTexture("uFaceMask", 5, faceFb.textureId)
+                    p.setVec2("uTexel", 1f / w, 1f / h)
+                    p.setFloat("uAspect", aspect)
+                    p.setFloat("uSmoothK", u.smoothK)
+                    // Frequency separation: keep most fine texture (pores) at low strengths, less at high ones.
+                    p.setFloat("uDetailKeep", u.detailKeep)
+                    p.setFloat("uRetouchK", u.retouchK)
+                    p.setFloat("uBlemishK", u.blemishK)
+                    p.setFloat("uBrightK", u.brightK)
+                    p.setFloat("uWhitenK", u.whitenK)
+                    p.setFloat("uToneT", u.toneT)
+                    p.setFloat("uSharpenK", u.sharpenK)
+                    p.setFloat("uDarkCircleK", u.darkK)
+                    p.setFloat("uTeethK", u.teethK)
+                    p.setFloat("uEyeWhitenK", u.eyeWhitenK)
+                    p.setFloat("uEyeSharpenK", u.eyeSharpenK)
+                    p.setVec4("uEyeColor", red(eyeColor.color), green(eyeColor.color), blue(eyeColor.color), u.eyeColorK)
+                    p.setFloat("uUseFaceMask", if (beautyFace) 1f else 0f)
+                    p.setInt("uIrisCount", irisCount)
+                    if (irisCount > 0) p.setVec4Array("uIris", iris, irisCount)
+                    setFilterUniforms(p, if (mergeFilterIntoComposite) effects else null, swipe, 6, 7)
+                    FullScreenQuad.draw(p)
+                }
+                current = a
+                spare = fbo(outB, w, h).also { outB = it }
+                currentTex = a.textureId
 
-            // ---------------------------------------------------------------- Face Mask makeup
-            if (needMakeup) {
-                val target = spare
-                renderMakeup(a, target, smallFb, skinFb, aspect, profile)
-                spare = current; current = target; currentTex = target.textureId
+                // ---------------------------------------------------------------- Face Mask makeup
+                if (needMakeup) {
+                    runStage(Stage.MAKEUP, clockNs) {
+                        val target = spare!!
+                        renderMakeup(a, target, smallFb, skinFb, aspect, profile)
+                        spare = current; current = target; currentTex = target.textureId
+                    }
+                }
             }
         }
 
         // ---------------------------------------------------------------- face paint lens (in place)
-        if (needPaint) {
-            val owned = current ?: ensureOwned(input, w, h).also { current = it; spare = fbo(outB, w, h).also { b -> outB = b } }
-            renderPaint(owned, aspect, profile)
-            currentTex = owned.textureId
+        if (wantPaint) {
+            runStage(Stage.PAINT, clockNs) {
+                if (paintTexture.ensureRgba(EffectsAssets.paint(), FacePaint.SIZE)) {
+                    val owned = current ?: ensureOwned(input, w, h).also { current = it; spare = fbo(outB, w, h).also { b -> outB = b } }
+                    renderPaint(owned, aspect, profile)
+                    currentTex = owned.textureId
+                }
+            }
         }
 
         // ---------------------------------------------------------------- Face Liquify (beauty reshape + warp lens)
         if (needBeautyWarp || needLensWarp) {
-            val disp = combineWarp(needBeautyWarp, needLensWarp)
-            val target = spare ?: fbo(outA, w, h).also { outA = it }
-            renderWarp(currentTex, target, aspect, profile, disp)
-            spare = current ?: fbo(outB, w, h).also { outB = it }
-            current = target
-            currentTex = target.textureId
+            runStage(Stage.WARP, clockNs) {
+                val disp = combineWarp(needBeautyWarp, needLensWarp)
+                val target = spare ?: fbo(outA, w, h).also { outA = it }
+                renderWarp(currentTex, target, aspect, profile, disp)
+                spare = current ?: fbo(outB, w, h).also { outB = it }
+                current = target
+                currentTex = target.textureId
+            }
         }
 
         // ---------------------------------------------------------------- final pass: background · glow · filter
         if (needFinal && !mergeFilterIntoComposite) {
-            val maskTex = if (bgReady) prepareBackground(currentTex, w, h, effects.background, profile) else 0
-            val glowTex = if (glowK > 0f) glowTexture(currentTex, w, h) else 0
-            val target = spare ?: fbo(if (current === outA) outB else outA, w, h).also { if (current === outA) outB = it else outA = it }
-            renderFinal(currentTex, target, w, h, effects, swipe, maskTex, glowTex, glowK)
-            spare = current
-            current = target
-            currentTex = target.textureId
+            val maskTex = if (bgReady) {
+                var tex = 0
+                runStage(Stage.BACKGROUND, clockNs) { tex = prepareBackground(currentTex, w, h, effects.background, profile) }
+                tex
+            } else {
+                0
+            }
+            val glowTex = if (glowK > 0f) {
+                var tex = 0
+                runStage(Stage.GLOW, clockNs) { tex = glowTexture(currentTex, w, h) }
+                tex
+            } else {
+                0
+            }
+            runStage(Stage.FINAL, clockNs) {
+                val target = spare ?: fbo(if (current === outA) outB else outA, w, h).also { if (current === outA) outB = it else outA = it }
+                renderFinal(currentTex, target, w, h, effects, swipe, maskTex, glowTex, glowK)
+                spare = current
+                current = target
+                currentTex = target.textureId
+            }
         }
 
         // ---------------------------------------------------------------- sprites & particles (in place)
-        if (lens != null && (lens.kind == Lens.Kind.SPRITE || lens.kind == Lens.Kind.PARTICLES)) {
-            scene.begin()
-            if (needSprites) {
-                for (s in 0 until DetectionFrame.MAX_FACES) {
-                    if (!faceVisible[s]) continue
-                    val f = tracks.faces[s]
-                    scene.addFace(lens, s, poses[s].affine, aspect, f.landmarks, f.blendshapes[Blendshape.JAW_OPEN],
-                        f.presence, lensTimeSec, dtSec, profile.maxParticles)
+        if (wantSprites && lens != null && stageUsable(Stage.SPRITES, clockNs)) {
+            runStage(Stage.SPRITES, clockNs) {
+                scene.begin()
+                if (anyFace && atlasTexture.ensure(SpriteAtlas.bitmap)) {
+                    for (s in 0 until DetectionFrame.MAX_FACES) {
+                        if (!faceVisible[s]) continue
+                        val f = tracks.faces[s]
+                        scene.addFace(lens, s, poses[s].affine, aspect, f.landmarks, f.blendshapes[Blendshape.JAW_OPEN],
+                            f.presence, lensTimeSec, dtSec, profile.maxParticles)
+                    }
                 }
-            }
-            scene.finish(dtSec)
-            if (scene.batch.quads > 0 && atlasTexture.id != 0) {
-                val owned = current ?: ensureOwned(input, w, h).also { current = it }
-                renderSprites(owned)
-                currentTex = owned.textureId
+                scene.finish(dtSec)
+                if (scene.batch.quads > 0 && atlasTexture.id != 0) {
+                    val owned = current ?: ensureOwned(input, w, h).also { current = it }
+                    renderSprites(owned)
+                    currentTex = owned.textureId
+                }
             }
         } else {
             scene.reset()
         }
 
-        publishEffectsStatus(effects, lensTracks, anyFace, wantsBackground, bgReady, nowNs)
+        publishEffectsStatus(effects, lensTracks, anyFace, wantsBackground, bgReady, clockNs)
         restoreGlState()
         val out = current ?: return input
         return GlTextureFrame(out.textureId, w, h, input.timestampNs, input.mirrored)
@@ -652,8 +802,8 @@ internal class BeautyProcessor(
             val gl = FaceMeshGl(topo, DetectionFrame.MAX_FACES)
             gl.create()
             textures.upload(loaded.atlas)
-            // Build the mesh programs now so a driver problem is found once, not mid-recording.
-            maskRegionsProgram(); maskSolidProgram(); makeupProgram(); warpProgram(); copyProgram()
+            // Mesh programs are built lazily inside their stages: a rejected makeup or warp shader then only turns
+            // that pass off instead of every face effect.
             topology = topo
             poses = Array(DetectionFrame.MAX_FACES) { PoseFit(loaded.model) }
             reshapeField = ReshapeField(loaded.model)
@@ -669,7 +819,7 @@ internal class BeautyProcessor(
             meshGl = gl
             true
         } catch (t: Throwable) {
-            RgLog.e(TAG, "Face mesh GPU setup failed; face effects disabled", t)
+            Diagnostics.record(TAG, "Face mesh GPU setup failed; face effects disabled [${GlDiagnostics.rendererSummary()}]", t)
             meshFailed = true
             GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
             GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0)
@@ -1038,7 +1188,6 @@ internal class BeautyProcessor(
             blur.bind()
             bp.bindTexture("uTexture", 0, prep.textureId)
             bp.setVec2("uRadius", radiusY * h / w, radiusY)
-            bp.setVec2Array("uTaps", bokehTaps, taps)
             FullScreenQuad.draw(bp)
             // Second, smaller disc for a smooth, creamy result.
             prep.bind()
@@ -1238,9 +1387,13 @@ internal class BeautyProcessor(
         val needsFace = beautyOn && (state.needsFaceTracking || eyeColorOn)
         val level = controller.level
         val tr = tracker
+        val beautyStageOff = Stage.SKIN in disabledStages ||
+            (cachedHasMakeup && Stage.MAKEUP in disabledStages) ||
+            (!reshapeParams.isNeutral && Stage.WARP in disabledStages)
         val reason = when {
             failed -> BeautySuspendReason.GPU_ERROR
             !beautyOn -> null
+            beautyStageOff -> BeautySuspendReason.GPU_ERROR
             meshFailed && needsFace -> BeautySuspendReason.GPU_ERROR
             needsFace && (tr == null || tr.isFailed || FaceAssets.failed) -> BeautySuspendReason.TRACKING_UNAVAILABLE
             level.ordinal > BeautyQuality.BALANCED.ordinal && droppedByQuality(state, level) ->
@@ -1274,14 +1427,30 @@ internal class BeautyProcessor(
 
     private fun publishEffectsStatus(effects: EffectsState, lensTracks: Boolean, anyFace: Boolean, wantsBackground: Boolean, bgReady: Boolean, nowNs: Long) {
         // Throttled before anything is built, so steady frames allocate nothing here.
-        if (nowNs - lastEffectsStatusNs < EFFECTS_STATUS_INTERVAL_NS) return
+        if (nowNs - lastEffectsStatusNs in 0 until EFFECTS_STATUS_INTERVAL_NS) return
         val sg = segmenter
+        val tr = tracker
         val bgActive = effects.background.active
+        val lens = effects.lens
+        // Face lenses need the landmarker, the face mesh and the readback; say so instead of silently doing nothing.
+        val lensUnavailable = lens != null && (
+            lensStage(lens) in disabledStages ||
+                (lens.needsFace && (tr == null || tr.isFailed || meshFailed || FaceAssets.failed || Stage.READBACK in disabledStages))
+            )
+        val gpuError = failed ||
+            (lens != null && lensStage(lens) in disabledStages) ||
+            (bgActive && (Stage.BACKGROUND in disabledStages || Stage.FINAL in disabledStages)) ||
+            (BeautyMapping.filterActive(effects, null) && Stage.FINAL in disabledStages && Stage.SKIN in disabledStages)
         val status = EffectsStatus(
-            lensNeedsFace = lensTracks && !anyFace && tracker?.isReady == true && (tracks.visibleCount == 0),
-            backgroundUnavailable = bgActive && (sg == null || sg.isFailed),
+            lensNeedsFace = lensTracks && !anyFace && tr?.isReady == true && (tracks.visibleCount == 0),
+            backgroundUnavailable = bgActive && (
+                sg == null || sg.isFailed ||
+                    Stage.READBACK in disabledStages || Stage.BACKGROUND in disabledStages || Stage.FINAL in disabledStages
+                ),
             backgroundWarmingUp = wantsBackground && !bgReady && sg != null && !sg.isFailed,
             backgroundImageMissing = effects.background is BackgroundEffect.Image && controls.backgroundBitmap == null,
+            lensUnavailable = lensUnavailable,
+            effectsGpuError = gpuError,
         )
         lastEffectsStatusNs = nowNs
         if (status != lastEffectsStatus) {
@@ -1323,31 +1492,35 @@ internal class BeautyProcessor(
         return existing
     }
 
-    private fun downsampleProgram() = downsampleProgram ?: GlProgram(BeautyShaders.VERTEX, BeautyShaders.DOWNSAMPLE).also { downsampleProgram = it }
-    private fun copyProgram() = copyProgram ?: GlProgram(BeautyShaders.VERTEX, BeautyShaders.COPY).also { copyProgram = it }
-    private fun gaussianProgram() = gaussianProgram ?: GlProgram(BeautyShaders.VERTEX, BeautyShaders.GAUSSIAN).also { gaussianProgram = it }
-    private fun skinProgram() = skinProgram ?: GlProgram(BeautyShaders.VERTEX, BeautyShaders.SKIN_MASK).also { skinProgram = it }
-    private fun compositeProgram() = compositeProgram ?: GlProgram(BeautyShaders.VERTEX, BeautyShaders.COMPOSITE).also { compositeProgram = it }
-    private fun maskRegionsProgram() = maskRegionsProgram ?: GlProgram(BeautyShaders.MESH_VERTEX, BeautyShaders.MASK_REGIONS).also { maskRegionsProgram = it }
-    private fun maskSolidProgram() = maskSolidProgram ?: GlProgram(BeautyShaders.MESH_VERTEX, BeautyShaders.MASK_SOLID).also { maskSolidProgram = it }
-    private fun makeupProgram() = makeupProgram ?: GlProgram(BeautyShaders.MESH_VERTEX, BeautyShaders.MAKEUP).also { makeupProgram = it }
-    private fun warpProgram() = warpProgram ?: GlProgram(BeautyShaders.WARP_VERTEX, BeautyShaders.WARP_FRAGMENT).also { warpProgram = it }
-    private fun finalProgram() = finalProgram ?: GlProgram(BeautyShaders.VERTEX, EffectsShaders.FINAL).also { finalProgram = it }
-    private fun maskRefineProgram() = maskRefineProgram ?: GlProgram(BeautyShaders.VERTEX, EffectsShaders.MASK_REFINE).also { maskRefineProgram = it }
-    private fun bokehPrepProgram() = bokehPrepProgram ?: GlProgram(BeautyShaders.VERTEX, EffectsShaders.BOKEH_PREP).also { bokehPrepProgram = it }
-    private fun paintProgram() = paintProgram ?: GlProgram(BeautyShaders.MESH_VERTEX, EffectsShaders.PAINT).also { paintProgram = it }
-    private fun spriteProgram() = spriteProgram ?: GlProgram(EffectsShaders.SPRITE_VERTEX, EffectsShaders.SPRITE_FRAGMENT).also { spriteProgram = it }
+    // Programs are built lazily inside the stage that uses them: a program this GPU rejects throws
+    // GlProgramException (recorded with its name and the driver log) and only that stage is switched off.
+    private fun downsampleProgram() = downsampleProgram ?: GlProgram(BeautyShaders.VERTEX, BeautyShaders.DOWNSAMPLE, "beauty.downsample").also { downsampleProgram = it }
+    private fun copyProgram() = copyProgram ?: GlProgram(BeautyShaders.VERTEX, BeautyShaders.COPY, "beauty.copy").also { copyProgram = it }
+    private fun gaussianProgram() = gaussianProgram ?: GlProgram(BeautyShaders.VERTEX, BeautyShaders.GAUSSIAN, "beauty.gaussian").also { gaussianProgram = it }
+    private fun skinProgram() = skinProgram ?: GlProgram(BeautyShaders.VERTEX, BeautyShaders.SKIN_MASK, "beauty.skinMask").also { skinProgram = it }
+    private fun compositeProgram() = compositeProgram ?: GlProgram(BeautyShaders.VERTEX, BeautyShaders.COMPOSITE, "beauty.composite").also { compositeProgram = it }
+    private fun maskRegionsProgram() = maskRegionsProgram ?: GlProgram(BeautyShaders.MESH_VERTEX, BeautyShaders.MASK_REGIONS, "mesh.maskRegions").also { maskRegionsProgram = it }
+    private fun maskSolidProgram() = maskSolidProgram ?: GlProgram(BeautyShaders.MESH_VERTEX, BeautyShaders.MASK_SOLID, "mesh.maskSolid").also { maskSolidProgram = it }
+    private fun makeupProgram() = makeupProgram ?: GlProgram(BeautyShaders.MESH_VERTEX, BeautyShaders.MAKEUP, "mesh.makeup").also { makeupProgram = it }
+    private fun warpProgram() = warpProgram ?: GlProgram(BeautyShaders.WARP_VERTEX, BeautyShaders.WARP_FRAGMENT, "mesh.warp").also { warpProgram = it }
+    private fun finalProgram() = finalProgram ?: GlProgram(BeautyShaders.VERTEX, EffectsShaders.FINAL, "effects.final").also { finalProgram = it }
+    private fun maskRefineProgram() = maskRefineProgram ?: GlProgram(BeautyShaders.VERTEX, EffectsShaders.MASK_REFINE, "effects.maskRefine").also { maskRefineProgram = it }
+    private fun bokehPrepProgram() = bokehPrepProgram ?: GlProgram(BeautyShaders.VERTEX, EffectsShaders.BOKEH_PREP, "effects.bokehPrep").also { bokehPrepProgram = it }
+    private fun paintProgram() = paintProgram ?: GlProgram(BeautyShaders.MESH_VERTEX, EffectsShaders.PAINT, "effects.paint").also { paintProgram = it }
+    private fun spriteProgram() = spriteProgram ?: GlProgram(EffectsShaders.SPRITE_VERTEX, EffectsShaders.SPRITE_FRAGMENT, "effects.sprite").also { spriteProgram = it }
     private fun bokehProgram(taps: Int): GlProgram {
         val existing = bokehProgram
         if (existing != null && bokehProgramTaps == taps) return existing
         existing?.release()
-        bokehTaps = EffectsShaders.bokehTaps(taps)
-        bokehProgramTaps = taps
-        return GlProgram(BeautyShaders.VERTEX, EffectsShaders.bokeh(taps)).also { bokehProgram = it }
+        bokehProgram = null
+        return GlProgram(BeautyShaders.VERTEX, EffectsShaders.bokeh(taps), "effects.bokeh$taps").also {
+            bokehProgram = it
+            bokehProgramTaps = taps
+        }
     }
     private fun bilateralProgram(radius: Int): GlProgram {
         val r = radius.coerceIn(1, MAX_BILATERAL_RADIUS)
-        return bilateralPrograms[r] ?: GlProgram(BeautyShaders.VERTEX, BeautyShaders.bilateral(r)).also { bilateralPrograms[r] = it }
+        return bilateralPrograms[r] ?: GlProgram(BeautyShaders.VERTEX, BeautyShaders.bilateral(r), "beauty.bilateral$r").also { bilateralPrograms[r] = it }
     }
 
     private fun even(v: Int) = (v + 1) and 0x7FFFFFFE
@@ -1360,6 +1533,12 @@ internal class BeautyProcessor(
         private const val TAG = "Beauty"
         private const val MAX_BILATERAL_RADIUS = 6
         private const val DEFAULT_BUDGET_NS = 33_333_333L
+        /** Consecutive frames failing outside every stage before the processor is bypassed. */
+        private const val MAX_FRAME_FAILURES = 3
+        /** Failures of one stage before it is switched off for the session (a rejected shader: immediately). */
+        private const val MAX_STAGE_FAILURES = 2
+        private const val STAGE_RETRY_NS = 1_500_000_000L
+        private const val GL_CHECK_INTERVAL_NS = 3_000_000_000L
         private const val STATUS_INTERVAL_NS = 250_000_000L
         private const val EFFECTS_STATUS_INTERVAL_NS = 150_000_000L
         /** An async readback the consumers could not take within this time is dropped. */

@@ -280,4 +280,31 @@
     <string name="account_tester_active">Pro test mode is on</string>
     <string name="account_tester_active_sub">All Pro features are unlocked on this device for testing.</string>
     <string name="account_tester_disable">Turn off</string>
+
+    <!-- Crash reports (stored on the device only; shared only by the user). -->
+    <string name="account_crash_prompt_title">RavanGo closed unexpectedly</string>
+    <string name="account_crash_prompt_message">Sorry about that. Your drafts are saved automatically and interrupted recordings are recovered where possible. A report of what went wrong was saved on this device — sharing it with us helps us fix it. Nothing is sent automatically.</string>
+    <string name="account_crash_view">View report</string>
+    <string name="account_crash_share">Share report</string>
+    <string name="account_crash_copy">Copy</string>
+    <string name="account_crash_copied">Report copied</string>
+    <string name="account_crash_dismiss">Not now</string>
+    <string name="account_crash_share_chooser">Share crash report</string>
+    <string name="account_crash_reports">Crash reports</string>
+    <string name="account_crash_reports_none">No reports on this device</string>
+    <plurals name="account_crash_reports_count">
+        <item quantity="one">%1$s report on this device</item>
+        <item quantity="other">%1$s reports on this device</item>
+    </plurals>
+    <plurals name="account_crash_more">
+        <item quantity="one">…and %1$s earlier report</item>
+        <item quantity="other">…and %1$s earlier reports</item>
+    </plurals>
+    <string name="account_crash_privacy">Reports stay on this device. They contain only technical details (device model, Android and app version, GPU, the error trace) — no videos, scripts or personal data. Share one only if you want to.</string>
+    <string name="account_crash_delete_all">Delete all</string>
+    <string name="account_crash_kind_java">App error</string>
+    <string name="account_crash_kind_native">Native crash</string>
+    <string name="account_crash_kind_anr">App not responding</string>
+    <string name="account_crash_empty_title">No crash reports</string>
+    <string name="account_crash_empty_message">If RavanGo ever closes unexpectedly, a report will appear here so you can send it to us.</string>
 </resources>

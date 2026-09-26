@@ -19,6 +19,21 @@ import com.ravango.engine.beauty.effects.LiveFilter
 object EffectsGating {
     val FEATURE: ProFeature = ProFeature.ADVANCED_BEAUTY
 
+    /**
+     * Entitlements must be stable this long before a downgrade switches Pro effects off (the provider starts with
+     * its default free plan for a moment after process start).
+     */
+    const val SETTLE_MS = 1_500L
+
+    /** The effects to switch off for [e] (a downgrade), or null when everything selected is allowed. */
+    fun downgrade(fx: com.ravango.engine.beauty.effects.EffectsState, e: Entitlements): com.ravango.engine.beauty.effects.EffectsState? {
+        val lens = fx.lens?.takeIf { lensAllowed(it, e) }
+        val filter = fx.filter.takeIf { filterAllowed(it, e) } ?: LiveFilter.NONE
+        val background = fx.background.takeIf { backgroundAllowed(it, e) } ?: BackgroundEffect.None
+        val next = fx.copy(lens = lens, filter = filter, background = background)
+        return if (next == fx) null else next
+    }
+
     fun lensAllowed(lens: Lens, e: Entitlements): Boolean = !lens.pro || e.has(FEATURE)
 
     fun filterAllowed(filter: LiveFilter, e: Entitlements): Boolean = !filter.pro || e.has(FEATURE)

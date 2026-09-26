@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">روان‌گو</string>
-    <string name="crash_recovered_title">کارهایتان بازیابی شد</string>
-    <string name="crash_recovered_message">دفعه قبل روان‌گو به‌طور غیرمنتظره بسته شد. پیش‌نویس‌ها خودکار ذخیره شده بودند و ضبط‌های نیمه‌کاره تا حد امکان بازیابی شدند.</string>
     <string name="licenses_title">مجوزها</string>
     <string name="licenses_brand_font_title">فونت برند: %1$s</string>
     <string name="licenses_ravagh_body">فونت «رواق» نرم‌افزاری تجاری و متعلق به طراح آن و فونت‌ایران (fontiran.com) است و با مجوز شماره ۱۳۶۷۱۰ استفاده می‌شود. این فونت فقط برای نمایش رابط کاربری روان‌گو در اپ جاسازی شده است و کپی، استخراج، بازنشر یا تغییر فایل‌های آن مجاز نیست. اطلاعات بیشتر: fontiran.com/about-licenses</string>

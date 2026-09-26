@@ -12,7 +12,11 @@ import android.view.Surface
  * Owns an EGL display + context (GLES 3 with GLES 2 fallback). The config is "recordable" so the same context
  * can render into MediaCodec input surfaces. Not thread-safe: use from a single GL thread.
  */
-class EglCore(sharedContext: EGLContext = EGL14.EGL_NO_CONTEXT) {
+class EglCore(
+    sharedContext: EGLContext = EGL14.EGL_NO_CONTEXT,
+    /** Highest GLES version to try (tests pass 2 to exercise the GLES 2 path on a GLES 3 device). */
+    maxVersion: Int = 3,
+) {
 
     val display: EGLDisplay
     val context: EGLContext
@@ -28,7 +32,7 @@ class EglCore(sharedContext: EGLContext = EGL14.EGL_NO_CONTEXT) {
         var chosen: EGLConfig? = null
         var ctx: EGLContext = EGL14.EGL_NO_CONTEXT
         var ver = 0
-        for (v in intArrayOf(3, 2)) {
+        for (v in intArrayOf(3, 2).filter { it <= maxVersion }) {
             val cfg = chooseConfig(v) ?: continue
             val attrs = intArrayOf(EGL14.EGL_CONTEXT_CLIENT_VERSION, v, EGL14.EGL_NONE)
             val c = EGL14.eglCreateContext(display, cfg, sharedContext, attrs, 0)
