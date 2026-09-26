@@ -177,12 +177,20 @@ data class QualityProfile(
     val depthTest: Boolean,
     /** Sclera/iris effects (eye whitening, eye colour, eye sharpening). */
     val eyeEffects: Boolean,
+    /** ADDED — start a segmentation readback at most every N frames (background effects). */
+    val segmentEveryFrames: Int = 1,
+    /** ADDED — taps of the portrait-blur disc kernel (compile-time constant in the shader). */
+    val bokehTaps: Int = 24,
+    /** ADDED — particle budget of particle lenses. */
+    val maxParticles: Int = 160,
+    /** ADDED — detection cadence used when only a lens needs the face (lenses keep tracking at every level). */
+    val lensDetectEveryFrames: Int = detectEveryFrames,
 ) {
     companion object {
-        private val FULL = QualityProfile(0.5f, 4, 1, 480, 384, retouchAndBlemish = true, smoothing = true, faceEffects = true, sharpen = true, depthTest = true, eyeEffects = true)
-        private val BALANCED = QualityProfile(0.375f, 3, 1, 416, 320, retouchAndBlemish = true, smoothing = true, faceEffects = true, sharpen = true, depthTest = true, eyeEffects = true)
-        private val LIGHT = QualityProfile(0.25f, 2, 2, 320, 224, retouchAndBlemish = false, smoothing = true, faceEffects = true, sharpen = true, depthTest = false, eyeEffects = true)
-        private val MINIMAL = QualityProfile(0.25f, 2, 4, 256, 192, retouchAndBlemish = false, smoothing = false, faceEffects = false, sharpen = false, depthTest = false, eyeEffects = false)
+        private val FULL = QualityProfile(0.5f, 4, 1, 480, 384, retouchAndBlemish = true, smoothing = true, faceEffects = true, sharpen = true, depthTest = true, eyeEffects = true, segmentEveryFrames = 1, bokehTaps = 24, maxParticles = 160)
+        private val BALANCED = QualityProfile(0.375f, 3, 1, 416, 320, retouchAndBlemish = true, smoothing = true, faceEffects = true, sharpen = true, depthTest = true, eyeEffects = true, segmentEveryFrames = 1, bokehTaps = 18, maxParticles = 120)
+        private val LIGHT = QualityProfile(0.25f, 2, 2, 320, 224, retouchAndBlemish = false, smoothing = true, faceEffects = true, sharpen = true, depthTest = false, eyeEffects = true, segmentEveryFrames = 2, bokehTaps = 12, maxParticles = 80)
+        private val MINIMAL = QualityProfile(0.25f, 2, 4, 256, 192, retouchAndBlemish = false, smoothing = false, faceEffects = false, sharpen = false, depthTest = false, eyeEffects = false, segmentEveryFrames = 3, bokehTaps = 8, maxParticles = 40, lensDetectEveryFrames = 2)
 
         fun of(level: BeautyQuality): QualityProfile = when (level) {
             BeautyQuality.FULL -> FULL

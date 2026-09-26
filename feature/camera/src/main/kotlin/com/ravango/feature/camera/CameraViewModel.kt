@@ -1,5 +1,6 @@
 package com.ravango.feature.camera
 
+import android.net.Uri
 import android.view.Surface
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -29,9 +30,15 @@ import com.ravango.core.model.service.EntitlementProvider
 import com.ravango.core.navigation.CameraRoute
 import com.ravango.engine.audio.AudioEngine
 import com.ravango.engine.beauty.BeautyEngine
+import com.ravango.engine.beauty.effects.BackgroundEffect
+import com.ravango.engine.beauty.effects.CameraEffects
+import com.ravango.engine.beauty.effects.FilterSwipe
+import com.ravango.engine.beauty.effects.Lens
+import com.ravango.engine.beauty.effects.LiveFilter
 import com.ravango.engine.camera.CameraEngine
 import com.ravango.engine.camera.CameraEvent
 import com.ravango.engine.camera.RecordingPhase
+import com.ravango.engine.camera.RecordingStatus
 import com.ravango.engine.camera.StopReason
 import com.ravango.engine.camera.capability.LensOption
 import com.ravango.engine.camera.encoder.BitrateCalculator
@@ -64,6 +71,7 @@ class CameraViewModel @Inject constructor(
     private val engine: CameraEngine,
     private val audioEngine: AudioEngine,
     private val beautyEngine: BeautyEngine,
+    private val cameraEffects: CameraEffects,
     private val preferences: PreferencesDataSource,
     private val projects: ProjectRepository,
     private val scripts: ScriptRepository,
@@ -83,6 +91,12 @@ class CameraViewModel @Inject constructor(
 
     /** ~30 Hz; read it in draw lambdas only. */
     val audioLevel: StateFlow<AudioLevel> = audioEngine.level
+
+    /**
+     * The live recording clock (duration, bytes, remaining time). Kept out of [state] on purpose: only the recording
+     * HUD reads it, so the rest of the studio does not recompose on every tick.
+     */
+    val recordingClock: StateFlow<RecordingStatus> = engine.recording
 
     private val _messages = Channel<StudioMessage>(Channel.BUFFERED)
     val messages: Flow<StudioMessage> = _messages.receiveAsFlow()
@@ -121,6 +135,7 @@ class CameraViewModel @Inject constructor(
         viewModelScope.launch {
             entitlementProvider.entitlements.collect { e ->
                 _state.update { it.copy(entitlements = e) }
+                reapplyEffectsGating(e)
                 if (_state.value.initialized) reapplyGating(e)
             }
         }
@@ -182,10 +197,20 @@ class CameraViewModel @Inject constructor(
         viewModelScope.launch { engine.focus.collect { f -> _state.update { it.copy(focus = f) } } }
         viewModelScope.launch { engine.liveExposure.collect { l -> _state.update { it.copy(live = l) } } }
         viewModelScope.launch { engine.previewFrame.collect { p -> _state.update { it.copy(previewFrame = p) } } }
-        viewModelScope.launch { engine.stats.collect { s -> _state.update { it.copy(stats = s) } } }
+        // PipelineStats are not mirrored into the UI state (nothing shows them; they would recompose the studio
+        // every second). Diagnostics read engine.stats directly.
         viewModelScope.launch { engine.thermal.collect { t -> _state.update { it.copy(thermal = t) } } }
         viewModelScope.launch {
-            engine.recording.collect { r -> _state.update { it.copy(recording = r) } }
+            // Only phase-level changes reach the UI state; the ticking clock is [recordingClock].
+            engine.recording
+                .distinctUntilChanged { a, b -> a.phase == b.phase && a.captureMode == b.captureMode && a.output == b.output && a.frameRate == b.frameRate }
+                .collect { r -> _state.update { it.copy(recording = r, lensTrayOpen = if (r.isActive) false else it.lensTrayOpen) } }
+        }
+        viewModelScope.launch { cameraEffects.effects.collect { e -> _state.update { it.copy(effects = e) } } }
+        viewModelScope.launch { cameraEffects.effectsStatus.collect { e -> _state.update { it.copy(effectsStatus = e) } } }
+        viewModelScope.launch { cameraEffects.hasBackgroundImage.collect { h -> _state.update { it.copy(hasBackgroundImage = h) } } }
+        viewModelScope.launch {
+            beautyEngine.status.map { it.faceCount }.distinctUntilChanged().collect { n -> _state.update { it.copy(facesTracked = n) } }
         }
         viewModelScope.launch {
             engine.recording.map { it.phase }.distinctUntilChanged().collect { phase ->
@@ -410,9 +435,83 @@ class CameraViewModel @Inject constructor(
         viewModelScope.launch { bypass.distinctUntilChanged().collect { engine.setPreviewBypass(it || _state.value.comparing) } }
     }
 
-    fun openSheet(sheet: StudioSheet) = _state.update { it.copy(sheet = sheet, proControlsOpen = false) }
+    fun openSheet(sheet: StudioSheet) = _state.update { it.copy(sheet = sheet, proControlsOpen = false, lensTrayOpen = false) }
     fun closeSheet() = _state.update { it.copy(sheet = StudioSheet.NONE) }
-    fun toggleProControls() = _state.update { it.copy(proControlsOpen = !it.proControlsOpen, sheet = StudioSheet.NONE) }
+    fun toggleProControls() = _state.update { it.copy(proControlsOpen = !it.proControlsOpen, sheet = StudioSheet.NONE, lensTrayOpen = false) }
+
+    // ---------------------------------------------------------------------------------------------------------
+    // Lenses, live filters, background effects (Pro gating: see [EffectsGating])
+    // ---------------------------------------------------------------------------------------------------------
+
+    fun toggleLensTray() {
+        if (_state.value.isRecording) return
+        _state.update { it.copy(lensTrayOpen = !it.lensTrayOpen, proControlsOpen = false, sheet = StudioSheet.NONE) }
+    }
+
+    fun closeLensTray() = _state.update { it.copy(lensTrayOpen = false) }
+
+    /**
+     * Applies [lens] (null = none). A Pro lens without the entitlement is not applied (the carousel shows it as
+     * locked and offers the paywall); returns whether it was applied.
+     */
+    fun selectLens(lens: Lens?): Boolean {
+        if (lens != null && !EffectsGating.lensAllowed(lens, _state.value.entitlements)) {
+            if (cameraEffects.effects.value.lens != null) cameraEffects.setLens(null)
+            return false
+        }
+        if (cameraEffects.effects.value.lens != lens) cameraEffects.setLens(lens)
+        return true
+    }
+
+    /** Filters a swipe cycles through: every free filter, plus Pro ones when entitled. */
+    fun swipeableFilters(): List<LiveFilter> = EffectsGating.swipeable(_state.value.entitlements)
+
+    fun setFilter(filter: LiveFilter): Boolean {
+        if (!EffectsGating.filterAllowed(filter, _state.value.entitlements)) return false
+        cameraEffects.setFilter(filter)
+        // Warm up the neighbours so the next swipe is instant.
+        val list = swipeableFilters()
+        val i = list.indexOf(filter)
+        if (i >= 0) cameraEffects.prefetch(listOf(list[(i + 1) % list.size], list[(i - 1 + list.size) % list.size]))
+        return true
+    }
+
+    fun setFilterIntensity(value: Int) = cameraEffects.setFilterIntensity(value)
+
+    /** Live split preview while the finger drags across the preview (no state change until committed). */
+    fun previewFilterSwipe(swipe: FilterSwipe?) = cameraEffects.setFilterSwipe(swipe)
+
+    fun setBackground(effect: BackgroundEffect): Boolean {
+        if (!EffectsGating.backgroundAllowed(effect, _state.value.entitlements)) return false
+        cameraEffects.setBackground(effect)
+        return true
+    }
+
+    fun onBackgroundPhotoPicked(uri: Uri) {
+        if (!EffectsGating.backgroundAllowed(BackgroundEffect.Image, _state.value.entitlements)) return
+        viewModelScope.launch {
+            if (cameraEffects.setBackgroundImage(uri)) {
+                cameraEffects.setBackground(BackgroundEffect.Image)
+            } else {
+                _messages.trySend(StudioMessage.BackgroundPhotoFailed)
+            }
+        }
+    }
+
+    /** Removes the lens, filter and background effect. */
+    fun clearEffects() {
+        cameraEffects.setLens(null)
+        cameraEffects.setFilter(LiveFilter.NONE)
+        cameraEffects.setBackground(BackgroundEffect.None)
+    }
+
+    /** A downgrade (or expired trial) must not keep Pro effects running. */
+    private fun reapplyEffectsGating(e: Entitlements) {
+        val fx = cameraEffects.effects.value
+        fx.lens?.let { if (!EffectsGating.lensAllowed(it, e)) cameraEffects.setLens(null) }
+        if (!EffectsGating.filterAllowed(fx.filter, e)) cameraEffects.setFilter(LiveFilter.NONE)
+        if (!EffectsGating.backgroundAllowed(fx.background, e)) cameraEffects.setBackground(BackgroundEffect.None)
+    }
 
     // ---------------------------------------------------------------------------------------------------------
     // Audio
@@ -524,6 +623,9 @@ class CameraViewModel @Inject constructor(
         runCatching { audioEngine.stopPreview() }
         runCatching { beautyEngine.setCompareMode(false) }
         runCatching { beautyEngine.setRecording(false) }
+        // Like Snapchat, the studio opens without a lens next time; filter and background are remembered.
+        runCatching { cameraEffects.setFilterSwipe(null) }
+        runCatching { cameraEffects.setLens(null) }
     }
 
     private companion object {

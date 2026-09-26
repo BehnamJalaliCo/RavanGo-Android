@@ -10,8 +10,11 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,6 +42,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChanged
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
@@ -95,8 +100,11 @@ internal fun frameRect(frame: PreviewFrame?, container: IntSize): Rect? {
 }
 
 /**
- * Live preview + overlays + gestures: tap to focus/meter, long-press for AE/AF lock, drag near the reticle for
- * exposure compensation, pinch to zoom.
+ * Live preview + overlays + gestures, disambiguated in one detector so they never fight:
+ * - tap → focus/meter, long-press → AE/AF lock;
+ * - two fingers → pinch zoom;
+ * - one finger moving mostly horizontally → live filter swipe ([onFilterDrag] / [onFilterRelease], in preview widths);
+ * - one finger moving vertically while the focus reticle is shown → exposure compensation.
  */
 @Composable
 internal fun StudioPreview(
@@ -115,8 +123,13 @@ internal fun StudioPreview(
     onZoom: (Float) -> Unit,
     onExposure: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    filterSwipeEnabled: Boolean = false,
+    onFilterDrag: (Float) -> Unit = {},
+    onFilterRelease: (Float) -> Unit = {},
 ) {
     val haptics = rememberHaptics()
+    val filterDrag by rememberUpdatedState(onFilterDrag)
+    val filterRelease by rememberUpdatedState(onFilterRelease)
     var container by remember { mutableStateOf(IntSize.Zero) }
     val rect = frameRect(frame, container)
     val currentRect by rememberUpdatedState(rect)
@@ -185,28 +198,65 @@ internal fun StudioPreview(
                         },
                     )
                 }
-                .pointerInput(Unit) {
-                    detectTransformGestures { _, pan, zoom, _ ->
-                        if (zoom != 1f) {
-                            val caps = currentCaps
-                            val range = caps?.zoomRange ?: (1f..1f)
-                            val next = (currentControls.zoomRatio * zoom).coerceIn(range.start, range.endInclusive)
-                            if (next != currentControls.zoomRatio) onZoom(next)
-                        } else if (reticle != null && currentCaps?.exposureCompensation == true && currentControls.iso == null && currentControls.shutterNs == null) {
-                            dragAccumulator -= pan.y
-                            val steps = (dragAccumulator / stepPx).toInt()
-                            if (steps != 0) {
-                                dragAccumulator -= steps * stepPx
-                                val range = currentCaps!!.exposureCompensationRange
-                                val next = (currentControls.exposureCompensation + steps).coerceIn(range)
-                                if (next != currentControls.exposureCompensation) {
-                                    haptics.perform(HapticEvent.TICK)
-                                    onExposure(next)
+                .pointerInput(filterSwipeEnabled) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        val velocity = VelocityTracker()
+                        velocity.addPosition(down.uptimeMillis, down.position)
+                        val slop = viewConfiguration.touchSlop
+                        var mode = GESTURE_UNDECIDED
+                        var pan = Offset.Zero
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val pressed = event.changes.count { it.pressed }
+                            if (pressed == 0) break
+                            if (pressed >= 2 && mode != GESTURE_SWIPE) mode = GESTURE_ZOOM
+                            val delta = event.calculatePan()
+                            when (mode) {
+                                GESTURE_UNDECIDED -> {
+                                    pan += delta
+                                    if (pan.getDistance() > slop) {
+                                        val exposureAvailable = reticle != null && currentCaps?.exposureCompensation == true &&
+                                            currentControls.iso == null && currentControls.shutterNs == null
+                                        mode = when {
+                                            filterSwipeEnabled && kotlin.math.abs(pan.x) > kotlin.math.abs(pan.y) * 1.2f -> GESTURE_SWIPE
+                                            exposureAvailable -> GESTURE_EXPOSURE
+                                            else -> GESTURE_IGNORED
+                                        }
+                                        if (mode == GESTURE_SWIPE && size.width > 0) filterDrag(pan.x / size.width)
+                                    }
                                 }
-                                showEv = true
-                                reticleStamp = System.nanoTime()
+                                GESTURE_ZOOM -> {
+                                    val zoom = event.calculateZoom()
+                                    if (zoom != 1f) {
+                                        val range = currentCaps?.zoomRange ?: (1f..1f)
+                                        val next = (currentControls.zoomRatio * zoom).coerceIn(range.start, range.endInclusive)
+                                        if (next != currentControls.zoomRatio) onZoom(next)
+                                    }
+                                }
+                                GESTURE_SWIPE -> if (size.width > 0) filterDrag(delta.x / size.width)
+                                GESTURE_EXPOSURE -> {
+                                    dragAccumulator -= delta.y
+                                    val steps = (dragAccumulator / stepPx).toInt()
+                                    if (steps != 0) {
+                                        dragAccumulator -= steps * stepPx
+                                        val range = currentCaps!!.exposureCompensationRange
+                                        val next = (currentControls.exposureCompensation + steps).coerceIn(range)
+                                        if (next != currentControls.exposureCompensation) {
+                                            haptics.perform(HapticEvent.TICK)
+                                            onExposure(next)
+                                        }
+                                        showEv = true
+                                        reticleStamp = System.nanoTime()
+                                    }
+                                }
                             }
+                            if (mode == GESTURE_ZOOM || mode == GESTURE_SWIPE || mode == GESTURE_EXPOSURE) {
+                                event.changes.forEach { if (it.positionChanged()) it.consume() }
+                            }
+                            event.changes.firstOrNull { it.id == down.id }?.let { velocity.addPosition(it.uptimeMillis, it.position) }
                         }
+                        if (mode == GESTURE_SWIPE && size.width > 0) filterRelease(velocity.calculateVelocity().x / size.width)
                     }
                 },
         )
@@ -264,3 +314,9 @@ private fun FocusReticle(position: Offset, focus: FocusState, evText: String?, i
         }
     }
 }
+
+private const val GESTURE_UNDECIDED = 0
+private const val GESTURE_ZOOM = 1
+private const val GESTURE_SWIPE = 2
+private const val GESTURE_EXPOSURE = 3
+private const val GESTURE_IGNORED = 4
