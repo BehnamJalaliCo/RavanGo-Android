@@ -124,6 +124,40 @@ object FrameGeometry {
     fun outputToBufferGl(rotationCw: Int, crop: CropRect, mirror: Boolean): Affine =
         Affine.FLIP_Y then outputToBufferImage(rotationCw, crop, mirror) then Affine.FLIP_Y
 
+    /**
+     * Camera2 sets a buffer transform on preview streams (sensor rotation, plus a horizontal flip for front cameras) so
+     * that plain TextureView previews look upright in the device's natural orientation. That transform is folded into
+     * `SurfaceTexture.getTransformMatrix`. Our geometry works on the *raw* sensor buffer, so the orientation part of the
+     * SurfaceTexture matrix must be cancelled, or frames end up rotated twice.
+     *
+     * Given the SurfaceTexture matrix [st] (column-major 4×4), writes into [out] the matrix `C` such that `st × C`
+     * keeps the SurfaceTexture's crop/scale but no rotation/mirroring (i.e. behaves like an untransformed buffer, whose
+     * matrix is a plain vertical flip). Returns false (and writes identity) when [st] has no orthogonal orientation part.
+     */
+    fun cancelSurfaceTextureOrientation(st: FloatArray, out: FloatArray): Boolean {
+        // Linear part of st (GL texture space): x' = st[0]·x + st[4]·y, y' = st[1]·x + st[5]·y.
+        // An untransformed buffer has linear part diag(1, -1); the orientation Q satisfies st = diag(1,-1) × Q.
+        val q00 = quantize(st[0]); val q01 = quantize(st[4])
+        val q10 = quantize(-st[1]); val q11 = quantize(-st[5])
+        val det = q00 * q11 - q01 * q10
+        out.fill(0f); out[0] = 1f; out[5] = 1f; out[10] = 1f; out[15] = 1f
+        if (det != 1 && det != -1) return false
+        // Q is orthogonal, so Q⁻¹ = Qᵀ; apply it about the texture centre (0.5, 0.5).
+        val i00 = q00.toFloat(); val i01 = q10.toFloat()
+        val i10 = q01.toFloat(); val i11 = q11.toFloat()
+        out[0] = i00; out[1] = i10
+        out[4] = i01; out[5] = i11
+        out[12] = 0.5f - (i00 * 0.5f + i01 * 0.5f)
+        out[13] = 0.5f - (i10 * 0.5f + i11 * 0.5f)
+        return true
+    }
+
+    private fun quantize(v: Float): Int = when {
+        v > 0.5f -> 1
+        v < -0.5f -> -1
+        else -> 0
+    }
+
     /** Clockwise rotation used to show a gravity-upright frame on a screen locked to the natural orientation. */
     fun previewRotationCw(deviceOrientation: Int): Int = Affine.normalize(360 - snap(deviceOrientation))
 

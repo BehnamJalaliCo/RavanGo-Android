@@ -95,6 +95,8 @@ internal class CameraRenderer(private val callbacks: Callbacks) {
     private val stMatrix = FloatArray(16)
     private val bufferMatrix = FloatArray(16)
     private val texMatrix = FloatArray(16)
+    private val stCompensation = FloatArray(16)
+    private val stTmp = FloatArray(16)
     private val previewMatrix = FloatArray(16)
     private val encoderMatrix = FloatArray(16)
 
@@ -334,7 +336,10 @@ internal class CameraRenderer(private val callbacks: Callbacks) {
             val frameFbo = fbo ?: return
             val ts = if (g.timestampRealtime) rawTs - (SystemClock.elapsedRealtimeNanos() - System.nanoTime()) else rawTs
             st.getTransformMatrix(stMatrix)
-            Matrix.multiplyMM(texMatrix, 0, stMatrix, 0, bufferMatrix, 0)
+            // Cancel the orientation Camera2 folds into the SurfaceTexture matrix; our geometry targets the raw buffer.
+            FrameGeometry.cancelSurfaceTextureOrientation(stMatrix, stCompensation)
+            Matrix.multiplyMM(stTmp, 0, stMatrix, 0, stCompensation, 0)
+            Matrix.multiplyMM(texMatrix, 0, stTmp, 0, bufferMatrix, 0)
 
             GLES20.glDisable(GLES20.GL_BLEND)
             frameFbo.bind()
