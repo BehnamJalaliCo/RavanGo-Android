@@ -2,6 +2,7 @@
 
 package com.ravango.feature.camera.ui
 
+import com.ravango.core.designsystem.component.RgSpinner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,7 +25,6 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.VisibilityOff
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -66,7 +66,7 @@ internal fun PostRecordSheet(
         Column(Modifier.fillMaxWidth().padding(horizontal = Spacing.gutter, vertical = Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
             when (state) {
                 PostRecordState.Saving -> Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(Modifier.size(28.dp), color = RgTheme.colors.accent, strokeWidth = 3.dp)
+                    RgSpinner(Modifier.size(28.dp), color = RgTheme.colors.accent, strokeWidth = 3.dp)
                     Spacer(Modifier.width(Spacing.md))
                     Text(stringResource(R.string.camera_saving_take), style = MaterialTheme.typography.titleMedium, color = Color.White)
                 }

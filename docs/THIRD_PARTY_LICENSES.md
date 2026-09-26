@@ -5,7 +5,7 @@ Generated from the app's release dependency graph by the AboutLibraries Gradle p
 
 **219 libraries.** Licence summary: Apache License 2.0 (198), Android Software Development Kit License (14), MIT License (5), BSD 3-Clause "New" or "Revised" License (2), GNU General Public License, version 2 (GPL2), with the classpath exception (1)
 
-Bundled assets: MediaPipe `face_landmarker.task` model and `canonical_face_model.obj` — Apache License 2.0 (Google), see `engine/beauty/src/main/assets/NOTICE.txt`.
+Bundled assets: MediaPipe `face_landmarker.task` and `selfie_segmenter.tflite` models and `canonical_face_model.obj` — Apache License 2.0 (Google), see `engine/beauty/src/main/assets/NOTICE.txt`.
 
 Fonts: *Ravagh* — commercial (fontiran.com, licence #136710), see [licenses/Ravagh-NOTICE.md](licenses/Ravagh-NOTICE.md); *Vazirmatn*, *Sahel*, *Samim* — SIL Open Font License 1.1, see [licenses/](licenses/).
 

@@ -8,6 +8,14 @@
 
 [![Android CI](https://github.com/BehnamJalaliCo/RavanGo-Android/actions/workflows/android.yml/badge.svg)](https://github.com/BehnamJalaliCo/RavanGo-Android/actions/workflows/android.yml)
 
+| خانه | استودیوی دوربین و لنزها | فیلترهای زنده | بیوتی و میکاپ |
+|:-:|:-:|:-:|:-:|
+| <img src="docs/screenshots/home-fa-light.png" width="200"/> | <img src="docs/screenshots/camera-studio-lenses-fa-dark.png" width="200"/> | <img src="docs/screenshots/camera-effects-filters-fa-dark.png" width="200"/> | <img src="docs/screenshots/beauty-panel-makeup-fa-dark.png" width="200"/> |
+| **پس‌زمینه‌ی مجازی** | **پروژه‌ها** | **اشتراک Pro** | **تنظیمات (تیره)** |
+| <img src="docs/screenshots/camera-effects-background-fa-light.png" width="200"/> | <img src="docs/screenshots/projects-fa-light.png" width="200"/> | <img src="docs/screenshots/paywall-fa-light.png" width="200"/> | <img src="docs/screenshots/settings-fa-dark.png" width="200"/> |
+
+<sub>تصاویر به‌صورت خودکار با تست‌های اسکرین‌شات Roborazzi (فارسی/انگلیسی، روشن/تیره) تولید می‌شوند؛ در استودیوی دوربین، یک تصویر نمونه جای پیش‌نمایش زنده را گرفته است.</sub>
+
 </div>
 
 ---
@@ -76,6 +84,11 @@
 - Grid، تراز (Level)، تایمر، نسبت تصویر (9:16، 16:9، 1:1، 4:5، 3:4، 4:3، 21:9)، Safe Area، نمایش فضای ذخیره‌سازی و **زمان قابل ضبط**.
 - خط لوله‌ی GPU واحد: پیش‌نمایش و فایل ضبط‌شده دقیقاً یکسان‌اند؛ اولویت همیشه با انکودر است و در صورت کندی، فریم پیش‌نمایش حذف می‌شود نه فریم ضبط.
 - ضبط **قطعه‌قطعه (segmented)** و **بازیابی پس از کرش**؛ توقف امن هنگام کمبود فضا یا دمای بحرانی.
+- **لنزهای صورت به سبک Snapchat** (چندچهره، روی پیش‌نمایش و فایل ضبط‌شده): چشم درشت، گونه‌ی پف‌کرده، صورت کوچک، آدم‌فضایی، چرخش (Swirl)، کک‌ومک و رژگونه، عینک، گربه، تاج، ستاره‌های چرخان، رنگین‌کمان با **باز کردن دهان**، درخشش نرم. استیکرها با زاویه‌ی سر می‌چرخند و همه‌ی گرافیک‌ها در زمان اجرا تولید می‌شوند.
+- **کاروسل لنز دور دکمه‌ی ضبط** با snap و لرزش لمسی، اعمال لنز هنگام عبور از زیر حلقه و راهنمای کوتاه («دهانت را باز کن»).
+- **۱۲ فیلتر زنده‌ی LUT** (Vivid، Warm، Cool، Mono، Pastel، Fade، Film، Noir، Sunset، Teal & Orange، Vintage، Cinema) با **کشیدن افقی روی تصویر** و نمایش تقسیم‌شده‌ی زنده بین دو فیلتر، و اسلایدر شدت (نگه‌داشتن روی نام فیلتر).
+- **پس‌زمینه‌ی مجازی** با MediaPipe Selfie Segmenter: بلور پرتره بدون هاله، رنگ ساده، گرادیان یا عکس دلخواه.
+- ژست‌های یکپارچه روی پیش‌نمایش: ضربه برای فوکوس، نگه‌داشتن برای قفل، دو انگشت برای زوم، کشیدن عمودی برای نوردهی.
 - تله‌پرامپتر روی دوربین (هم‌گام با شروع/توقف ضبط)، پنل بیوتی و پنل صدا در همان صفحه. پس از ضبط، پروژه ساخته و **ادیتور** باز می‌شود.
 
 ### ۴. صدا (`engine:audio`، `core:media/dsp`)
@@ -226,6 +239,7 @@ Workflow: [`.github/workflows/android.yml`](.github/workflows/android.yml)
 | `RAVANGO_RELEASE_KEYSTORE_BASE64` | برای انتشار در Play | keystore انتشار به‌صورت base64 |
 | `RAVANGO_RELEASE_STORE_PASSWORD`، `RAVANGO_RELEASE_KEY_ALIAS`، `RAVANGO_RELEASE_KEY_PASSWORD` | همراه keystore | |
 | `RAVANGO_SUPABASE_URL`، `RAVANGO_SUPABASE_ANON_KEY`، `RAVANGO_GOOGLE_WEB_CLIENT_ID`، `RAVANGO_AI_GATEWAY_URL` | اختیاری | فعال‌سازی سرویس‌های ابری در APK |
+| `RAVANGO_OWNER_CODE_SHA256` | اختیاری | هش SHA-256 کد «حالت تست Pro» مالک (خود کد هرگز در مخزن نیست) |
 
 ---
 
@@ -243,6 +257,9 @@ Workflow: [`.github/workflows/android.yml`](.github/workflows/android.yml)
 | ابر | اسکریپت‌ها و تنظیمات | + پروژه‌ها و ۵۰ گیگابایت ویدیو | + پروژه‌ها و ۲۰ گیگابایت |
 
 بسته‌های اعتبار هوش مصنوعی (۲۰۰ و ۱۰۰۰) برای همه. همه‌ی قوانین به‌صورت داده تعریف شده‌اند و از راه دور (جدول `app_config`) قابل تغییرند.
+
+### حالت تست Pro (برای مالک)
+برای بررسی همه‌ی قابلیت‌های Pro بدون خرید: **حساب ← درباره ← ۷ بار ضربه روی شماره‌ی نسخه** و وارد کردن کد مالک. همه‌ی قابلیت‌های Pro و اعتبار نامحدود هوش مصنوعی باز می‌شوند و از همان کارت قابل خاموش شدن است. فقط هش SHA-256 کد (`ownerCodeSha256` / `RAVANGO_OWNER_CODE_SHA256`) داخل APK قرار می‌گیرد؛ اگر تنظیم نشود، این گزینه اصلاً نمایش داده نمی‌شود.
 
 ---
 
@@ -296,7 +313,7 @@ Workflow: [`.github/workflows/android.yml`](.github/workflows/android.yml)
 **teleprompter → pro camera → real-time beauty & makeup → audio → multi-track editor → subtitles & AI → export**.
 Persian is the primary language (full RTL); English is fully supported.
 
-- **Stack:** Kotlin 2.2, Jetpack Compose (custom pastel/glass design system), Hilt, Room, DataStore, Camera2 + EGL/GLES + MediaCodec, MediaPipe Face Landmarker (Snapchat-style 3D face mesh, UV-space makeup, mesh-warp reshape), Media3 1.8 (Transformer/Effect/CompositionPlayer), Anthropic Java SDK (Claude via a server-side gateway), Supabase (auth, RLS sync, storage), Google Play Billing 8.
+- **Stack:** Kotlin 2.2, Jetpack Compose (custom pastel/glass design system), Hilt, Room, DataStore, Camera2 + EGL/GLES + MediaCodec, MediaPipe Face Landmarker + Selfie Segmenter (Snapchat-style 3D face mesh, UV-space makeup, mesh-warp reshape, 12 face lenses, swipeable LUT filters, virtual background), Media3 1.8 (Transformer/Effect/CompositionPlayer), Anthropic Java SDK (Claude via a server-side gateway), Supabase (auth, RLS sync, storage), Google Play Billing 8.
 - **Modules:** `core:*` foundations, `engine:*` (render, camera, audio, beauty, teleprompter, editor, ai), `platform:*` (auth, cloud, billing), `feature:*` screens. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 - **Build:** `./gradlew :app:assembleDebug` / `:app:assembleRelease`; tests: `./gradlew testDebugUnitTest`.
 - **Downloads:** GitHub Releases → `latest-build` (built by [CI](.github/workflows/android.yml) on every push).
