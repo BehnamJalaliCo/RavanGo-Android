@@ -1,0 +1,11 @@
+# A Pro-gated action opens the paywall for a free user: record it and close it again.
+appId: com.ravango.app.debug
+---
+- runFlow:
+    when:
+      visible: 'Restore|بازیابی'
+    commands:
+      - takeScreenshot: paywall_from_gate
+      - tapOn: 'Close|بستن'
+      - waitForAnimationToEnd:
+          timeout: 3000

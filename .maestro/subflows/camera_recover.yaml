@@ -1,0 +1,15 @@
+# If Camera Studio shows its error card (camera stopped / unsupported / busy), record it and tap Retry once.
+appId: com.ravango.app.debug
+---
+- runFlow:
+    when:
+      visible: '.*The camera stopped.*|.*دوربین متوقف شد.*|.*This setting isn.t supported.*|.*این تنظیم پشتیبانی نمی.شود.*|.*Camera is busy.*|.*دوربین مشغول است.*'
+    commands:
+      - takeScreenshot: camera_error_card
+      - tapOn:
+          text: 'Retry|تلاش دوباره'
+          optional: true
+      - extendedWaitUntil:
+          visible: 'Start recording|شروع ضبط'
+          timeout: 30000
+          optional: true

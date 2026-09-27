@@ -1,0 +1,84 @@
+# Projects: tabs, sort, search, project actions (more menu, duplicate), open in editor, Templates.
+# Runs after the camera/editor flows in a suite, so there are projects to show; also passes on an empty list.
+appId: com.ravango.app.debug
+name: 09 Projects
+tags:
+  - smoke
+---
+- runFlow: ../subflows/launch.yaml
+- tapOn: 'Projects|پروژه.ها'
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: projects_all
+- tapOn:
+    text: 'Drafts|پیش.نویس.ها'
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: projects_drafts
+- tapOn:
+    text: 'Exported|خروجی.گرفته'
+    index: 0
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: projects_exported
+- tapOn:
+    text: 'All|همه'
+    index: 0
+    optional: true
+- tapOn:
+    text: 'Name|نام'
+    optional: true
+- tapOn:
+    text: 'Recent|جدیدترین'
+    optional: true
+- takeScreenshot: projects_sorted
+
+# Project actions (only when at least one project exists).
+- runFlow:
+    when:
+      visible: 'More|بیشتر'
+    commands:
+      - tapOn:
+          text: 'More|بیشتر'
+          index: 0
+      - extendedWaitUntil:
+          visible: 'Open in editor|باز کردن در ویرایشگر'
+          timeout: 10000
+      - takeScreenshot: projects_actions_sheet
+      - tapOn: 'Duplicate|کپی'
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: projects_duplicated
+      - tapOn:
+          text: 'More|بیشتر'
+          index: 0
+      - tapOn: 'Open in editor|باز کردن در ویرایشگر'
+      - extendedWaitUntil:
+          visible: 'Export|خروجی'
+          timeout: 30000
+      - takeScreenshot: projects_opened_editor
+      - back
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# Search
+- tapOn:
+    text: 'Search|جستجو'
+    optional: true
+- inputText: zzqqxx
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: projects_search_empty
+- hideKeyboard
+- runFlow: ../subflows/go_home.yaml
+
+# Templates
+- tapOn: 'Templates|قالب.ها'
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: templates_list
+- scroll
+- takeScreenshot: templates_scrolled
+- runFlow: ../subflows/go_home.yaml

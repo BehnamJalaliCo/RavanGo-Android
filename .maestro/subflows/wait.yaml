@@ -1,0 +1,7 @@
+# Waits WAIT_MS milliseconds (Maestro has no sleep; wait for something that never appears).
+appId: com.ravango.app.debug
+---
+- extendedWaitUntil:
+    visible: 'ravango-maestro-never-visible-marker'
+    timeout: ${WAIT_MS}
+    optional: true

@@ -1,0 +1,52 @@
+# In Camera Studio: record for RECORD_MS (default 5 s), stop, and wait for the outcome. A take must never be
+# lost silently: the studio shows the saved-take sheet ("Open in Editor"), a "saved up to that moment" warning,
+# or an explicit "nothing to save" message. If the take was lost (flaky emulated camera), try once more.
+appId: com.ravango.app.debug
+---
+- runFlow: camera_recover.yaml
+- tapOn: 'Start recording|شروع ضبط'
+- extendedWaitUntil:
+    visible: 'Stop recording|پایان ضبط'
+    timeout: 15000
+- runFlow:
+    file: wait.yaml
+    env:
+      WAIT_MS: "${typeof RECORD_MS !== 'undefined' ? RECORD_MS : 5000}"
+- takeScreenshot: camera_recording
+# The camera may already have ended the take on its own (device error): only stop if still recording.
+- runFlow:
+    when:
+      visible: 'Stop recording|پایان ضبط'
+    commands:
+      - tapOn: 'Stop recording|پایان ضبط'
+- extendedWaitUntil:
+    visible: 'Open in Editor|باز کردن در ویرایشگر|.*nothing to save.*|.*چیزی برای ذخیره نبود.*|.*Nothing was recorded.*|.*چیزی ضبط نشد.*|.*We couldn.t save this take to a project.*|.*ذخیرهٔ این برداشت در پروژه ممکن نشد.*'
+    timeout: 90000
+- takeScreenshot: camera_take_result
+- runFlow:
+    when:
+      notVisible: 'Open in Editor|باز کردن در ویرایشگر'
+    commands:
+      - takeScreenshot: camera_take_lost_retrying
+      - runFlow: camera_recover.yaml
+      - extendedWaitUntil:
+          visible: 'Start recording|شروع ضبط'
+          timeout: 30000
+      - tapOn: 'Start recording|شروع ضبط'
+      - extendedWaitUntil:
+          visible: 'Stop recording|پایان ضبط'
+          timeout: 15000
+      - runFlow:
+          file: wait.yaml
+          env:
+            WAIT_MS: "5000"
+      - runFlow:
+          when:
+            visible: 'Stop recording|پایان ضبط'
+          commands:
+            - tapOn: 'Stop recording|پایان ضبط'
+      - extendedWaitUntil:
+          visible: 'Open in Editor|باز کردن در ویرایشگر|.*nothing to save.*|.*چیزی برای ذخیره نبود.*'
+          timeout: 90000
+      - takeScreenshot: camera_take_result_retry
+- assertVisible: 'Open in Editor|باز کردن در ویرایشگر'

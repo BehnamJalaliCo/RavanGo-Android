@@ -1,0 +1,82 @@
+# First run from a clean install: language, the two value pages, privacy/theme/focus choices, Get started.
+appId: com.ravango.app.debug
+name: 01 Onboarding (first run)
+tags:
+  - smoke
+---
+- launchApp:
+    appId: com.ravango.app.debug
+    clearState: true
+    stopApp: true
+    permissions:
+      all: allow
+- runFlow: ../subflows/dismiss_system_dialogs.yaml
+- extendedWaitUntil:
+    visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*'
+    timeout: 45000
+- takeScreenshot: onboarding_1_language_default
+- runFlow: ../subflows/choose_language.yaml
+- takeScreenshot: onboarding_1_language_chosen
+
+# Page 2 — teleprompter value page
+- tapOn: 'Continue|ادامه'
+- extendedWaitUntil:
+    visible: '.*Read naturally, right at the lens.*|.*روان بخوانید، رو به لنز.*'
+    timeout: 10000
+- takeScreenshot: onboarding_2_prompter
+# Back returns to the language page, Continue comes back.
+- tapOn: 'Back|بازگشت'
+- extendedWaitUntil:
+    visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*'
+    timeout: 10000
+- tapOn: 'Continue|ادامه'
+- extendedWaitUntil:
+    visible: '.*Read naturally, right at the lens.*|.*روان بخوانید، رو به لنز.*'
+    timeout: 10000
+
+# Page 3 — beauty/editor value page
+- tapOn: 'Continue|ادامه'
+- extendedWaitUntil:
+    visible: '.*Look your best, edit in minutes.*|.*بهترین خودتان باشید، در چند دقیقه تدوین کنید.*'
+    timeout: 10000
+- takeScreenshot: onboarding_3_beauty
+
+# Page 4 — privacy promises, consents, theme, creator focus
+- tapOn: 'Continue|ادامه'
+- extendedWaitUntil:
+    visible: '.*Your videos stay yours.*|.*ویدیوهایتان مال خودتان است.*'
+    timeout: 10000
+- takeScreenshot: onboarding_4_privacy
+- tapOn: '.*Anonymous usage statistics.*|.*آمار ناشناس استفاده.*'
+- tapOn: '.*Anonymous usage statistics.*|.*آمار ناشناس استفاده.*'
+- scrollUntilVisible:
+    element: 'Dark|تیره'
+    direction: DOWN
+    timeout: 15000
+- tapOn: 'Dark|تیره'
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: onboarding_4_theme_dark
+- tapOn: 'System|مطابق سیستم'
+- scrollUntilVisible:
+    element: '.*YouTube.*|.*یوتیوب.*'
+    direction: DOWN
+    timeout: 15000
+- tapOn: '.*YouTube.*|.*یوتیوب.*'
+- tapOn: '.*Podcast.*|.*پادکست.*'
+- takeScreenshot: onboarding_4_focus
+
+- tapOn: 'Get started|شروع کنیم'
+- extendedWaitUntil:
+    visible: '.*New recording.*|.*ضبط جدید.*'
+    timeout: 30000
+- takeScreenshot: onboarding_done_home
+
+# Onboarding is not shown again on the next launch.
+- launchApp:
+    appId: com.ravango.app.debug
+    stopApp: true
+- extendedWaitUntil:
+    visible: '.*New recording.*|.*ضبط جدید.*'
+    timeout: 30000
+- assertNotVisible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*'

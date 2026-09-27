@@ -1,0 +1,20 @@
+# Picks the app language on the first onboarding page from the APP_LANG env var
+# (`-e APP_LANG=en` for English; anything else, or unset, keeps Persian — the app's primary language).
+# Choosing a language recreates the activity, so wait for the page to come back.
+appId: com.ravango.app.debug
+---
+- runFlow:
+    when:
+      true: ${typeof APP_LANG !== 'undefined' && APP_LANG === 'en'}
+    commands:
+      - tapOn: '.*English.*'
+- runFlow:
+    when:
+      true: ${typeof APP_LANG === 'undefined' || APP_LANG !== 'en'}
+    commands:
+      - tapOn: '.*فارسی.*'
+- waitForAnimationToEnd:
+    timeout: 5000
+- extendedWaitUntil:
+    visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*'
+    timeout: 15000

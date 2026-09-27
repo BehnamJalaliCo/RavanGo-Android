@@ -1,0 +1,22 @@
+# Slow CI emulators sometimes show "<System app> isn't responding" over everything. Dismiss it with "Wait"
+# (an ANR of RavanGo itself is still recorded in logcat/dropbox by the runner and reported).
+appId: com.ravango.app.debug
+---
+- runFlow:
+    when:
+      visible: ".*isn't responding.*|.*keeps stopping.*|.*has stopped.*"
+    commands:
+      - takeScreenshot: system_dialog
+      - tapOn: 'Wait|Close app|Close|OK'
+      - waitForAnimationToEnd:
+          timeout: 3000
+- runFlow:
+    when:
+      visible: ".*isn't responding.*|.*keeps stopping.*|.*has stopped.*"
+    commands:
+      - tapOn: 'Wait|Close app|Close|OK'
+- runFlow:
+    when:
+      visible: 'GOT IT|Got it'
+    commands:
+      - tapOn: 'GOT IT|Got it'

@@ -1,0 +1,71 @@
+# Paywall on a device without a usable store (emulator image without Play Store): must show an honest
+# "purchases unavailable / plans couldn't be loaded" state, retry and restore must not crash, close works.
+appId: com.ravango.app.debug
+name: 11 Paywall (store unavailable)
+tags:
+  - smoke
+---
+- runFlow: ../subflows/launch.yaml
+- tapOn: 'Go Pro|نسخهٔ حرفه.ای'
+- extendedWaitUntil:
+    visible: 'Restore|بازیابی'
+    timeout: 15000
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 3000
+- takeScreenshot: paywall_top
+- scrollUntilVisible:
+    element: '.*Choose your plan.*|.*طرحت را انتخاب کن.*'
+    direction: DOWN
+    timeout: 15000
+    optional: true
+- takeScreenshot: paywall_plans
+- scroll
+- takeScreenshot: paywall_plans_scrolled
+- tapOn:
+    text: 'Try again|تلاش دوباره'
+    optional: true
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 3000
+- takeScreenshot: paywall_after_retry
+# If plans did load (Play-enabled image), select one and start the purchase, then cancel from Play's sheet.
+- tapOn:
+    text: 'Yearly|سالانه'
+    optional: true
+- tapOn:
+    text: 'Monthly|ماهانه'
+    optional: true
+- scrollUntilVisible:
+    element: 'Continue with Free|ادامه با نسخهٔ رایگان'
+    direction: DOWN
+    timeout: 10000
+    optional: true
+- takeScreenshot: paywall_bottom
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+- tapOn: 'Restore|بازیابی'
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 3000
+- takeScreenshot: paywall_after_restore
+- tapOn: 'Close|بستن'
+- extendedWaitUntil:
+    visible: '.*New recording.*|.*ضبط جدید.*'
+    timeout: 15000
+
+# Paywall from Account → Subscription.
+- tapOn: 'Account|حساب کاربری'
+- tapOn: '.*Subscription.*|.*اشتراک.*'
+- extendedWaitUntil:
+    visible: 'Restore|بازیابی'
+    timeout: 15000
+- takeScreenshot: paywall_from_account
+- runFlow: ../subflows/go_home.yaml

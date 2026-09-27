@@ -3,6 +3,7 @@ package com.ravango.feature.ai
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -194,7 +195,7 @@ private fun InputCard(state: AiStudioUiState, tool: AiTool, onInput: (String) ->
             } else {
                 null
             },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag("ai_input"),
         )
     }
 }

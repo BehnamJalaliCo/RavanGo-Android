@@ -1,0 +1,55 @@
+# Just-in-time permissions: with camera + microphone denied, Camera Studio shows the in-app rationale;
+# "Allow access" raises the system dialog; granting it brings up the live preview.
+appId: com.ravango.app.debug
+name: 12 Camera permissions (rationale → system dialog → preview)
+tags:
+  - camera
+---
+- launchApp:
+    appId: com.ravango.app.debug
+    stopApp: true
+    permissions:
+      all: deny
+- runFlow: ../subflows/dismiss_system_dialogs.yaml
+- extendedWaitUntil:
+    visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*|.*New recording.*|.*ضبط جدید.*|RavanGo closed unexpectedly|روان.گو دفعه.ی قبل ناگهان بسته شد'
+    timeout: 45000
+- runFlow:
+    when:
+      visible: 'RavanGo closed unexpectedly|روان.گو دفعه.ی قبل ناگهان بسته شد'
+    commands:
+      - takeScreenshot: crash_report_prompt
+      - tapOn: 'Not now|فعلاً نه'
+- runFlow:
+    when:
+      visible: '.*Welcome to RavanGo.*|.*به روان.گو خوش آمدید.*'
+    file: ../subflows/onboarding_quick.yaml
+- tapOn: 'Start recording|شروع ضبط'
+- extendedWaitUntil:
+    visible: 'Allow access|اجازه دسترسی'
+    timeout: 20000
+- takeScreenshot: permission_rationale
+- tapOn: 'Allow access|اجازه دسترسی'
+- extendedWaitUntil:
+    visible: 'While using the app|Allow|ALLOW|Only this time'
+    timeout: 15000
+- takeScreenshot: permission_system_dialog
+- tapOn: 'While using the app|Allow|ALLOW'
+# The microphone may be requested right after the camera.
+- runFlow:
+    when:
+      visible: 'While using the app|Allow|ALLOW'
+    commands:
+      - tapOn: 'While using the app|Allow|ALLOW'
+- extendedWaitUntil:
+    visible: 'Start recording|شروع ضبط'
+    timeout: 30000
+- runFlow:
+    file: ../subflows/wait.yaml
+    env:
+      WAIT_MS: 2000
+- takeScreenshot: permission_granted_preview
+- tapOn: 'Close studio|بستن استودیو'
+- extendedWaitUntil:
+    visible: '.*New recording.*|.*ضبط جدید.*'
+    timeout: 20000

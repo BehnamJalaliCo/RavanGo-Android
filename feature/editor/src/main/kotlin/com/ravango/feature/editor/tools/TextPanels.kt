@@ -28,6 +28,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -139,7 +140,7 @@ fun TextPanel(state: EditorUiState, vm: EditorActions) {
         var draft by rememberSaveable { mutableStateOf("") }
         var style by remember { mutableStateOf(TextStyleSpec()) }
         Row(Modifier.fillMaxWidth().padding(horizontal = Spacing.lg), verticalAlignment = Alignment.CenterVertically) {
-            RgTextField(draft, { draft = it }, Modifier.weight(1f), placeholder = stringResource(R.string.editor_text_placeholder), singleLine = false, maxLines = 3)
+            RgTextField(draft, { draft = it }, Modifier.weight(1f).testTag("editor_text_input"), placeholder = stringResource(R.string.editor_text_placeholder), singleLine = false, maxLines = 3)
             Spacer(Modifier.width(Spacing.sm))
             RgIconButton(Icons.Rounded.Add, stringResource(R.string.editor_add_text), {
                 vm.addText(draft, style)

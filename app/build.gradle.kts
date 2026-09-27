@@ -21,6 +21,12 @@ fun secret(name: String): String {
 
 fun quoted(v: String) = "\"" + v.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 
+/**
+ * Opt-in for automated device tests on x86_64 emulators (`-Pravango.emulatorAbi=true`): adds x86_64 natives
+ * (MediaPipe etc.) to the DEBUG build only. Release builds always stay a single ARM-only APK.
+ */
+val emulatorAbi = providers.gradleProperty("ravango.emulatorAbi").orNull.toBoolean()
+
 android {
     namespace = "com.ravango.app"
 
@@ -84,6 +90,7 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            if (emulatorAbi) ndk { abiFilters += "x86_64" }
         }
         release {
             isMinifyEnabled = true

@@ -1,0 +1,228 @@
+name: Device tests
+
+# Runs the real app on Android emulators and walks through every screen with Maestro (.maestro/flows),
+# in Persian and English. Catches crashes/ANRs, captures screenshots + logcat, and publishes the results to
+# the rolling "device-tests" release (public, no auth needed) and as workflow artifacts.
+# Local runs: docs/dev/DEVICE_TESTS.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      locales:
+        description: "Optional: override the languages every emulator job tests (e.g. \"fa\"); empty = matrix default"
+        default: ""
+      flows:
+        description: "Optional: only these flow files (space separated, e.g. .maestro/flows/05_camera_studio.yaml)"
+        default: ""
+  push:
+    branches: [ "claude/ravango-video-production-app-4m2l7j", "wip/device-tests" ]
+    paths:
+      - "app/**"
+      - "core/**"
+      - "engine/**"
+      - "feature/**"
+      - "platform/**"
+      - "build-logic/**"
+      - "gradle/**"
+      - "*.gradle.kts"
+      - "gradle.properties"
+      - ".maestro/**"
+      - "scripts/device-tests/**"
+      - ".github/workflows/device-tests.yml"
+
+concurrency:
+  group: device-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  APP_ID: com.ravango.app.debug
+  MAESTRO_VERSION: "2.10.0"
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g
+
+jobs:
+  build:
+    name: Build emulator APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      owner_code: ${{ steps.owner.outputs.configured }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - id: owner
+        env:
+          HASH: ${{ secrets.RAVANGO_OWNER_CODE_SHA256 }}
+        run: echo "configured=$([ -n "$HASH" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      # Debug build + x86_64 natives (opt-in property; the release APK stays ARM-only). The licensed font is not
+      # needed here: the build falls back to the open font like android.yml does without the secret.
+      - name: Build debug APK for x86_64 emulators
+        env:
+          RAVANGO_OWNER_CODE_SHA256: ${{ secrets.RAVANGO_OWNER_CODE_SHA256 }}
+        run: ./gradlew :app:assembleDebug -Pravango.emulatorAbi=true --stacktrace
+      # Instrumented GL tests (shader compilation + effects pipeline) run on the same emulators.
+      - name: Build instrumented test APKs
+        run: ./gradlew :engine:beauty:assembleDebugAndroidTest --stacktrace
+      - uses: actions/upload-artifact@v4
+        with:
+          name: emulator-apk
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            engine/beauty/build/outputs/apk/androidTest/debug/*.apk
+          retention-days: 7
+
+  device:
+    name: Emulator API ${{ matrix.api }} (${{ matrix.locales }})
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        # One job per (API, language) so they run in parallel.
+        include:
+          - api: 34
+            locales: "fa"
+          - api: 34
+            locales: "en"
+          - api: 28
+            locales: "fa"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: emulator-apk
+          path: apk
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install Maestro ${{ env.MAESTRO_VERSION }}
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+      - name: Run flows on the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          OWNER_CODE_CONFIGURED: ${{ needs.build.outputs.owner_code }}
+          FLOWS: ${{ github.event.inputs.flows }}
+          TEST_APKS: apk/engine/beauty/build/outputs/apk/androidTest/debug/*.apk
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          ram-size: 4096M
+          disk-size: 6000M
+          cores: 3
+          disable-animations: true
+          # Emulated front + back cameras; audio stays on so the microphone exists for audio recording.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-boot-anim -camera-back emulated -camera-front emulated
+          script: bash scripts/device-tests/run-suite.sh apk/app/build/outputs/apk/debug/app-debug.apk results "${{ github.event.inputs.locales || matrix.locales }}"
+      - name: Result
+        id: result
+        if: always()
+        run: |
+          mkdir -p results
+          cat results/result.env 2>/dev/null || echo "RUN_FAILED=1" | tee results/result.env
+          cat results/result.env >> "$GITHUB_OUTPUT"
+          echo "## API ${{ matrix.api }} (${{ matrix.locales }})" >> "$GITHUB_STEP_SUMMARY"
+          cat results/summary.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "No summary (emulator or suite failed to start)." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: device-results-api${{ matrix.api }}-${{ matrix.locales }}
+          path: results
+          retention-days: 14
+      - name: Fail on crashes, ANRs or failed flows
+        if: always()
+        run: |
+          . results/result.env || exit 1
+          if [ -n "${INSTALL_FAILED:-}" ] || [ -n "${RUN_FAILED:-}" ]; then echo "::error::Suite did not run"; exit 1; fi
+          if [ "${CRASHES:-0}" != "0" ]; then echo "::error::App crashed in $CRASHES flow(s) — see summary.md"; fi
+          if [ "${ANRS:-0}" != "0" ]; then echo "::error::App ANR in $ANRS flow(s) — see summary.md"; fi
+          if [ "${FAILED_FLOWS:-0}" != "0" ]; then echo "::error::$FAILED_FLOWS flow(s) failed — see summary.md"; fi
+          if [ "${INSTRUMENTED_FAILED:-0}" != "0" ]; then echo "::error::Instrumented tests failed — see summary.md"; fi
+          [ "${CRASHES:-0}" = "0" ] && [ "${ANRS:-0}" = "0" ] && [ "${FAILED_FLOWS:-0}" = "0" ] && [ "${INSTRUMENTED_FAILED:-0}" = "0" ]
+
+  publish:
+    name: Publish results (release "device-tests")
+    needs: device
+    if: always() && needs.device.result != 'skipped' && needs.device.result != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: device-results-*
+          path: all
+      - name: Package
+        run: |
+          sudo apt-get install -y -qq zip python3-pil >/dev/null 2>&1 || true
+          mkdir -p dist
+          {
+            echo "# RavanGo device tests — run #${{ github.run_number }}"
+            echo
+            echo "Commit \`${GITHUB_SHA::7}\` on \`${GITHUB_REF_NAME}\` · [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo
+            echo "Download everything: \`curl -L -o device-tests.zip https://github.com/${{ github.repository }}/releases/download/device-tests/device-tests.zip\`"
+            echo
+            for d in all/device-results-*; do
+              [ -d "$d" ] || continue
+              echo "## ${d#all/device-results-}"
+              echo
+              sed '1d' "$d/summary.md" 2>/dev/null || echo "(no summary — the emulator job failed before the suite ran)"
+              echo
+            done
+          } > dist/summary.md
+          # Light copy for the release: screenshots downscaled to JPEG, logs kept, videos dropped (they stay in the
+          # workflow artifacts).
+          python3 - <<'EOF'
+          import shutil, pathlib
+          src, dst = pathlib.Path("all"), pathlib.Path("light")
+          try:
+              from PIL import Image
+          except Exception:
+              Image = None
+          for p in src.rglob("*"):
+              if p.is_dir() or "/video/" in p.as_posix():
+                  continue
+              rel = p.relative_to(src)
+              out = dst / rel
+              out.parent.mkdir(parents=True, exist_ok=True)
+              if p.suffix == ".png" and Image is not None:
+                  im = Image.open(p).convert("RGB")
+                  im.thumbnail((540, 1200))
+                  im.save(out.with_suffix(".jpg"), quality=70)
+              elif p.suffix in (".mp4",):
+                  continue
+              else:
+                  shutil.copy2(p, out)
+          EOF
+          cp dist/summary.md light/summary.md
+          (cd light && zip -qr ../dist/device-tests.zip .)
+          ls -la dist
+          cat dist/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload to the rolling "device-tests" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if ! gh release view device-tests >/dev/null 2>&1; then
+            gh release create device-tests --prerelease --target "$GITHUB_SHA" \
+              --title "RavanGo device tests (rolling)" \
+              --notes "Latest on-device test results (Maestro on Android emulators). summary.md = verdict + crash traces; device-tests.zip = screenshots, logcat, Maestro logs per flow."
+          fi
+          gh release upload device-tests dist/summary.md dist/device-tests.zip --clobber
+          gh release edit device-tests --title "RavanGo device tests (run #${{ github.run_number }}, ${GITHUB_SHA::7})" \
+            --notes-file dist/summary.md || true

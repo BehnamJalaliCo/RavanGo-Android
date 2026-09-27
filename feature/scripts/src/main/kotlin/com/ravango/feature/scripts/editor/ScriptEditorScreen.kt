@@ -75,6 +75,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDirection
@@ -359,7 +360,7 @@ private fun EditorBody(
                     singleLine = true,
                     textStyle = MaterialTheme.typography.headlineSmall.copy(color = colors.textPrimary, textDirection = TextDirection.Content),
                     cursorBrush = SolidColor(colors.accent),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("script_title"),
                 )
             }
         }
@@ -400,7 +401,7 @@ private fun EditorBody(
                             onValueChange = onBodyChange,
                             textStyle = bodyStyle,
                             cursorBrush = SolidColor(colors.accent),
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().testTag("script_body"),
                         )
                     }
                 }

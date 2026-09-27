@@ -1,0 +1,135 @@
+# Account hub, Settings (language switch at runtime, theme, toggles, AI/storage sections), Cloud, Privacy,
+# Terms, About with the hidden owner "Pro test mode" entry (tap the version 7 times → dialog), Licenses.
+appId: com.ravango.app.debug
+name: 10 Account, Settings, About
+tags:
+  - smoke
+---
+- runFlow: ../subflows/launch.yaml
+- tapOn: 'Account|حساب کاربری'
+- extendedWaitUntil:
+    visible: 'Settings|تنظیمات'
+    timeout: 10000
+- takeScreenshot: account_hub
+
+# Settings
+- tapOn: 'Settings|تنظیمات'
+- extendedWaitUntil:
+    visible: '.*Appearance \& language.*|.*ظاهر و زبان.*'
+    timeout: 10000
+- takeScreenshot: settings_top
+# Switch the app language at runtime (recreates the activity) and switch back.
+- tapOn: 'English'
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: settings_language_en
+- runFlow:
+    when:
+      visible: 'RavanGo closed unexpectedly|روان.گو دفعه.ی قبل ناگهان بسته شد'
+    commands:
+      - takeScreenshot: crash_report_prompt_after_recreate
+      - tapOn: 'Not now|فعلاً نه'
+- tapOn: 'فارسی'
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: settings_language_fa
+- runFlow:
+    when:
+      true: ${typeof APP_LANG !== 'undefined' && APP_LANG === 'en'}
+    commands:
+      - tapOn: 'English'
+      - waitForAnimationToEnd:
+          timeout: 5000
+- tapOn: 'Dark|تیره'
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: settings_theme_dark
+- tapOn:
+    text: 'System|سیستم'
+    index: 1
+- tapOn: '.*Reduce motion.*|.*کاهش حرکت.*'
+- tapOn: '.*Reduce motion.*|.*کاهش حرکت.*'
+- scroll
+- takeScreenshot: settings_recording
+- scroll
+- takeScreenshot: settings_ai
+- scroll
+- scroll
+- takeScreenshot: settings_bottom
+- back
+- extendedWaitUntil:
+    visible: 'Settings|تنظیمات'
+    timeout: 10000
+
+# Cloud & sync (no backend configured in CI builds → must say so)
+- tapOn: '.*Cloud \& sync.*|.*فضای ابری و همگام.سازی.*'
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: account_cloud
+- back
+
+# Privacy and Terms
+- tapOn: 'Privacy|حریم خصوصی'
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: account_privacy
+- scroll
+- takeScreenshot: account_privacy_scrolled
+- back
+- scrollUntilVisible:
+    element: 'Terms of use|شرایط استفاده'
+    direction: DOWN
+    timeout: 10000
+- tapOn: 'Terms of use|شرایط استفاده'
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: account_terms
+- back
+
+# About: tap the version 7 times → owner/tester unlock dialog (only when the build has an owner code hash).
+- scrollUntilVisible:
+    element: 'About RavanGo|دربارهٔ روان.گو'
+    direction: DOWN
+    timeout: 10000
+- tapOn: 'About RavanGo|دربارهٔ روان.گو'
+- extendedWaitUntil:
+    visible: '.*Version .*|.*نسخهٔ .*'
+    timeout: 10000
+- takeScreenshot: about
+- repeat:
+    times: 7
+    commands:
+      - tapOn: '.*Version .*|.*نسخهٔ .*'
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: about_after_7_taps
+- runFlow:
+    when:
+      true: ${typeof OWNER_CODE_CONFIGURED !== 'undefined' && OWNER_CODE_CONFIGURED === 'true'}
+    commands:
+      - assertVisible: 'Tester access|دسترسی آزمایشی'
+- runFlow:
+    when:
+      visible: 'Tester access|دسترسی آزمایشی'
+    commands:
+      - takeScreenshot: about_tester_dialog
+      # A wrong code must be rejected (the real code is never used in tests).
+      # The code field sits between the message and the buttons (a dialog window: no test tags there).
+      - tapOn:
+          below: '.*Enter the owner code.*|.*کد مالک را وارد کنید.*'
+          above: 'Unlock|باز کردن'
+      - inputText: not-the-owner-code
+      - tapOn: 'Unlock|باز کردن'
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - takeScreenshot: about_tester_wrong_code
+      - tapOn: 'Cancel|انصراف'
+- scrollUntilVisible:
+    element: '.*Open\-source licenses.*|.*مجوزهای متن.باز.*'
+    direction: DOWN
+    timeout: 10000
+- tapOn: '.*Open\-source licenses.*|.*مجوزهای متن.باز.*'
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: licenses
+- runFlow: ../subflows/go_home.yaml

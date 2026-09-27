@@ -1,0 +1,8 @@
+# First run without the full walkthrough: choose the language, then "Skip".
+appId: com.ravango.app.debug
+---
+- runFlow: choose_language.yaml
+- tapOn: 'Skip|رد شدن'
+- extendedWaitUntil:
+    visible: '.*New recording.*|.*ضبط جدید.*'
+    timeout: 20000

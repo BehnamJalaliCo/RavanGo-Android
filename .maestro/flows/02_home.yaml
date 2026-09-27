@@ -1,0 +1,59 @@
+# Home: hero, quick actions, scrolling, and each quick destination opens and returns.
+appId: com.ravango.app.debug
+name: 02 Home
+tags:
+  - smoke
+---
+- runFlow: ../subflows/launch.yaml
+- takeScreenshot: home_top
+- assertVisible: 'Start recording|شروع ضبط'
+- assertVisible: 'Scripts|متن.ها'
+- assertVisible: 'Projects|پروژه.ها'
+- scrollUntilVisible:
+    element: 'Start from a template|شروع با یک قالب'
+    direction: DOWN
+    timeout: 20000
+    optional: true
+- takeScreenshot: home_scrolled
+- scroll
+- takeScreenshot: home_bottom
+- swipe:
+    direction: DOWN
+- swipe:
+    direction: DOWN
+
+# Account (avatar)
+- tapOn: 'Account|حساب کاربری'
+- extendedWaitUntil:
+    visible: 'Settings|تنظیمات'
+    timeout: 10000
+- takeScreenshot: home_to_account
+- back
+- extendedWaitUntil:
+    visible: '.*New recording.*|.*ضبط جدید.*'
+    timeout: 10000
+
+# Templates
+- tapOn: 'Templates|قالب.ها'
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: home_to_templates
+- back
+
+# Drafts (Projects, drafts tab)
+- tapOn: 'Drafts|پیش.نویس.ها'
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: home_to_drafts
+- back
+
+# Cloud: must say honestly that the backend is not configured in this build (or show sync state).
+- tapOn: 'Cloud|فضای ابری'
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: home_to_cloud
+- back
+- extendedWaitUntil:
+    visible: '.*New recording.*|.*ضبط جدید.*'
+    timeout: 10000
+- takeScreenshot: home_back_again

@@ -1,0 +1,6 @@
+# Maestro workspace: `maestro test .maestro/` runs every flow in flows/ (subflows/ are only used via runFlow).
+# Pass the app language with `-e APP_LANG=fa` (default) or `-e APP_LANG=en`. See docs/dev/DEVICE_TESTS.md.
+flows:
+  - "flows/*"
+executionOrder:
+  continueOnFailure: true
