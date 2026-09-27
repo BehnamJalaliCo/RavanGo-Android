@@ -7,6 +7,7 @@ import com.ravango.platform.billing.BillingProvider
 import com.ravango.platform.billing.BillingRepository
 import com.ravango.platform.billing.DefaultEntitlementProvider
 import com.ravango.platform.billing.NoopBillingProvider
+import com.ravango.platform.billing.bazaar.BazaarBillingProvider
 import com.ravango.platform.billing.play.PlayBillingProvider
 import dagger.Binds
 import dagger.Module
@@ -35,11 +36,19 @@ abstract class BillingBindings {
 @Module
 @InstallIn(SingletonComponent::class)
 object BillingProviderModule {
-    /** Google Play Billing for the Play build; other channels get a provider that explains why purchases are unavailable. */
+    /**
+     * Google Play Billing for the Play build, Poolakey for the Cafe Bazaar build (when its RSA key is configured);
+     * other channels get a provider that explains why purchases are unavailable.
+     */
     @Provides
     @Singleton
-    fun billingProvider(config: AppConfig, play: Provider<PlayBillingProvider>): BillingProvider =
-        if (config.distribution.equals(DISTRIBUTION_PLAY, ignoreCase = true)) play.get() else NoopBillingProvider(config.distribution)
+    fun billingProvider(config: AppConfig, play: Provider<PlayBillingProvider>, bazaar: Provider<BazaarBillingProvider>): BillingProvider =
+        when {
+            config.distribution.equals(DISTRIBUTION_PLAY, ignoreCase = true) -> play.get()
+            config.distribution.equals(DISTRIBUTION_BAZAAR, ignoreCase = true) && config.bazaarRsaPublicKey.isNotBlank() -> bazaar.get()
+            else -> NoopBillingProvider(config.distribution)
+        }
 
     private const val DISTRIBUTION_PLAY = "play"
+    private const val DISTRIBUTION_BAZAAR = "bazaar"
 }

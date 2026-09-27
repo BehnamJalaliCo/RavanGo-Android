@@ -47,3 +47,8 @@
 -dontwarn org.openjsse.**
 
 # MediaPipe tasks and Media3 ship their own consumer rules (engine:beauty adds MediaPipe-specific keeps).
+
+# Cafe Bazaar Poolakey: talks to the Bazaar app over AIDL/Bundles; keep its classes intact.
+-keep class ir.cafebazaar.poolakey.** { *; }
+-keep class com.android.vending.billing.** { *; }
+-dontwarn ir.cafebazaar.poolakey.**

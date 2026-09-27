@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":core:datastore"))
     implementation(project(":platform:auth"))
     implementation(libs.billing.ktx)
+    implementation(libs.poolakey)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
 }

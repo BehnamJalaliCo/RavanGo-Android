@@ -7,6 +7,8 @@ Generated from the app's release dependency graph by the AboutLibraries Gradle p
 
 Bundled assets: MediaPipe `face_landmarker.task` and `selfie_segmenter.tflite` models and `canonical_face_model.obj` — Apache License 2.0 (Google), see `engine/beauty/src/main/assets/NOTICE.txt`.
 
+Cafe Bazaar build only: **Poolakey 2.2.0** (`com.github.cafebazaar.Poolakey:poolakey`, JitPack) — Apache License 2.0, © Cafe Bazaar.
+
 Fonts: *Ravagh* — commercial (fontiran.com, licence #136710), see [licenses/Ravagh-NOTICE.md](licenses/Ravagh-NOTICE.md); *Vazirmatn*, *Sahel*, *Samim* — SIL Open Font License 1.1, see [licenses/](licenses/).
 
 | Library | Artifact | Version | Licence |

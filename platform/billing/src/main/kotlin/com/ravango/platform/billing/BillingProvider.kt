@@ -75,6 +75,8 @@ enum class UnavailableReason {
     PLAY_BILLING_UNAVAILABLE,
     /** Could not reach the store right now. */
     SERVICE_UNAVAILABLE,
+    /** The store app (e.g. Cafe Bazaar) is missing, outdated or signed out, so it can't take payments. */
+    STORE_APP_UNAVAILABLE,
 }
 
 sealed interface BillingAvailability {
@@ -84,7 +86,7 @@ sealed interface BillingAvailability {
 }
 
 /**
- * Store abstraction. Google Play Billing 8 is implemented; Cafe Bazaar (Poolakey) and Myket (Myket IAB) plug in
+ * Store abstraction: Google Play Billing 8 and Cafe Bazaar (Poolakey) are implemented; Myket (Myket IAB) plugs in
  * behind the same interface, selected by `AppConfig.distribution`.
  */
 interface BillingProvider {

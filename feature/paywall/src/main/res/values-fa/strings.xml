@@ -79,7 +79,8 @@
 
     <string name="paywall_loading">در حال دریافت قیمت‌ها…</string>
     <string name="paywall_unavailable_title">خرید در دسترس نیست</string>
-    <string name="paywall_unavailable_store">خرید درون‌برنامه‌ای در نسخهٔ گوگل‌پلی روان‌گو در دسترس است. پرداخت از طریق %1$s به کیت پرداخت آن (پولکی / مایکت) نیاز دارد که هنوز در این نسخه نیست. قابلیت‌های پرویی که روی حسابت فعال شده، این‌جا هم کار می‌کنند.</string>
+    <string name="paywall_unavailable_store">خرید درون‌برنامه‌ای از طریق %1$s هنوز در این نسخه پشتیبانی نمی‌شود. قابلیت‌های پرویی که روی حسابت فعال شده، این‌جا هم کار می‌کنند.</string>
+    <string name="paywall_unavailable_store_app">برای خرید، برنامهٔ %1$s باید نصب و به‌روز باشد و وارد حسابت شده باشی. بعد دوباره تلاش کن.</string>
     <string name="paywall_unavailable_play">پرداخت گوگل‌پلی روی این دستگاه در دسترس نیست. مطمئن شو که پلی‌استور نصب، به‌روز و وارد حساب شده است.</string>
     <string name="paywall_unavailable_service">ارتباط با %1$s برقرار نشد. اتصال اینترنت را بررسی کن و دوباره تلاش کن.</string>
     <string name="paywall_products_missing">طرح‌ها از %1$s دریافت نشد.</string>

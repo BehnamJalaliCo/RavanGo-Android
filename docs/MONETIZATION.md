@@ -77,9 +77,14 @@ stays active.
 
 * `play` → Google Play Billing 8 (`PlayBillingProvider`: pending purchases, auto service reconnection,
   subscription offers with free-trial phases, acknowledge/consume, restore).
-* `bazaar`, `myket`, `direct` → `NoopBillingProvider`. The paywall explains that purchases are available in the
-  Play Store version; Cafe Bazaar (Poolakey) and Myket (Myket IAB) need their SDKs implemented behind the same
-  `BillingProvider` interface. Server-granted entitlements (e.g. bought on another device) still apply.
+* `bazaar` → Cafe Bazaar through Poolakey 2.2.0 (`BazaarBillingProvider`), enabled when `RAVANGO_BAZAAR_RSA_PUBLIC_KEY`
+  is set (purchases are signature-checked locally with it). Bazaar has no base plans, so the SKUs
+  `ravango_pro_monthly` / `ravango_pro_yearly` are mapped onto the monthly/yearly plans of `ravango_pro`; lifetime
+  and AI credit packs use the same product ids as Play. No free-trial phase; no acknowledgement step; packs are
+  consumed after crediting. Prices come as formatted strings (Toman/Rial) and are parsed for the yearly-savings badge.
+* `myket`, `direct` (or `bazaar` without the RSA key) → `NoopBillingProvider`: the paywall explains that purchases
+  aren't supported through that store yet. Server-granted entitlements (e.g. bought on another device) still apply.
+* Each release build carries only its own store's billing (manifest overlays `app/src/{playStore,bazaarStore,otherStore}`).
 
 ## Trust model
 

@@ -477,6 +477,7 @@ private fun UnavailableCard(state: PaywallUiState, reason: UnavailableReason?, o
         val text = when (reason) {
             UnavailableReason.STORE_NOT_SUPPORTED -> stringResource(R.string.paywall_unavailable_store, state.storeName)
             UnavailableReason.PLAY_BILLING_UNAVAILABLE -> stringResource(R.string.paywall_unavailable_play)
+            UnavailableReason.STORE_APP_UNAVAILABLE -> stringResource(R.string.paywall_unavailable_store_app, state.storeName)
             UnavailableReason.SERVICE_UNAVAILABLE, null -> stringResource(R.string.paywall_unavailable_service, state.storeName)
         }
         Text(text, style = MaterialTheme.typography.bodyMedium, color = RgTheme.colors.textSecondary)

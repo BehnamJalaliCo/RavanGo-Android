@@ -227,7 +227,8 @@ gpg --batch --pinentry-mode loopback --passphrase "<RAVAGH_FONT_PASSPHRASE>" \
 | **Google Play Billing** | محصولات `ravango_pro` (monthly/yearly)، `ravango_lifetime`، `ai_credits_200`، `ai_credits_1000` |
 | **پیامک (OTP)** | ارائه‌دهنده‌ی SMS در Supabase (مثلاً Kavenegar از طریق Send SMS hook) |
 | **Eye Contact** (اختیاری) | `EYE_CONTACT_API_URL` و `EYE_CONTACT_API_KEY` در گیت‌وی |
-| **کافه‌بازار / مایکت** | نیازمند SDK آن‌ها (Poolakey / Myket IAB)؛ رابط `BillingProvider` آماده است |
+| **کافه‌بازار** | پولکی (Poolakey) پیاده‌سازی شده؛ کلید RSA در `RAVANGO_BAZAAR_RSA_PUBLIC_KEY` و ساخت با `RAVANGO_DISTRIBUTION=bazaar` |
+| **مایکت** | نیازمند SDK مایکت (Myket IAB)؛ رابط `BillingProvider` آماده است |
 
 ---
 
@@ -253,7 +254,17 @@ Workflow: [`.github/workflows/android.yml`](.github/workflows/android.yml)
 
 ### انتشار در کافه‌بازار
 - بازار بسته‌ی امضاشده با کلید دیباگ را نمی‌پذیرد؛ باید با **کلید انتشار اختصاصی** امضا شود. این کلید را هرگز در مخزن قرار ندهید و حتماً از آن پشتیبان بگیرید: بدون همان کلید، به‌روزرسانی برنامه در بازار ممکن نیست.
-- با تنظیم Secretهای `RAVANGO_RELEASE_*`، CI علاوه بر نسخه‌ی گوگل‌پلی فایل `RavanGo-bazaar.apk` را هم می‌سازد (`RAVANGO_DISTRIBUTION=bazaar`): مجوز پرداخت گوگل‌پلی حذف می‌شود و پرداخت درون‌برنامه‌ای تا اضافه شدن SDK پولکی (Poolakey) «در دسترس نیست» نمایش داده می‌شود.
+- با تنظیم Secretهای `RAVANGO_RELEASE_*`، CI علاوه بر نسخه‌ی گوگل‌پلی فایل `RavanGo-bazaar.apk` را هم می‌سازد (`RAVANGO_DISTRIBUTION=bazaar`). هر نسخه فقط پرداخت فروشگاه خودش را دارد: گوگل‌پلی ← Play Billing، بازار ← **پولکی (Poolakey 2.2.0)**.
+- **پرداخت درون‌برنامه‌ای بازار:** کلید RSA عمومی برنامه (از پنل بازار) در `secrets.defaults.properties` (`bazaarRsaPublicKey`) ثبت شده است؛ با Secret `RAVANGO_BAZAAR_RSA_PUBLIC_KEY` قابل جایگزینی است. در پنل بازار این محصولات را با همین شناسه‌ها بسازید:
+
+| شناسه (SKU) | نوع در بازار | کاربرد |
+|---|---|---|
+| `ravango_pro_monthly` | اشتراک ماهانه | روان‌گو پرو ماهانه |
+| `ravango_pro_yearly` | اشتراک سالانه | روان‌گو پرو سالانه |
+| `ravango_lifetime` | محصول درون‌برنامه‌ای (غیرمصرفی) | پرو مادام‌العمر |
+| `ai_credits_200` | محصول درون‌برنامه‌ای (مصرفی) | ۲۰۰ اعتبار هوش مصنوعی |
+| `ai_credits_1000` | محصول درون‌برنامه‌ای (مصرفی) | ۱۰۰۰ اعتبار هوش مصنوعی |
+
 - ساخت محلی: `RAVANGO_DISTRIBUTION=bazaar RAVANGO_RELEASE_STORE_FILE=... RAVANGO_RELEASE_STORE_PASSWORD=... RAVANGO_RELEASE_KEY_ALIAS=ravango RAVANGO_RELEASE_KEY_PASSWORD=... ./gradlew :app:assembleRelease`
 
 ---
@@ -319,7 +330,7 @@ Workflow: [`.github/workflows/android.yml`](.github/workflows/android.yml)
 - Transitionها از نوع «عبور» هستند (بدون هم‌پوشانی دو کلیپ / cross-dissolve).
 - Import فایل PDF پشتیبانی نمی‌شود.
 - اصلاح تماس چشمی (Eye Contact) نیازمند سرویس سمت سرور است.
-- پرداخت در کافه‌بازار/مایکت نیازمند افزودن SDK آن‌هاست.
+- پرداخت در مایکت نیازمند افزودن SDK آن است (کافه‌بازار با پولکی پیاده شده است).
 
 </div>
 

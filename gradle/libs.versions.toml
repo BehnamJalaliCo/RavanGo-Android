@@ -45,6 +45,7 @@ anthropic = "2.65.0"
 
 # Billing
 billing = "8.0.0"
+poolakey = "2.2.0"
 
 # Images
 coil = "2.7.0"
@@ -140,6 +141,7 @@ anthropic-java = { module = "com.anthropic:anthropic-java", version.ref = "anthr
 
 # Billing
 billing-ktx = { module = "com.android.billingclient:billing-ktx", version.ref = "billing" }
+poolakey = { module = "com.github.cafebazaar.Poolakey:poolakey", version.ref = "poolakey" }
 
 # Images
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }

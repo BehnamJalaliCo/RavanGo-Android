@@ -18,6 +18,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // Cafe Bazaar's Poolakey billing SDK is only published on JitPack.
+        maven("https://jitpack.io") {
+            content { includeGroup("com.github.cafebazaar.Poolakey") }
+        }
     }
 }
 

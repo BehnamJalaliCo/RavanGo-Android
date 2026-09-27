@@ -86,7 +86,8 @@
     <!-- States -->
     <string name="paywall_loading">Loading prices…</string>
     <string name="paywall_unavailable_title">Purchases unavailable</string>
-    <string name="paywall_unavailable_store">Purchases are available in the Google Play version of RavanGo. Payments through %1$s require its billing SDK (Poolakey / Myket IAB), which this build doesn\'t include yet. Pro features granted to your account still work here.</string>
+    <string name="paywall_unavailable_store">In-app purchases aren\'t supported through %1$s in this version yet. Pro features granted to your account still work here.</string>
+    <string name="paywall_unavailable_store_app">To buy, the %1$s app must be installed, up to date and signed in. Then try again.</string>
     <string name="paywall_unavailable_play">Google Play billing isn\'t available on this device. Make sure the Play Store is installed, updated and signed in.</string>
     <string name="paywall_unavailable_service">Couldn\'t reach %1$s. Check your connection and try again.</string>
     <string name="paywall_products_missing">Plans couldn\'t be loaded from %1$s.</string>

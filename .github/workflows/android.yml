@@ -85,6 +85,7 @@ jobs:
       - name: Build Cafe Bazaar APK
         env:
           RAVANGO_DISTRIBUTION: bazaar
+          RAVANGO_BAZAAR_RSA_PUBLIC_KEY: ${{ secrets.RAVANGO_BAZAAR_RSA_PUBLIC_KEY }}
         run: |
           # Save the Google Play APK first; the Bazaar build reuses the same output path.
           mkdir -p dist

@@ -42,6 +42,9 @@ data class ProductIds(
     val yearlyTrialOfferId: String = "yearly-free-trial",
     val lifetimeProductId: String = "ravango_lifetime",
     val creditPacks: List<CreditPack> = listOf(CreditPack("ai_credits_200", 200), CreditPack("ai_credits_1000", 1000)),
+    /** Cafe Bazaar has no base plans: each subscription period is its own SKU, mapped onto [subscriptionId]. */
+    val bazaarMonthlySku: String = "ravango_pro_monthly",
+    val bazaarYearlySku: String = "ravango_pro_yearly",
 ) {
     fun packFor(productId: String): CreditPack? = creditPacks.firstOrNull { it.productId == productId }
 }

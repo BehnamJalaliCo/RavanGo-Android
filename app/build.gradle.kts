@@ -35,8 +35,8 @@ android {
 
     defaultConfig {
         applicationId = "com.ravango.app"
-        versionCode = 3
-        versionName = "1.2.0"
+        versionCode = 4
+        versionName = "1.2.1"
         // One APK for every Android 8+ phone: 64-bit and 32-bit ARM. (x86 is emulator/Chromebook-only; Chromebooks
         // run ARM apps through translation.)
         ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
@@ -50,6 +50,7 @@ android {
         buildConfigField("String", "SUPPORT_EMAIL", quoted(secret("supportEmail")))
         buildConfigField("String", "OWNER_CODE_SHA256", quoted(secret("ownerCodeSha256").lowercase()))
         buildConfigField("String", "DISTRIBUTION", quoted(distribution))
+        buildConfigField("String", "BAZAAR_RSA_PUBLIC_KEY", quoted(secret("bazaarRsaPublicKey").filterNot { it.isWhitespace() }))
     }
 
     androidResources {
@@ -65,10 +66,14 @@ android {
     }
 
 
-    // Stores other than Google Play (Cafe Bazaar, Myket, direct APK) must not ship Google Play's billing permission.
-    if (distribution != "play") {
-        sourceSets.getByName("release").manifest.srcFile("src/nonPlayStore/AndroidManifest.xml")
-    }
+    // Each store build ships only its own billing: Play Billing for Google Play, Poolakey for Cafe Bazaar, none otherwise.
+    sourceSets.getByName("release").manifest.srcFile(
+        when (distribution) {
+            "play" -> "src/playStore/AndroidManifest.xml"
+            "bazaar" -> "src/bazaarStore/AndroidManifest.xml"
+            else -> "src/otherStore/AndroidManifest.xml"
+        },
+    )
 
     signingConfigs {
         // Shared debug key (public, non-secret) so debug/CI builds install over each other across machines.

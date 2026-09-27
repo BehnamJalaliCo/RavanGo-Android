@@ -25,6 +25,8 @@ data class AppConfig(
      * Empty disables the feature. Only the hash ships in the app; the code itself is never stored in the repo.
      */
     val ownerCodeSha256: String = "",
+    /** Cafe Bazaar in-app billing RSA public key (developer panel → the app → In-app payments). Enables Poolakey. */
+    val bazaarRsaPublicKey: String = "",
 ) {
     val isCloudConfigured: Boolean get() = supabaseUrl.isNotBlank() && supabaseAnonKey.isNotBlank()
     val isAiGatewayConfigured: Boolean get() = aiGatewayUrl.isNotBlank()
