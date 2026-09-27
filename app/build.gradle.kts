@@ -27,6 +27,9 @@ fun quoted(v: String) = "\"" + v.replace("\\", "\\\\").replace("\"", "\\\"") + "
  */
 val emulatorAbi = providers.gradleProperty("ravango.emulatorAbi").orNull.toBoolean()
 
+/** Store channel: "play", "bazaar", "myket" or "direct" (env RAVANGO_DISTRIBUTION). Selects billing and manifest. */
+val distribution = secret("distribution").ifBlank { "play" }.lowercase()
+
 android {
     namespace = "com.ravango.app"
 
@@ -46,7 +49,7 @@ android {
         buildConfigField("String", "TERMS_URL", quoted(secret("termsUrl")))
         buildConfigField("String", "SUPPORT_EMAIL", quoted(secret("supportEmail")))
         buildConfigField("String", "OWNER_CODE_SHA256", quoted(secret("ownerCodeSha256").lowercase()))
-        buildConfigField("String", "DISTRIBUTION", quoted(secret("distribution").ifBlank { "play" }))
+        buildConfigField("String", "DISTRIBUTION", quoted(distribution))
     }
 
     androidResources {
@@ -61,6 +64,11 @@ android {
         buildConfig = true
     }
 
+
+    // Stores other than Google Play (Cafe Bazaar, Myket, direct APK) must not ship Google Play's billing permission.
+    if (distribution != "play") {
+        sourceSets.getByName("release").manifest.srcFile("src/nonPlayStore/AndroidManifest.xml")
+    }
 
     signingConfigs {
         // Shared debug key (public, non-secret) so debug/CI builds install over each other across machines.

@@ -251,6 +251,11 @@ Workflow: [`.github/workflows/android.yml`](.github/workflows/android.yml)
 | `RAVANGO_SUPABASE_URL`، `RAVANGO_SUPABASE_ANON_KEY`، `RAVANGO_GOOGLE_WEB_CLIENT_ID`، `RAVANGO_AI_GATEWAY_URL` | اختیاری | فعال‌سازی سرویس‌های ابری در APK |
 | `RAVANGO_OWNER_CODE_SHA256` | اختیاری | هش SHA-256 کد «حالت تست Pro» مالک (خود کد هرگز در مخزن نیست) |
 
+### انتشار در کافه‌بازار
+- بازار بسته‌ی امضاشده با کلید دیباگ را نمی‌پذیرد؛ باید با **کلید انتشار اختصاصی** امضا شود. این کلید را هرگز در مخزن قرار ندهید و حتماً از آن پشتیبان بگیرید: بدون همان کلید، به‌روزرسانی برنامه در بازار ممکن نیست.
+- با تنظیم Secretهای `RAVANGO_RELEASE_*`، CI علاوه بر نسخه‌ی گوگل‌پلی فایل `RavanGo-bazaar.apk` را هم می‌سازد (`RAVANGO_DISTRIBUTION=bazaar`): مجوز پرداخت گوگل‌پلی حذف می‌شود و پرداخت درون‌برنامه‌ای تا اضافه شدن SDK پولکی (Poolakey) «در دسترس نیست» نمایش داده می‌شود.
+- ساخت محلی: `RAVANGO_DISTRIBUTION=bazaar RAVANGO_RELEASE_STORE_FILE=... RAVANGO_RELEASE_STORE_PASSWORD=... RAVANGO_RELEASE_KEY_ALIAS=ravango RAVANGO_RELEASE_KEY_PASSWORD=... ./gradlew :app:assembleRelease`
+
 ---
 
 ## مدل درآمدی
